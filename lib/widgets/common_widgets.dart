@@ -1,0 +1,175 @@
+import 'package:flutter/material.dart';
+import '../theme/app_theme.dart';
+
+class MulgilButton extends StatelessWidget {
+  final String label;
+  final VoidCallback? onTap;
+  final bool filled;
+  final Color? fillColor;
+  final Color? textColor;
+
+  const MulgilButton({
+    super.key,
+    required this.label,
+    this.onTap,
+    this.filled = true,
+    this.fillColor,
+    this.textColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final bg = fillColor ?? (filled ? AppColors.navy : Colors.transparent);
+    final fg = textColor ?? (filled ? Colors.white : AppColors.navy);
+    return Material(
+      color: bg,
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          decoration: filled ? null : BoxDecoration(border: Border.all(color: AppColors.navy), borderRadius: BorderRadius.circular(14)),
+          alignment: Alignment.center,
+          child: Text(label, style: TextStyle(color: fg, fontWeight: FontWeight.w700, fontSize: 15)),
+        ),
+      ),
+    );
+  }
+}
+
+class MulgilChip extends StatelessWidget {
+  final String label;
+  final bool selected;
+  final VoidCallback? onTap;
+
+  const MulgilChip({super.key, required this.label, this.selected = false, this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: selected ? AppColors.navy : const Color(0xFFF2F2F2),
+      borderRadius: BorderRadius.circular(100),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(100),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              color: selected ? Colors.white : AppColors.textMuted,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class MulgilProgressBar extends StatelessWidget {
+  final double value;
+  final Color color;
+  const MulgilProgressBar({super.key, required this.value, this.color = AppColors.teal});
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(3),
+      child: LinearProgressIndicator(
+        value: value,
+        minHeight: 5,
+        backgroundColor: const Color(0xFFEEF0F2),
+        color: color,
+      ),
+    );
+  }
+}
+
+class MulgilToggle extends StatelessWidget {
+  final bool value;
+  final ValueChanged<bool>? onChanged;
+  const MulgilToggle({super.key, required this.value, this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: () => onChanged?.call(!value),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          width: 40,
+          height: 24,
+          decoration: BoxDecoration(
+            color: value ? AppColors.teal : const Color(0xFFD8DDE1),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: AnimatedAlign(
+            duration: const Duration(milliseconds: 200),
+            alignment: value ? Alignment.centerRight : Alignment.centerLeft,
+            child: Container(
+              margin: const EdgeInsets.all(3),
+              width: 18,
+              height: 18,
+              decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class StarBadge extends StatelessWidget {
+  final int stars;
+  const StarBadge({super.key, required this.stars});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF3E9),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text('⭐' * stars, style: const TextStyle(fontSize: 11)),
+    );
+  }
+}
+
+class ExamDayBadge extends StatelessWidget {
+  final int dDay;
+  const ExamDayBadge({super.key, required this.dDay});
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      'D-$dDay',
+      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: AppColors.coral),
+    );
+  }
+}
+
+class SectionHeader extends StatelessWidget {
+  final String title;
+  final Widget? trailing;
+  const SectionHeader({super.key, required this.title, this.trailing});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(title, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
+          ?trailing,
+        ],
+      ),
+    );
+  }
+}
