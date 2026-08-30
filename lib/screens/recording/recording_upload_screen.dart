@@ -7,7 +7,11 @@ enum _Stage { pick, uploading, mapping, done }
 class _CandidateSession {
   final String id, title;
   final double overlapScore;
-  const _CandidateSession({required this.id, required this.title, required this.overlapScore});
+  const _CandidateSession({
+    required this.id,
+    required this.title,
+    required this.overlapScore,
+  });
 }
 
 // Mirrors POST /recordings/upload-url -> upload-complete -> confirm-mapping.
@@ -53,9 +57,23 @@ class _RecordingUploadScreenState extends State<RecordingUploadScreen> {
             children: [
               Row(
                 children: [
-                  GestureDetector(onTap: () => Navigator.pop(context), child: const Icon(Icons.arrow_back_ios, size: 18, color: AppColors.textPrimary)),
+                  GestureDetector(
+                    onTap: () => Navigator.pop(context),
+                    child: const Icon(
+                      Icons.arrow_back_ios,
+                      size: 18,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
                   const SizedBox(width: 8),
-                  const Text('강의 녹음 업로드', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.textPrimary)),
+                  const Text(
+                    '강의 녹음 업로드',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
                 ],
               ),
               const SizedBox(height: 28),
@@ -107,9 +125,19 @@ class _PickStage extends StatelessWidget {
               children: [
                 Icon(Icons.mic_none, size: 32, color: AppColors.tealDark),
                 SizedBox(height: 8),
-                Text('녹음 파일 선택 (m4a / mp4)', style: TextStyle(fontSize: 13, color: AppColors.tealDark, fontWeight: FontWeight.w700)),
+                Text(
+                  '녹음 파일 선택 (m4a / mp4)',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: AppColors.tealDark,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
                 SizedBox(height: 2),
-                Text('최대 3시간까지 업로드할 수 있어요', style: TextStyle(fontSize: 11, color: AppColors.textLight)),
+                Text(
+                  '최대 3시간까지 업로드할 수 있어요',
+                  style: TextStyle(fontSize: 11, color: AppColors.textLight),
+                ),
               ],
             ),
           ),
@@ -130,7 +158,10 @@ class _UploadingStage extends StatelessWidget {
         children: [
           CircularProgressIndicator(),
           SizedBox(height: 16),
-          Text('업로드 중이에요...', style: TextStyle(fontSize: 13, color: AppColors.textMuted)),
+          Text(
+            '업로드 중이에요...',
+            style: TextStyle(fontSize: 13, color: AppColors.textMuted),
+          ),
         ],
       ),
     );
@@ -142,40 +173,83 @@ class _MappingStage extends StatelessWidget {
   final String? selectedId;
   final ValueChanged<String> onSelect;
   final VoidCallback onConfirm;
-  const _MappingStage({required this.candidates, required this.selectedId, required this.onSelect, required this.onConfirm});
+  const _MappingStage({
+    required this.candidates,
+    required this.selectedId,
+    required this.onSelect,
+    required this.onConfirm,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('어느 차시 녹음인가요?', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
+        const Text(
+          '어느 차시 녹음인가요?',
+          style: TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w700,
+            color: AppColors.textPrimary,
+          ),
+        ),
         const SizedBox(height: 4),
-        const Text('겹치는 시간대를 기준으로 추천했어요', style: TextStyle(fontSize: 12, color: AppColors.textMuted)),
+        const Text(
+          '겹치는 시간대를 기준으로 추천했어요',
+          style: TextStyle(fontSize: 12, color: AppColors.textMuted),
+        ),
         const SizedBox(height: 16),
-        ...candidates.map((c) => Padding(
-          padding: const EdgeInsets.only(bottom: 10),
-          child: GestureDetector(
-            onTap: () => onSelect(c.id),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-              decoration: BoxDecoration(
-                color: selectedId == c.id ? const Color(0xFFEEF7F8) : const Color(0xFFF7F7F7),
-                border: Border.all(color: selectedId == c.id ? AppColors.teal : Colors.transparent, width: 1.5),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(c.title, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
-                  Text('${(c.overlapScore * 100).round()}% 일치', style: const TextStyle(fontSize: 11, color: AppColors.tealDark)),
-                ],
+        ...candidates.map(
+          (c) => Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: GestureDetector(
+              onTap: () => onSelect(c.id),
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 14,
+                ),
+                decoration: BoxDecoration(
+                  color: selectedId == c.id
+                      ? const Color(0xFFEEF7F8)
+                      : const Color(0xFFF7F7F7),
+                  border: Border.all(
+                    color: selectedId == c.id
+                        ? AppColors.teal
+                        : Colors.transparent,
+                    width: 1.5,
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      c.title,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    Text(
+                      '${(c.overlapScore * 100).round()}% 일치',
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: AppColors.tealDark,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
-        )),
+        ),
         const Spacer(),
-        MulgilButton(label: '차시 확정', onTap: selectedId == null ? null : onConfirm),
+        MulgilButton(
+          label: '차시 확정',
+          onTap: selectedId == null ? null : onConfirm,
+        ),
       ],
     );
   }
@@ -192,9 +266,19 @@ class _DoneStage extends StatelessWidget {
       children: [
         const Icon(Icons.check_circle, size: 48, color: AppColors.teal),
         const SizedBox(height: 12),
-        const Text('업로드가 완료됐어요', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
+        const Text(
+          '업로드가 완료됐어요',
+          style: TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w700,
+            color: AppColors.textPrimary,
+          ),
+        ),
         const SizedBox(height: 4),
-        const Text('음성 인식이 끝나면 알림으로 알려드려요', style: TextStyle(fontSize: 12, color: AppColors.textMuted)),
+        const Text(
+          '음성 인식이 끝나면 알림으로 알려드려요',
+          style: TextStyle(fontSize: 12, color: AppColors.textMuted),
+        ),
         const SizedBox(height: 24),
         MulgilButton(label: '확인', onTap: onClose),
       ],

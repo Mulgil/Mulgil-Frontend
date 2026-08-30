@@ -8,6 +8,10 @@ class DrawStroke {
   final double width;
   final List<Offset> points;
 
-  DrawStroke({required this.tool, required this.color, required this.width, List<Offset>? points})
-      : points = points ?? [];
+  DrawStroke({
+    required this.tool,
+    required this.color,
+    required this.width,
+    List<Offset>? points,
+  }) : points = points ?? [];
 }

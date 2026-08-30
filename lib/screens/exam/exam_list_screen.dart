@@ -37,7 +37,9 @@ class _ExamListScreenState extends State<ExamListScreen> {
 
   void _attachPastExam(Exam exam) {
     _replaceExam(exam, exam.copyWith(hasPastExamAttached: true));
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('기출 PDF가 첨부됐어요 (mock)')));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('기출 PDF가 첨부됐어요 (mock)')));
   }
 
   Future<void> _generate(Exam exam, {required bool isSummary}) async {
@@ -45,7 +47,9 @@ class _ExamListScreenState extends State<ExamListScreen> {
     if (current == AiJobStatus.succeeded && !_usedDailyLimit) {
       setState(() => _usedDailyLimit = true);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('오늘 AI 생성 한도를 모두 사용했어요 (429 AI_DAILY_LIMIT_REACHED)')),
+        const SnackBar(
+          content: Text('오늘 AI 생성 한도를 모두 사용했어요 (429 AI_DAILY_LIMIT_REACHED)'),
+        ),
       );
       return;
     }
@@ -55,11 +59,21 @@ class _ExamListScreenState extends State<ExamListScreen> {
       );
       return;
     }
-    _replaceExam(exam, isSummary ? exam.copyWith(summaryStatus: AiJobStatus.running) : exam.copyWith(quizStatus: AiJobStatus.running));
+    _replaceExam(
+      exam,
+      isSummary
+          ? exam.copyWith(summaryStatus: AiJobStatus.running)
+          : exam.copyWith(quizStatus: AiJobStatus.running),
+    );
     await Future.delayed(const Duration(seconds: 2));
     if (!mounted) return;
     final running = MockData.exams.firstWhere((e) => e.id == exam.id);
-    _replaceExam(running, isSummary ? running.copyWith(summaryStatus: AiJobStatus.succeeded) : running.copyWith(quizStatus: AiJobStatus.succeeded));
+    _replaceExam(
+      running,
+      isSummary
+          ? running.copyWith(summaryStatus: AiJobStatus.succeeded)
+          : running.copyWith(quizStatus: AiJobStatus.succeeded),
+    );
   }
 
   void _openCreateSheet() {
@@ -102,12 +116,25 @@ class _ExamListScreenState extends State<ExamListScreen> {
             children: [
               Row(
                 children: [
-                  GestureDetector(onTap: () => Navigator.pop(context), child: const Icon(Icons.arrow_back_ios, size: 18, color: AppColors.textPrimary)),
+                  GestureDetector(
+                    onTap: () => Navigator.pop(context),
+                    child: const Icon(
+                      Icons.arrow_back_ios,
+                      size: 18,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      _courseFilter == null ? '시험 관리' : '시험 관리 · $_courseFilter',
-                      style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
+                      _courseFilter == null
+                          ? '시험 관리'
+                          : '시험 관리 · $_courseFilter',
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.textPrimary,
+                      ),
                     ),
                   ),
                 ],
@@ -115,15 +142,22 @@ class _ExamListScreenState extends State<ExamListScreen> {
               const SizedBox(height: 14),
               Expanded(
                 child: _exams.isEmpty
-                    ? const Center(child: Text('등록된 시험이 없어요', style: TextStyle(color: AppColors.textMuted)))
+                    ? const Center(
+                        child: Text(
+                          '등록된 시험이 없어요',
+                          style: TextStyle(color: AppColors.textMuted),
+                        ),
+                      )
                     : ListView.separated(
                         itemCount: _exams.length,
                         separatorBuilder: (_, _) => const SizedBox(height: 12),
                         itemBuilder: (_, i) => _ExamCard(
                           exam: _exams[i],
                           onAttachPastExam: () => _attachPastExam(_exams[i]),
-                          onGenerateSummary: () => _generate(_exams[i], isSummary: true),
-                          onGenerateQuiz: () => _generate(_exams[i], isSummary: false),
+                          onGenerateSummary: () =>
+                              _generate(_exams[i], isSummary: true),
+                          onGenerateQuiz: () =>
+                              _generate(_exams[i], isSummary: false),
                           onEdit: () => _openEditSheet(_exams[i]),
                           onDelete: () => _deleteExam(_exams[i]),
                         ),
@@ -166,7 +200,13 @@ class _ExamCard extends StatelessWidget {
         color: Colors.white,
         border: Border.all(color: const Color(0xFFEEEEEE)),
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 8, offset: const Offset(0, 2))],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -179,13 +219,31 @@ class _ExamCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(exam.courseName, style: const TextStyle(fontSize: 11, color: AppColors.teal, fontWeight: FontWeight.w700)),
-                    Text(exam.title, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: AppColors.textPrimary)),
+                    Text(
+                      exam.courseName,
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: AppColors.teal,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    Text(
+                      exam.title,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
                   ],
                 ),
               ),
               PopupMenuButton<String>(
-                icon: const Icon(Icons.more_vert, size: 18, color: AppColors.textLight),
+                icon: const Icon(
+                  Icons.more_vert,
+                  size: 18,
+                  color: AppColors.textLight,
+                ),
                 padding: EdgeInsets.zero,
                 onSelected: (v) => v == 'edit' ? onEdit() : onDelete(),
                 itemBuilder: (_) => const [
@@ -198,7 +256,9 @@ class _ExamCard extends StatelessWidget {
           const SizedBox(height: 8),
           Wrap(
             spacing: 6,
-            children: exam.sessionTitles.map((s) => MulgilChip(label: s)).toList(),
+            children: exam.sessionTitles
+                .map((s) => MulgilChip(label: s))
+                .toList(),
           ),
           const SizedBox(height: 12),
           Row(
@@ -206,9 +266,18 @@ class _ExamCard extends StatelessWidget {
               Expanded(
                 child: OutlinedButton.icon(
                   onPressed: exam.hasPastExamAttached ? null : onAttachPastExam,
-                  icon: Icon(exam.hasPastExamAttached ? Icons.check : Icons.upload_file, size: 16),
-                  label: Text(exam.hasPastExamAttached ? '기출 첨부됨' : '기출 PDF 첨부', style: const TextStyle(fontSize: 12)),
-                  style: OutlinedButton.styleFrom(foregroundColor: AppColors.navy, side: const BorderSide(color: AppColors.navy)),
+                  icon: Icon(
+                    exam.hasPastExamAttached ? Icons.check : Icons.upload_file,
+                    size: 16,
+                  ),
+                  label: Text(
+                    exam.hasPastExamAttached ? '기출 첨부됨' : '기출 PDF 첨부',
+                    style: const TextStyle(fontSize: 12),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.navy,
+                    side: const BorderSide(color: AppColors.navy),
+                  ),
                 ),
               ),
             ],
@@ -216,9 +285,21 @@ class _ExamCard extends StatelessWidget {
           const SizedBox(height: 8),
           Row(
             children: [
-              Expanded(child: _JobButton(label: '요약 생성', status: exam.summaryStatus, onTap: onGenerateSummary)),
+              Expanded(
+                child: _JobButton(
+                  label: '요약 생성',
+                  status: exam.summaryStatus,
+                  onTap: onGenerateSummary,
+                ),
+              ),
               const SizedBox(width: 8),
-              Expanded(child: _JobButton(label: '예상 문제 생성', status: exam.quizStatus, onTap: onGenerateQuiz)),
+              Expanded(
+                child: _JobButton(
+                  label: '예상 문제 생성',
+                  status: exam.quizStatus,
+                  onTap: onGenerateQuiz,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 6),
@@ -236,17 +317,28 @@ class _JobButton extends StatelessWidget {
   final String label;
   final AiJobStatus status;
   final VoidCallback onTap;
-  const _JobButton({required this.label, required this.status, required this.onTap});
+  const _JobButton({
+    required this.label,
+    required this.status,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final isRunning = status == AiJobStatus.queued || status == AiJobStatus.running;
+    final isRunning =
+        status == AiJobStatus.queued || status == AiJobStatus.running;
     final isFailed = status == AiJobStatus.failed;
     final isDone = status == AiJobStatus.succeeded;
 
-    final bg = isFailed ? const Color(0xFFFFF0EB) : (isDone ? const Color(0xFFEEF7F8) : const Color(0xFFF2F2F2));
-    final fg = isFailed ? AppColors.coral : (isDone ? AppColors.tealDark : AppColors.textPrimary);
-    final text = isRunning ? '생성 중...' : (isFailed ? '실패 · 재시도' : (isDone ? '$label 완료 · 보기' : label));
+    final bg = isFailed
+        ? const Color(0xFFFFF0EB)
+        : (isDone ? const Color(0xFFEEF7F8) : const Color(0xFFF2F2F2));
+    final fg = isFailed
+        ? AppColors.coral
+        : (isDone ? AppColors.tealDark : AppColors.textPrimary);
+    final text = isRunning
+        ? '생성 중...'
+        : (isFailed ? '실패 · 재시도' : (isDone ? '$label 완료 · 보기' : label));
 
     return Material(
       color: bg,
@@ -258,8 +350,19 @@ class _JobButton extends StatelessWidget {
           padding: const EdgeInsets.symmetric(vertical: 10),
           child: Center(
             child: isRunning
-                ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2))
-                : Text(text, style: TextStyle(fontSize: 11.5, color: fg, fontWeight: FontWeight.w700)),
+                ? const SizedBox(
+                    width: 14,
+                    height: 14,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : Text(
+                    text,
+                    style: TextStyle(
+                      fontSize: 11.5,
+                      color: fg,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
           ),
         ),
       ),

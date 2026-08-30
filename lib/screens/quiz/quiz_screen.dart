@@ -40,13 +40,22 @@ class _QuizScreenState extends State<QuizScreen> {
                     onChanged: (v) => setState(() => _course = v),
                   ),
                   const Spacer(),
-                  Text('${_current + 1} / $_total', style: const TextStyle(fontSize: 12, color: AppColors.textMuted)),
+                  Text(
+                    '${_current + 1} / $_total',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppColors.textMuted,
+                    ),
+                  ),
                 ],
               ),
               const SizedBox(height: 10),
               MulgilProgressBar(value: (_current + 1) / _total),
               const SizedBox(height: 24),
-              if (context.isTablet) _buildTabletQuiz(q) else _buildMobileQuiz(q),
+              if (context.isTablet)
+                _buildTabletQuiz(q)
+              else
+                _buildMobileQuiz(q),
             ],
           ),
         ),
@@ -64,14 +73,31 @@ class _QuizScreenState extends State<QuizScreen> {
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(20),
-              boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 16, offset: const Offset(0, 4))],
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.06),
+                  blurRadius: 16,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
-            child: Text(q.question, textAlign: TextAlign.center, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
+            child: Text(
+              q.question,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textPrimary,
+              ),
+            ),
           ),
           const SizedBox(height: 28),
           _buildAnswerControls(q),
           const SizedBox(height: 16),
-          Text('남은 문제 ${_total - _current - 1}개 · 예상 시간 ${(_total - _current - 1) * 30}초', style: const TextStyle(fontSize: 12, color: AppColors.textMuted)),
+          Text(
+            '남은 문제 ${_total - _current - 1}개 · 예상 시간 ${(_total - _current - 1) * 30}초',
+            style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
+          ),
           const Spacer(),
           if (_showResult)
             Align(
@@ -82,15 +108,35 @@ class _QuizScreenState extends State<QuizScreen> {
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(14),
-                  boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.15), blurRadius: 20, offset: const Offset(0, 6))],
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.15),
+                      blurRadius: 20,
+                      offset: const Offset(0, 6),
+                    ),
+                  ],
                   border: Border.all(color: const Color(0xFFEEEEEE)),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(_correct ? '정답!' : '오답', style: TextStyle(color: _correct ? AppColors.tealDark : AppColors.coral, fontWeight: FontWeight.w800, fontSize: 12)),
+                    Text(
+                      _correct ? '정답!' : '오답',
+                      style: TextStyle(
+                        color: _correct ? AppColors.tealDark : AppColors.coral,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 12,
+                      ),
+                    ),
                     const SizedBox(height: 4),
-                    Text(q.explanation, style: const TextStyle(fontSize: 11, color: AppColors.textSecondary, height: 1.5)),
+                    Text(
+                      q.explanation,
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: AppColors.textSecondary,
+                        height: 1.5,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -108,17 +154,37 @@ class _QuizScreenState extends State<QuizScreen> {
           Expanded(
             child: Container(
               padding: const EdgeInsets.all(22),
-              decoration: BoxDecoration(color: const Color(0xFFFAFAFA), borderRadius: BorderRadius.circular(16)),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFAFAFA),
+                borderRadius: BorderRadius.circular(16),
+              ),
               child: const Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('참고 자료', style: TextStyle(fontSize: 11.5, color: AppColors.textLight)),
+                  Text(
+                    '참고 자료',
+                    style: TextStyle(
+                      fontSize: 11.5,
+                      color: AppColors.textLight,
+                    ),
+                  ),
                   SizedBox(height: 10),
-                  Text('프로세스 스케줄링', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: AppColors.textPrimary)),
+                  Text(
+                    '프로세스 스케줄링',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
                   SizedBox(height: 6),
                   Text(
                     'SJF(Shortest Job First)는 실행 시간이 짧은 작업을 우선 처리하는 스케줄링 기법이다.',
-                    style: TextStyle(fontSize: 12.5, color: AppColors.textSecondary, height: 1.7),
+                    style: TextStyle(
+                      fontSize: 12.5,
+                      color: AppColors.textSecondary,
+                      height: 1.7,
+                    ),
                   ),
                   SizedBox(height: 10),
                   _TabletHint(),
@@ -130,7 +196,10 @@ class _QuizScreenState extends State<QuizScreen> {
           Expanded(
             child: Container(
               padding: const EdgeInsets.all(22),
-              decoration: BoxDecoration(color: AppColors.cream, borderRadius: BorderRadius.circular(16)),
+              decoration: BoxDecoration(
+                color: AppColors.cream,
+                borderRadius: BorderRadius.circular(16),
+              ),
               child: Column(
                 children: [
                   Container(
@@ -139,9 +208,23 @@ class _QuizScreenState extends State<QuizScreen> {
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(18),
-                      boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 16, offset: const Offset(0, 4))],
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.06),
+                          blurRadius: 16,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
                     ),
-                    child: Text(q.question, textAlign: TextAlign.center, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
+                    child: Text(
+                      q.question,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
                   ),
                   const SizedBox(height: 22),
                   _buildAnswerControls(q),
@@ -154,7 +237,13 @@ class _QuizScreenState extends State<QuizScreen> {
                         border: Border.all(color: AppColors.yellow),
                         borderRadius: BorderRadius.circular(10),
                       ),
-                      child: Text(q.explanation, style: const TextStyle(fontSize: 11.5, color: AppColors.textSecondary)),
+                      child: Text(
+                        q.explanation,
+                        style: const TextStyle(
+                          fontSize: 11.5,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
                     ),
                   ],
                 ],
@@ -170,23 +259,38 @@ class _QuizScreenState extends State<QuizScreen> {
     if (q.type == QuizType.multipleChoice) {
       final options = q.options!;
       return Column(
-        children: List.generate(options.length, (i) => Padding(
-          padding: EdgeInsets.only(bottom: i < options.length - 1 ? 10 : 0),
-          child: _ChoiceButton(
-            index: i,
-            label: options[i],
-            selected: _showResult && i == q.answer,
-            wrong: _showResult && !_correct && i != q.answer,
-            onTap: _showResult ? null : () => _answer(i, q),
+        children: List.generate(
+          options.length,
+          (i) => Padding(
+            padding: EdgeInsets.only(bottom: i < options.length - 1 ? 10 : 0),
+            child: _ChoiceButton(
+              index: i,
+              label: options[i],
+              selected: _showResult && i == q.answer,
+              wrong: _showResult && !_correct && i != q.answer,
+              onTap: _showResult ? null : () => _answer(i, q),
+            ),
           ),
-        )),
+        ),
       );
     }
     return Row(
       children: [
-        Expanded(child: _OxButton(label: 'O', color: AppColors.tealDark, onTap: () => _answer(0, q))),
+        Expanded(
+          child: _OxButton(
+            label: 'O',
+            color: AppColors.tealDark,
+            onTap: () => _answer(0, q),
+          ),
+        ),
         const SizedBox(width: 14),
-        Expanded(child: _OxButton(label: 'X', color: AppColors.coral, onTap: () => _answer(1, q))),
+        Expanded(
+          child: _OxButton(
+            label: 'X',
+            color: AppColors.coral,
+            onTap: () => _answer(1, q),
+          ),
+        ),
       ],
     );
   }
@@ -213,10 +317,17 @@ class _TabletHint extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(color: const Color(0xFFFFF9DB), borderRadius: BorderRadius.circular(8)),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF9DB),
+        borderRadius: BorderRadius.circular(8),
+      ),
       child: const Text(
         '⭐ 긴 작업이 계속 밀려 실행되지 못하는 기아 현상(starvation)이 발생할 수 있다.',
-        style: TextStyle(fontSize: 12.5, color: AppColors.textSecondary, height: 1.7),
+        style: TextStyle(
+          fontSize: 12.5,
+          color: AppColors.textSecondary,
+          height: 1.7,
+        ),
       ),
     );
   }
@@ -228,14 +339,24 @@ class _ChoiceButton extends StatelessWidget {
   final bool selected;
   final bool wrong;
   final VoidCallback? onTap;
-  const _ChoiceButton({required this.index, required this.label, required this.selected, required this.wrong, required this.onTap});
+  const _ChoiceButton({
+    required this.index,
+    required this.label,
+    required this.selected,
+    required this.wrong,
+    required this.onTap,
+  });
 
   static const _letters = ['A', 'B', 'C', 'D'];
 
   @override
   Widget build(BuildContext context) {
-    final bg = selected ? AppColors.tealDark : (wrong ? const Color(0xFFFFF0EB) : Colors.white);
-    final border = selected ? AppColors.tealDark : (wrong ? AppColors.coral : const Color(0xFFEEEEEE));
+    final bg = selected
+        ? AppColors.tealDark
+        : (wrong ? const Color(0xFFFFF0EB) : Colors.white);
+    final border = selected
+        ? AppColors.tealDark
+        : (wrong ? AppColors.coral : const Color(0xFFEEEEEE));
     final fg = selected ? Colors.white : AppColors.textPrimary;
 
     return GestureDetector(
@@ -243,17 +364,43 @@ class _ChoiceButton extends StatelessWidget {
       child: Container(
         width: double.infinity,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        decoration: BoxDecoration(color: bg, border: Border.all(color: border, width: 1.5), borderRadius: BorderRadius.circular(14)),
+        decoration: BoxDecoration(
+          color: bg,
+          border: Border.all(color: border, width: 1.5),
+          borderRadius: BorderRadius.circular(14),
+        ),
         child: Row(
           children: [
             Container(
-              width: 24, height: 24,
-              decoration: BoxDecoration(color: selected ? Colors.white.withValues(alpha: 0.25) : const Color(0xFFF2F2F2), shape: BoxShape.circle),
+              width: 24,
+              height: 24,
+              decoration: BoxDecoration(
+                color: selected
+                    ? Colors.white.withValues(alpha: 0.25)
+                    : const Color(0xFFF2F2F2),
+                shape: BoxShape.circle,
+              ),
               alignment: Alignment.center,
-              child: Text(_letters[index], style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: fg)),
+              child: Text(
+                _letters[index],
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800,
+                  color: fg,
+                ),
+              ),
             ),
             const SizedBox(width: 12),
-            Expanded(child: Text(label, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: fg))),
+            Expanded(
+              child: Text(
+                label,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: fg,
+                ),
+              ),
+            ),
           ],
         ),
       ),
@@ -265,7 +412,11 @@ class _OxButton extends StatelessWidget {
   final String label;
   final Color color;
   final VoidCallback onTap;
-  const _OxButton({required this.label, required this.color, required this.onTap});
+  const _OxButton({
+    required this.label,
+    required this.color,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -273,9 +424,19 @@ class _OxButton extends StatelessWidget {
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 32),
-        decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(20)),
+        decoration: BoxDecoration(
+          color: color,
+          borderRadius: BorderRadius.circular(20),
+        ),
         alignment: Alignment.center,
-        child: Text(label, style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w800, color: Colors.white)),
+        child: Text(
+          label,
+          style: const TextStyle(
+            fontSize: 32,
+            fontWeight: FontWeight.w800,
+            color: Colors.white,
+          ),
+        ),
       ),
     );
   }

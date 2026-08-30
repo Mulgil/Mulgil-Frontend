@@ -39,9 +39,23 @@ class _PdfUploadScreenState extends State<PdfUploadScreen> {
             children: [
               Row(
                 children: [
-                  GestureDetector(onTap: () => Navigator.pop(context), child: const Icon(Icons.arrow_back_ios, size: 18, color: AppColors.textPrimary)),
+                  GestureDetector(
+                    onTap: () => Navigator.pop(context),
+                    child: const Icon(
+                      Icons.arrow_back_ios,
+                      size: 18,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
                   const SizedBox(width: 8),
-                  const Text('PDF 자료 업로드', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.textPrimary)),
+                  const Text(
+                    'PDF 자료 업로드',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
                 ],
               ),
               const SizedBox(height: 28),
@@ -56,16 +70,21 @@ class _PdfUploadScreenState extends State<PdfUploadScreen> {
   Widget _buildStage() {
     switch (_stage) {
       case _Stage.pickPhase:
-        return _PhaseStage(onSelect: (phase) => setState(() {
-          _sourcePhase = phase;
-          _stage = _Stage.pickFile;
-        }));
+        return _PhaseStage(
+          onSelect: (phase) => setState(() {
+            _sourcePhase = phase;
+            _stage = _Stage.pickFile;
+          }),
+        );
       case _Stage.pickFile:
         return _PickFileStage(sourcePhase: _sourcePhase!, onPick: _pickFile);
       case _Stage.uploading:
         return _UploadingStage(fileName: _fileName!);
       case _Stage.done:
-        return _DoneStage(fileName: _fileName!, onClose: () => Navigator.pop(context));
+        return _DoneStage(
+          fileName: _fileName!,
+          onClose: () => Navigator.pop(context),
+        );
     }
   }
 }
@@ -79,9 +98,19 @@ class _PhaseStage extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('어떤 용도의 자료인가요?', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
+        const Text(
+          '어떤 용도의 자료인가요?',
+          style: TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w700,
+            color: AppColors.textPrimary,
+          ),
+        ),
         const SizedBox(height: 4),
-        const Text('용도에 따라 AI가 미리보기/복습 자료를 다르게 생성해요', style: TextStyle(fontSize: 12, color: AppColors.textMuted)),
+        const Text(
+          '용도에 따라 AI가 미리보기/복습 자료를 다르게 생성해요',
+          style: TextStyle(fontSize: 12, color: AppColors.textMuted),
+        ),
         const SizedBox(height: 20),
         _PhaseOption(
           icon: '📖',
@@ -104,7 +133,12 @@ class _PhaseStage extends StatelessWidget {
 class _PhaseOption extends StatelessWidget {
   final String icon, title, desc;
   final VoidCallback onTap;
-  const _PhaseOption({required this.icon, required this.title, required this.desc, required this.onTap});
+  const _PhaseOption({
+    required this.icon,
+    required this.title,
+    required this.desc,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -112,7 +146,10 @@ class _PhaseOption extends StatelessWidget {
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(border: Border.all(color: const Color(0xFFEEEEEE)), borderRadius: BorderRadius.circular(14)),
+        decoration: BoxDecoration(
+          border: Border.all(color: const Color(0xFFEEEEEE)),
+          borderRadius: BorderRadius.circular(14),
+        ),
         child: Row(
           children: [
             Text(icon, style: const TextStyle(fontSize: 22)),
@@ -121,13 +158,30 @@ class _PhaseOption extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
                   const SizedBox(height: 2),
-                  Text(desc, style: const TextStyle(fontSize: 12, color: AppColors.textMuted)),
+                  Text(
+                    desc,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppColors.textMuted,
+                    ),
+                  ),
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right, size: 18, color: AppColors.textLight),
+            const Icon(
+              Icons.chevron_right,
+              size: 18,
+              color: AppColors.textLight,
+            ),
           ],
         ),
       ),
@@ -149,18 +203,35 @@ class _PickFileStage extends StatelessWidget {
           child: Container(
             width: double.infinity,
             padding: const EdgeInsets.symmetric(vertical: 40),
-            decoration: BoxDecoration(border: Border.all(color: const Color(0xFFc8ccd0)), borderRadius: BorderRadius.circular(14)),
+            decoration: BoxDecoration(
+              border: Border.all(color: const Color(0xFFc8ccd0)),
+              borderRadius: BorderRadius.circular(14),
+            ),
             child: const Column(
               children: [
-                Icon(Icons.picture_as_pdf_outlined, size: 32, color: AppColors.tealDark),
+                Icon(
+                  Icons.picture_as_pdf_outlined,
+                  size: 32,
+                  color: AppColors.tealDark,
+                ),
                 SizedBox(height: 8),
-                Text('PDF 파일 선택', style: TextStyle(fontSize: 13, color: AppColors.tealDark, fontWeight: FontWeight.w700)),
+                Text(
+                  'PDF 파일 선택',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: AppColors.tealDark,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
               ],
             ),
           ),
         ),
         const SizedBox(height: 12),
-        const Text('최대 50MB · 150페이지 · 세션당 5개까지', style: TextStyle(fontSize: 11, color: AppColors.textLight)),
+        const Text(
+          '최대 50MB · 150페이지 · 세션당 5개까지',
+          style: TextStyle(fontSize: 11, color: AppColors.textLight),
+        ),
       ],
     );
   }
@@ -178,7 +249,10 @@ class _UploadingStage extends StatelessWidget {
         children: [
           const CircularProgressIndicator(),
           const SizedBox(height: 16),
-          Text('$fileName 업로드 중...', style: const TextStyle(fontSize: 13, color: AppColors.textMuted)),
+          Text(
+            '$fileName 업로드 중...',
+            style: const TextStyle(fontSize: 13, color: AppColors.textMuted),
+          ),
         ],
       ),
     );
@@ -197,9 +271,20 @@ class _DoneStage extends StatelessWidget {
       children: [
         const Icon(Icons.check_circle, size: 48, color: AppColors.teal),
         const SizedBox(height: 12),
-        Text('$fileName 업로드가 완료됐어요', style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.textPrimary), textAlign: TextAlign.center),
+        Text(
+          '$fileName 업로드가 완료됐어요',
+          style: const TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w700,
+            color: AppColors.textPrimary,
+          ),
+          textAlign: TextAlign.center,
+        ),
         const SizedBox(height: 4),
-        const Text('AI가 텍스트를 분석하면 알림으로 알려드려요', style: TextStyle(fontSize: 12, color: AppColors.textMuted)),
+        const Text(
+          'AI가 텍스트를 분석하면 알림으로 알려드려요',
+          style: TextStyle(fontSize: 12, color: AppColors.textMuted),
+        ),
         const SizedBox(height: 24),
         MulgilButton(label: '확인', onTap: onClose),
       ],

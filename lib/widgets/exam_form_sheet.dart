@@ -7,7 +7,11 @@ import 'confirm_dialog.dart';
 
 // Confirms with the user, then invokes onConfirmedDelete — callers still own the
 // actual MockData.exams removal so they control their own setState/rebuild.
-Future<void> confirmDeleteExam(BuildContext context, Exam exam, VoidCallback onConfirmedDelete) async {
+Future<void> confirmDeleteExam(
+  BuildContext context,
+  Exam exam,
+  VoidCallback onConfirmedDelete,
+) async {
   final confirmed = await showMulgilConfirmDialog(
     context,
     title: '시험을 삭제할까요?',
@@ -24,21 +28,36 @@ class ExamFormSheet extends StatefulWidget {
   final Exam? existingExam;
   final String? initialCourseName;
   final ValueChanged<Exam> onSubmit;
-  const ExamFormSheet({super.key, this.existingExam, this.initialCourseName, required this.onSubmit});
+  const ExamFormSheet({
+    super.key,
+    this.existingExam,
+    this.initialCourseName,
+    required this.onSubmit,
+  });
 
   @override
   State<ExamFormSheet> createState() => _ExamFormSheetState();
 }
 
 class _ExamFormSheetState extends State<ExamFormSheet> {
-  late final _titleCtrl = TextEditingController(text: widget.existingExam?.title ?? '');
-  late DateTime _examAt = widget.existingExam?.examAt ?? DateTime.now().add(const Duration(days: 7));
-  late String _courseName = widget.existingExam?.courseName ?? widget.initialCourseName ?? MockData.courseNames.first;
-  late final Set<String> _selectedSessions = {...?widget.existingExam?.sessionTitles};
+  late final _titleCtrl = TextEditingController(
+    text: widget.existingExam?.title ?? '',
+  );
+  late DateTime _examAt =
+      widget.existingExam?.examAt ??
+      DateTime.now().add(const Duration(days: 7));
+  late String _courseName =
+      widget.existingExam?.courseName ??
+      widget.initialCourseName ??
+      MockData.courseNames.first;
+  late final Set<String> _selectedSessions = {
+    ...?widget.existingExam?.sessionTitles,
+  };
 
   bool get _isEditing => widget.existingExam != null;
 
-  List<String> get _availableSessions => MockData.lectures.map((l) => l.week).toList();
+  List<String> get _availableSessions =>
+      MockData.lectures.map((l) => l.week).toList();
 
   @override
   void dispose() {
@@ -58,37 +77,60 @@ class _ExamFormSheetState extends State<ExamFormSheet> {
 
   void _submit() {
     if (_titleCtrl.text.trim().isEmpty || _selectedSessions.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('시험명과 범위를 모두 입력해주세요')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('시험명과 범위를 모두 입력해주세요')));
       return;
     }
     final existing = widget.existingExam;
-    widget.onSubmit(Exam(
-      id: existing?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
-      courseName: _courseName,
-      title: _titleCtrl.text.trim(),
-      examAt: _examAt,
-      sessionTitles: _selectedSessions.toList()..sort(),
-      hasPastExamAttached: existing?.hasPastExamAttached ?? false,
-      summaryStatus: existing?.summaryStatus ?? AiJobStatus.none,
-      quizStatus: existing?.quizStatus ?? AiJobStatus.none,
-    ));
+    widget.onSubmit(
+      Exam(
+        id: existing?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
+        courseName: _courseName,
+        title: _titleCtrl.text.trim(),
+        examAt: _examAt,
+        sessionTitles: _selectedSessions.toList()..sort(),
+        hasPastExamAttached: existing?.hasPastExamAttached ?? false,
+        summaryStatus: existing?.summaryStatus ?? AiJobStatus.none,
+        quizStatus: existing?.quizStatus ?? AiJobStatus.none,
+      ),
+    );
     Navigator.pop(context);
   }
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.fromLTRB(20, 20, 20, MediaQuery.of(context).viewInsets.bottom + 20),
+      padding: EdgeInsets.fromLTRB(
+        20,
+        20,
+        20,
+        MediaQuery.of(context).viewInsets.bottom + 20,
+      ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(_isEditing ? '시험 수정' : '시험 등록', style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: AppColors.textPrimary)),
+          Text(
+            _isEditing ? '시험 수정' : '시험 등록',
+            style: const TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w800,
+              color: AppColors.textPrimary,
+            ),
+          ),
           const SizedBox(height: 16),
           DropdownButtonFormField<String>(
             initialValue: _courseName,
-            decoration: InputDecoration(labelText: '과목', border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))),
-            items: MockData.courseNames.map((name) => DropdownMenuItem(value: name, child: Text(name))).toList(),
+            decoration: InputDecoration(
+              labelText: '과목',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            items: MockData.courseNames
+                .map((name) => DropdownMenuItem(value: name, child: Text(name)))
+                .toList(),
             onChanged: (v) => setState(() => _courseName = v ?? _courseName),
           ),
           const SizedBox(height: 12),
@@ -97,7 +139,9 @@ class _ExamFormSheetState extends State<ExamFormSheet> {
             decoration: InputDecoration(
               labelText: '시험명',
               hintText: '예: 중간고사',
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
           ),
           const SizedBox(height: 14),
@@ -105,27 +149,55 @@ class _ExamFormSheetState extends State<ExamFormSheet> {
             onTap: _pickDate,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-              decoration: BoxDecoration(border: Border.all(color: const Color(0xFFDDDDDD)), borderRadius: BorderRadius.circular(12)),
+              decoration: BoxDecoration(
+                border: Border.all(color: const Color(0xFFDDDDDD)),
+                borderRadius: BorderRadius.circular(12),
+              ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text('시험 날짜', style: TextStyle(fontSize: 13, color: AppColors.textMuted)),
-                  Text('${_examAt.year}.${_examAt.month}.${_examAt.day}', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
+                  const Text(
+                    '시험 날짜',
+                    style: TextStyle(fontSize: 13, color: AppColors.textMuted),
+                  ),
+                  Text(
+                    '${_examAt.year}.${_examAt.month}.${_examAt.day}',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
                 ],
               ),
             ),
           ),
           const SizedBox(height: 14),
-          const Text('시험 범위', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
+          const Text(
+            '시험 범위',
+            style: TextStyle(
+              fontSize: 12.5,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textPrimary,
+            ),
+          ),
           const SizedBox(height: 8),
           Wrap(
             spacing: 8,
             runSpacing: 8,
-            children: _availableSessions.map((s) => MulgilChip(
-              label: s,
-              selected: _selectedSessions.contains(s),
-              onTap: () => setState(() => _selectedSessions.contains(s) ? _selectedSessions.remove(s) : _selectedSessions.add(s)),
-            )).toList(),
+            children: _availableSessions
+                .map(
+                  (s) => MulgilChip(
+                    label: s,
+                    selected: _selectedSessions.contains(s),
+                    onTap: () => setState(
+                      () => _selectedSessions.contains(s)
+                          ? _selectedSessions.remove(s)
+                          : _selectedSessions.add(s),
+                    ),
+                  ),
+                )
+                .toList(),
           ),
           const SizedBox(height: 20),
           MulgilButton(label: _isEditing ? '수정' : '등록', onTap: _submit),

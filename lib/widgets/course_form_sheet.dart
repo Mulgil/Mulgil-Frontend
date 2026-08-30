@@ -30,11 +30,13 @@ class _CourseFormSheetState extends State<CourseFormSheet> {
     super.dispose();
   }
 
-  String _formatTime(TimeOfDay t) => '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
+  String _formatTime(TimeOfDay t) =>
+      '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
 
   // 주 1회 수업은 보통 3시간 연강, 주 2회 이상은 교시당 1시간 15분이 흔한 패턴이라 기본값으로 사용.
   // 특수한 과목은 종료 시간을 직접 눌러서 조절할 수 있음.
-  int _defaultDurationMinutesFor(int weekdayCount) => weekdayCount <= 1 ? 180 : 75;
+  int _defaultDurationMinutesFor(int weekdayCount) =>
+      weekdayCount <= 1 ? 180 : 75;
 
   TimeOfDay _addMinutes(TimeOfDay t, int minutes) {
     final total = (t.hour * 60 + t.minute + minutes) % (24 * 60);
@@ -46,7 +48,10 @@ class _CourseFormSheetState extends State<CourseFormSheet> {
   }
 
   Future<void> _pickTime({required bool isStart}) async {
-    final picked = await showTimePicker(context: context, initialTime: isStart ? _start : _end);
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: isStart ? _start : _end,
+    );
     if (picked == null) return;
     setState(() {
       if (isStart) {
@@ -77,16 +82,23 @@ class _CourseFormSheetState extends State<CourseFormSheet> {
 
   Future<void> _submit() async {
     if (_nameCtrl.text.trim().isEmpty || _weekdays.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('과목명과 요일을 입력해주세요')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('과목명과 요일을 입력해주세요')));
       return;
     }
 
     final conflicts = _findConflictingSlots();
     if (conflicts.isNotEmpty) {
-      final names = conflicts.map((slot) {
-        final course = MockData.courses.firstWhere((c) => c.id == slot.courseId);
-        return "'${course.name}' (${slot.weekdayLabel} ${slot.startTime}~${slot.endTime})";
-      }).toSet().join(', ');
+      final names = conflicts
+          .map((slot) {
+            final course = MockData.courses.firstWhere(
+              (c) => c.id == slot.courseId,
+            );
+            return "'${course.name}' (${slot.weekdayLabel} ${slot.startTime}~${slot.endTime})";
+          })
+          .toSet()
+          .join(', ');
       final proceed = await showMulgilConfirmDialog(
         context,
         title: '시간표가 겹쳐요',
@@ -103,17 +115,23 @@ class _CourseFormSheetState extends State<CourseFormSheet> {
     final course = Course(
       id: courseId,
       name: _nameCtrl.text.trim(),
-      instructor: _professorCtrl.text.trim().isEmpty ? null : '${_professorCtrl.text.trim()} 교수님',
+      instructor: _professorCtrl.text.trim().isEmpty
+          ? null
+          : '${_professorCtrl.text.trim()} 교수님',
     );
     final startStr = _formatTime(_start);
     final endStr = _formatTime(_end);
-    final slots = _weekdays.map((wd) => TimetableSlot(
-      id: 't${DateTime.now().microsecondsSinceEpoch}_$wd',
-      courseId: courseId,
-      weekday: wd,
-      startTime: startStr,
-      endTime: endStr,
-    )).toList();
+    final slots = _weekdays
+        .map(
+          (wd) => TimetableSlot(
+            id: 't${DateTime.now().microsecondsSinceEpoch}_$wd',
+            courseId: courseId,
+            weekday: wd,
+            startTime: startStr,
+            endTime: endStr,
+          ),
+        )
+        .toList();
     widget.onAdd(course, slots);
     Navigator.pop(context);
   }
@@ -121,32 +139,65 @@ class _CourseFormSheetState extends State<CourseFormSheet> {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.fromLTRB(20, 20, 20, MediaQuery.of(context).viewInsets.bottom + 20),
+      padding: EdgeInsets.fromLTRB(
+        20,
+        20,
+        20,
+        MediaQuery.of(context).viewInsets.bottom + 20,
+      ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('과목 추가', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: AppColors.textPrimary)),
+          const Text(
+            '과목 추가',
+            style: TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w800,
+              color: AppColors.textPrimary,
+            ),
+          ),
           const SizedBox(height: 16),
           TextField(
             controller: _nameCtrl,
-            decoration: InputDecoration(labelText: '과목명', border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))),
+            decoration: InputDecoration(
+              labelText: '과목명',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
           ),
           const SizedBox(height: 12),
           TextField(
             controller: _professorCtrl,
-            decoration: InputDecoration(labelText: '교수님 (선택)', border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))),
+            decoration: InputDecoration(
+              labelText: '교수님 (선택)',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
           ),
           const SizedBox(height: 14),
-          const Text('요일', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
+          const Text(
+            '요일',
+            style: TextStyle(
+              fontSize: 12.5,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textPrimary,
+            ),
+          ),
           const SizedBox(height: 8),
           Wrap(
             spacing: 8,
-            children: List.generate(7, (i) => i + 1).map((wd) => ChoiceChip(
-              label: Text(TimetableSlot.weekdayLabels[wd - 1]),
-              selected: _weekdays.contains(wd),
-              onSelected: (sel) => _toggleWeekday(wd, sel),
-            )).toList(),
+            children: List.generate(7, (i) => i + 1)
+                .map(
+                  (wd) => ChoiceChip(
+                    label: Text(TimetableSlot.weekdayLabels[wd - 1]),
+                    selected: _weekdays.contains(wd),
+                    onSelected: (sel) => _toggleWeekday(wd, sel),
+                  ),
+                )
+                .toList(),
           ),
           const SizedBox(height: 14),
           Row(

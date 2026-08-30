@@ -26,10 +26,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
     showMulgilSheet(
       context,
       isScrollControlled: true,
-      builder: (_) => CourseFormSheet(onAdd: (course, slots) => setState(() {
-        MockData.courses.add(course);
-        MockData.timetableSlots.addAll(slots);
-      })),
+      builder: (_) => CourseFormSheet(
+        onAdd: (course, slots) => setState(() {
+          MockData.courses.add(course);
+          MockData.timetableSlots.addAll(slots);
+        }),
+      ),
     );
   }
 
@@ -37,7 +39,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     showMulgilSheet(
       context,
       isScrollControlled: true,
-      builder: (_) => ExamFormSheet(onSubmit: (exam) => setState(() => MockData.exams.insert(0, exam))),
+      builder: (_) => ExamFormSheet(
+        onSubmit: (exam) => setState(() => MockData.exams.insert(0, exam)),
+      ),
     );
   }
 
@@ -62,23 +66,35 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   void _openPrivacyPolicy() {
-    Navigator.of(context).push(MaterialPageRoute(builder: (_) => const LegalDocumentScreen(
-      title: '개인정보처리방침',
-      updatedAt: '2026.08.01',
-      body: _privacyPolicyBody,
-    )));
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => const LegalDocumentScreen(
+          title: '개인정보처리방침',
+          updatedAt: '2026.08.01',
+          body: _privacyPolicyBody,
+        ),
+      ),
+    );
   }
 
   void _openTermsOfService() {
-    Navigator.of(context).push(MaterialPageRoute(builder: (_) => const LegalDocumentScreen(
-      title: '이용약관',
-      updatedAt: '2026.08.01',
-      body: _termsOfServiceBody,
-    )));
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => const LegalDocumentScreen(
+          title: '이용약관',
+          updatedAt: '2026.08.01',
+          body: _termsOfServiceBody,
+        ),
+      ),
+    );
   }
 
   void _openOpenSourceLicenses() {
-    showLicensePage(context: context, applicationName: '물길 (Mulgil)', applicationVersion: '1.0.0');
+    showLicensePage(
+      context: context,
+      applicationName: '물길 (Mulgil)',
+      applicationVersion: '1.0.0',
+    );
   }
 
   void _openContactSupport() {
@@ -88,9 +104,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   void _openBugReport() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('버그 제보 폼 연결 예정 (mock)')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('버그 제보 폼 연결 예정 (mock)')));
   }
 
   // Mirrors POST /auth/logout — revokes the refresh token family server-side once wired up.
@@ -103,9 +119,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.cream,
-      body: SafeArea(
-        child: context.isTablet ? _buildTablet() : _buildMobile(),
-      ),
+      body: SafeArea(child: context.isTablet ? _buildTablet() : _buildMobile()),
     );
   }
 
@@ -118,7 +132,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
           Row(
             children: [
               const BackIfPushed(),
-              const Text('설정', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: AppColors.textPrimary)),
+              const Text(
+                '설정',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.textPrimary,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 20),
@@ -142,26 +163,56 @@ class _SettingsScreenState extends State<SettingsScreen> {
           if (MockData.exams.isEmpty)
             const _EmptyExamBox()
           else
-            ...MockData.exams.map((e) => Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: _ExamScheduleTile(
-                exam: e,
-                onEdit: () => _openEditExamSheet(e),
-                onDelete: () => _deleteExamSchedule(e),
+            ...MockData.exams.map(
+              (e) => Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: _ExamScheduleTile(
+                  exam: e,
+                  onEdit: () => _openEditExamSheet(e),
+                  onDelete: () => _deleteExamSchedule(e),
+                ),
               ),
-            )),
+            ),
           const SizedBox(height: 20),
           const _SectionLabel(label: '앱 정보'),
-          const _NavTile(label: '버전 1.0.0', icon: Icons.info_outlined, showArrow: false),
-          _NavTile(label: '문의 · 피드백', icon: Icons.mail_outlined, sublabel: 'mulgil@gmail.com', onTap: _openContactSupport),
-          _NavTile(label: '개인정보처리방침', icon: Icons.shield_outlined, onTap: _openPrivacyPolicy),
-          _NavTile(label: '이용약관', icon: Icons.article_outlined, onTap: _openTermsOfService),
-          _NavTile(label: '오픈소스 라이선스', icon: Icons.code_outlined, onTap: _openOpenSourceLicenses),
+          const _NavTile(
+            label: '버전 1.0.0',
+            icon: Icons.info_outlined,
+            showArrow: false,
+          ),
+          _NavTile(
+            label: '문의 · 피드백',
+            icon: Icons.mail_outlined,
+            sublabel: 'mulgil@gmail.com',
+            onTap: _openContactSupport,
+          ),
+          _NavTile(
+            label: '개인정보처리방침',
+            icon: Icons.shield_outlined,
+            onTap: _openPrivacyPolicy,
+          ),
+          _NavTile(
+            label: '이용약관',
+            icon: Icons.article_outlined,
+            onTap: _openTermsOfService,
+          ),
+          _NavTile(
+            label: '오픈소스 라이선스',
+            icon: Icons.code_outlined,
+            onTap: _openOpenSourceLicenses,
+          ),
           const SizedBox(height: 24),
           TextButton(
             onPressed: _logout,
             child: const Center(
-              child: Text('로그아웃', style: TextStyle(fontSize: 14, color: AppColors.coral, fontWeight: FontWeight.w600)),
+              child: Text(
+                '로그아웃',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: AppColors.coral,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ),
           ),
         ],
@@ -177,19 +228,50 @@ class _SettingsScreenState extends State<SettingsScreen> {
           width: 220,
           height: double.infinity,
           padding: const EdgeInsets.fromLTRB(16, 24, 16, 24),
-          decoration: const BoxDecoration(border: Border(right: BorderSide(color: Color(0xFFEEEEEE)))),
+          decoration: const BoxDecoration(
+            border: Border(right: BorderSide(color: Color(0xFFEEEEEE))),
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('설정', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: AppColors.textPrimary)),
+              const Text(
+                '설정',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.textPrimary,
+                ),
+              ),
               const SizedBox(height: 20),
-              _TabletSideItem(label: '프로필', icon: '👤', selected: _tab == _SettingsTab.profile, onTap: () => setState(() => _tab = _SettingsTab.profile)),
-              _TabletSideItem(label: '과목 관리', icon: '📚', selected: _tab == _SettingsTab.subjects, onTap: () => setState(() => _tab = _SettingsTab.subjects)),
-              _TabletSideItem(label: '앱 정보', icon: 'ℹ️', selected: _tab == _SettingsTab.appInfo, onTap: () => setState(() => _tab = _SettingsTab.appInfo)),
+              _TabletSideItem(
+                label: '프로필',
+                icon: '👤',
+                selected: _tab == _SettingsTab.profile,
+                onTap: () => setState(() => _tab = _SettingsTab.profile),
+              ),
+              _TabletSideItem(
+                label: '과목 관리',
+                icon: '📚',
+                selected: _tab == _SettingsTab.subjects,
+                onTap: () => setState(() => _tab = _SettingsTab.subjects),
+              ),
+              _TabletSideItem(
+                label: '앱 정보',
+                icon: 'ℹ️',
+                selected: _tab == _SettingsTab.appInfo,
+                onTap: () => setState(() => _tab = _SettingsTab.appInfo),
+              ),
               const Spacer(),
               TextButton(
                 onPressed: _logout,
-                child: const Text('로그아웃', style: TextStyle(fontSize: 13, color: AppColors.coral, fontWeight: FontWeight.w600)),
+                child: const Text(
+                  '로그아웃',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: AppColors.coral,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
               ),
             ],
           ),
@@ -254,23 +336,34 @@ class _SettingsScreenState extends State<SettingsScreen> {
         if (MockData.exams.isEmpty)
           const _EmptyExamBox()
         else
-          ...MockData.exams.map((e) => Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: _ExamScheduleTile(
-              exam: e,
-              onEdit: () => _openEditExamSheet(e),
-              onDelete: () => _deleteExamSchedule(e),
+          ...MockData.exams.map(
+            (e) => Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: _ExamScheduleTile(
+                exam: e,
+                onEdit: () => _openEditExamSheet(e),
+                onDelete: () => _deleteExamSchedule(e),
+              ),
             ),
-          )),
+          ),
         const SizedBox(height: 12),
         Container(
           padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(color: const Color(0xFFF0FDF8), border: Border.all(color: AppColors.teal.withValues(alpha: 0.3)), borderRadius: BorderRadius.circular(14)),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF0FDF8),
+            border: Border.all(color: AppColors.teal.withValues(alpha: 0.3)),
+            borderRadius: BorderRadius.circular(14),
+          ),
           child: const Row(
             children: [
               Icon(Icons.info_outline, size: 16, color: AppColors.tealDark),
               SizedBox(width: 8),
-              Expanded(child: Text('과목을 추가하면 AI가 강의 패턴을 분석해 맞춤 퀴즈를 만들어요', style: TextStyle(fontSize: 12, color: AppColors.tealDark))),
+              Expanded(
+                child: Text(
+                  '과목을 추가하면 AI가 강의 패턴을 분석해 맞춤 퀴즈를 만들어요',
+                  style: TextStyle(fontSize: 12, color: AppColors.tealDark),
+                ),
+              ),
             ],
           ),
         ),
@@ -286,7 +379,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
         const SizedBox(height: 20),
         Container(
           padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(color: AppColors.navy, borderRadius: BorderRadius.circular(16)),
+          decoration: BoxDecoration(
+            color: AppColors.navy,
+            borderRadius: BorderRadius.circular(16),
+          ),
           child: Row(
             children: [
               const Column(
@@ -294,16 +390,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 children: [
                   MulgilWordmark(fontSize: 28),
                   SizedBox(height: 4),
-                  Text('흐르듯 공부하다', style: TextStyle(fontSize: 13, color: Color(0xFF9fb6c4))),
+                  Text(
+                    '흐르듯 공부하다',
+                    style: TextStyle(fontSize: 13, color: Color(0xFF9fb6c4)),
+                  ),
                 ],
               ),
               const Spacer(),
               const Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  Text('버전 1.0.0', style: TextStyle(fontSize: 13, color: Colors.white, fontWeight: FontWeight.w600)),
+                  Text(
+                    '버전 1.0.0',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                   SizedBox(height: 2),
-                  Text('빌드 2026.08', style: TextStyle(fontSize: 11, color: Color(0xFF9fb6c4))),
+                  Text(
+                    '빌드 2026.08',
+                    style: TextStyle(fontSize: 11, color: Color(0xFF9fb6c4)),
+                  ),
                 ],
               ),
             ],
@@ -311,13 +420,34 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
         const SizedBox(height: 20),
         const _SectionLabel(label: '지원'),
-        _NavTile(label: '문의 · 피드백', icon: Icons.mail_outlined, sublabel: 'mulgil@gmail.com', onTap: _openContactSupport),
-        _NavTile(label: '버그 신고', icon: Icons.bug_report_outlined, onTap: _openBugReport),
+        _NavTile(
+          label: '문의 · 피드백',
+          icon: Icons.mail_outlined,
+          sublabel: 'mulgil@gmail.com',
+          onTap: _openContactSupport,
+        ),
+        _NavTile(
+          label: '버그 신고',
+          icon: Icons.bug_report_outlined,
+          onTap: _openBugReport,
+        ),
         const SizedBox(height: 20),
         const _SectionLabel(label: '법적 고지'),
-        _NavTile(label: '개인정보처리방침', icon: Icons.shield_outlined, onTap: _openPrivacyPolicy),
-        _NavTile(label: '이용약관', icon: Icons.article_outlined, onTap: _openTermsOfService),
-        _NavTile(label: '오픈소스 라이선스', icon: Icons.code_outlined, onTap: _openOpenSourceLicenses),
+        _NavTile(
+          label: '개인정보처리방침',
+          icon: Icons.shield_outlined,
+          onTap: _openPrivacyPolicy,
+        ),
+        _NavTile(
+          label: '이용약관',
+          icon: Icons.article_outlined,
+          onTap: _openTermsOfService,
+        ),
+        _NavTile(
+          label: '오픈소스 라이선스',
+          icon: Icons.code_outlined,
+          onTap: _openOpenSourceLicenses,
+        ),
       ],
     );
   }
@@ -331,7 +461,14 @@ class _PanelTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Text(title, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: AppColors.textPrimary));
+    return Text(
+      title,
+      style: const TextStyle(
+        fontSize: 20,
+        fontWeight: FontWeight.w800,
+        color: AppColors.textPrimary,
+      ),
+    );
   }
 }
 
@@ -342,16 +479,40 @@ class _ProfileCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(color: AppColors.navy, borderRadius: BorderRadius.circular(16)),
+      decoration: BoxDecoration(
+        color: AppColors.navy,
+        borderRadius: BorderRadius.circular(16),
+      ),
       child: const Row(
         children: [
-          CircleAvatar(radius: 26, backgroundColor: AppColors.teal, child: Text('유', style: TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.w700))),
+          CircleAvatar(
+            radius: 26,
+            backgroundColor: AppColors.teal,
+            child: Text(
+              '유',
+              style: TextStyle(
+                fontSize: 18,
+                color: Colors.white,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
           SizedBox(width: 14),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('지민', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Colors.white)),
-              Text('소프트웨어학부 · 3학년', style: TextStyle(fontSize: 12, color: Color(0xFF9fb6c4))),
+              Text(
+                '지민',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                ),
+              ),
+              Text(
+                '소프트웨어학부 · 3학년',
+                style: TextStyle(fontSize: 12, color: Color(0xFF9fb6c4)),
+              ),
             ],
           ),
         ],
@@ -368,7 +529,15 @@ class _SectionLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
-      child: Text(label, style: const TextStyle(fontSize: 12, color: AppColors.textMuted, fontWeight: FontWeight.w600, letterSpacing: 0.5)),
+      child: Text(
+        label,
+        style: const TextStyle(
+          fontSize: 12,
+          color: AppColors.textMuted,
+          fontWeight: FontWeight.w600,
+          letterSpacing: 0.5,
+        ),
+      ),
     );
   }
 }
@@ -379,7 +548,13 @@ class _NavTile extends StatelessWidget {
   final IconData? icon;
   final bool showArrow;
   final VoidCallback? onTap;
-  const _NavTile({required this.label, this.sublabel, this.icon, this.showArrow = true, this.onTap});
+  const _NavTile({
+    required this.label,
+    this.sublabel,
+    this.icon,
+    this.showArrow = true,
+    this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -403,13 +578,30 @@ class _NavTile extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(label, style: const TextStyle(fontSize: 14, color: AppColors.textPrimary)),
+                      Text(
+                        label,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
                       if (sublabel != null)
-                        Text(sublabel!, style: const TextStyle(fontSize: 11, color: AppColors.textMuted)),
+                        Text(
+                          sublabel!,
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: AppColors.textMuted,
+                          ),
+                        ),
                     ],
                   ),
                 ),
-                if (showArrow) const Icon(Icons.chevron_right, size: 18, color: AppColors.textLight),
+                if (showArrow)
+                  const Icon(
+                    Icons.chevron_right,
+                    size: 18,
+                    color: AppColors.textLight,
+                  ),
               ],
             ),
           ),
@@ -428,12 +620,25 @@ class _InfoTile extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-      decoration: BoxDecoration(color: const Color(0xFFF7F7F7), borderRadius: BorderRadius.circular(12)),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF7F7F7),
+        borderRadius: BorderRadius.circular(12),
+      ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: const TextStyle(fontSize: 14, color: AppColors.textMuted)),
-          Text(value, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+          Text(
+            label,
+            style: const TextStyle(fontSize: 14, color: AppColors.textMuted),
+          ),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textPrimary,
+            ),
+          ),
         ],
       ),
     );
@@ -444,7 +649,11 @@ class _ExamScheduleTile extends StatelessWidget {
   final Exam exam;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
-  const _ExamScheduleTile({required this.exam, required this.onEdit, required this.onDelete});
+  const _ExamScheduleTile({
+    required this.exam,
+    required this.onEdit,
+    required this.onDelete,
+  });
 
   int get _dDay => exam.examAt.difference(DateTime.now()).inDays;
 
@@ -453,7 +662,10 @@ class _ExamScheduleTile extends StatelessWidget {
     final dDay = _dDay < 0 ? 0 : _dDay;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      decoration: BoxDecoration(color: const Color(0xFFF7F7F7), borderRadius: BorderRadius.circular(12)),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF7F7F7),
+        borderRadius: BorderRadius.circular(12),
+      ),
       child: Row(
         children: [
           ExamDayBadge(dDay: dDay),
@@ -465,26 +677,60 @@ class _ExamScheduleTile extends StatelessWidget {
                 Text.rich(
                   TextSpan(
                     children: [
-                      TextSpan(text: exam.courseName, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
-                      const TextSpan(text: ' · ', style: TextStyle(fontSize: 14, color: AppColors.textMuted)),
-                      TextSpan(text: exam.title, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w400, color: AppColors.textPrimary)),
+                      TextSpan(
+                        text: exam.courseName,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      const TextSpan(
+                        text: ' · ',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: AppColors.textMuted,
+                        ),
+                      ),
+                      TextSpan(
+                        text: exam.title,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w400,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
                     ],
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 5),
-                Text('${exam.examAt.year}.${exam.examAt.month}.${exam.examAt.day}', style: const TextStyle(fontSize: 12, color: AppColors.textMuted)),
+                Text(
+                  '${exam.examAt.year}.${exam.examAt.month}.${exam.examAt.day}',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: AppColors.textMuted,
+                  ),
+                ),
               ],
             ),
           ),
           IconButton(
-            icon: const Icon(Icons.edit_outlined, size: 16, color: AppColors.textLight),
+            icon: const Icon(
+              Icons.edit_outlined,
+              size: 16,
+              color: AppColors.textLight,
+            ),
             onPressed: onEdit,
             constraints: const BoxConstraints(),
             padding: const EdgeInsets.all(8),
           ),
           IconButton(
-            icon: const Icon(Icons.delete_outline, size: 16, color: AppColors.coral),
+            icon: const Icon(
+              Icons.delete_outline,
+              size: 16,
+              color: AppColors.coral,
+            ),
             onPressed: onDelete,
             constraints: const BoxConstraints(),
             padding: const EdgeInsets.all(8),
@@ -504,8 +750,14 @@ class _EmptyExamBox extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 20),
       alignment: Alignment.center,
-      decoration: BoxDecoration(color: const Color(0xFFF7F7F7), borderRadius: BorderRadius.circular(12)),
-      child: const Text('등록된 시험이 없어요', style: TextStyle(fontSize: 12, color: AppColors.textMuted)),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF7F7F7),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: const Text(
+        '등록된 시험이 없어요',
+        style: TextStyle(fontSize: 12, color: AppColors.textMuted),
+      ),
     );
   }
 }
@@ -560,12 +812,19 @@ class _TabletSideItem extends StatelessWidget {
   final String label, icon;
   final bool selected;
   final VoidCallback onTap;
-  const _TabletSideItem({required this.label, required this.icon, required this.selected, required this.onTap});
+  const _TabletSideItem({
+    required this.label,
+    required this.icon,
+    required this.selected,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: selected ? AppColors.navy.withValues(alpha: 0.08) : Colors.transparent,
+      color: selected
+          ? AppColors.navy.withValues(alpha: 0.08)
+          : Colors.transparent,
       borderRadius: BorderRadius.circular(10),
       child: InkWell(
         onTap: onTap,
@@ -577,7 +836,14 @@ class _TabletSideItem extends StatelessWidget {
             children: [
               Text(icon, style: const TextStyle(fontSize: 16)),
               const SizedBox(width: 10),
-              Text(label, style: TextStyle(fontSize: 13.5, color: selected ? AppColors.navy : AppColors.textSecondary, fontWeight: selected ? FontWeight.w700 : FontWeight.w400)),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 13.5,
+                  color: selected ? AppColors.navy : AppColors.textSecondary,
+                  fontWeight: selected ? FontWeight.w700 : FontWeight.w400,
+                ),
+              ),
             ],
           ),
         ),

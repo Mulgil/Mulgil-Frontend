@@ -31,15 +31,23 @@ class AppColors {
 }
 
 class AppTextStyles {
-  static TextStyle get _base => GoogleFonts.notoSansKr(color: AppColors.textPrimary);
+  static TextStyle get _base =>
+      GoogleFonts.notoSansKr(color: AppColors.textPrimary);
 
-  static TextStyle get h1 => _base.copyWith(fontSize: 22, fontWeight: FontWeight.w800);
-  static TextStyle get h2 => _base.copyWith(fontSize: 18, fontWeight: FontWeight.w800);
-  static TextStyle get h3 => _base.copyWith(fontSize: 16, fontWeight: FontWeight.w700);
-  static TextStyle get body => _base.copyWith(fontSize: 14, fontWeight: FontWeight.w400);
-  static TextStyle get bodySmall => _base.copyWith(fontSize: 12, color: AppColors.textMuted);
-  static TextStyle get caption => _base.copyWith(fontSize: 11, color: AppColors.textLight);
-  static TextStyle get label => _base.copyWith(fontSize: 13, fontWeight: FontWeight.w700);
+  static TextStyle get h1 =>
+      _base.copyWith(fontSize: 22, fontWeight: FontWeight.w800);
+  static TextStyle get h2 =>
+      _base.copyWith(fontSize: 18, fontWeight: FontWeight.w800);
+  static TextStyle get h3 =>
+      _base.copyWith(fontSize: 16, fontWeight: FontWeight.w700);
+  static TextStyle get body =>
+      _base.copyWith(fontSize: 14, fontWeight: FontWeight.w400);
+  static TextStyle get bodySmall =>
+      _base.copyWith(fontSize: 12, color: AppColors.textMuted);
+  static TextStyle get caption =>
+      _base.copyWith(fontSize: 11, color: AppColors.textLight);
+  static TextStyle get label =>
+      _base.copyWith(fontSize: 13, fontWeight: FontWeight.w700);
 
   static TextStyle get logoStyle => GoogleFonts.nunito(
     fontSize: 48,

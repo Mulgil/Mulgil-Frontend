@@ -5,7 +5,8 @@ import '../../widgets/common_widgets.dart';
 import '../../data/mock_data.dart';
 import '../../models/lecture.dart';
 
-List<Lecture> _recentNotes(List<Lecture> lectures) => lectures.where((l) => l.done).take(2).toList();
+List<Lecture> _recentNotes(List<Lecture> lectures) =>
+    lectures.where((l) => l.done).take(2).toList();
 
 String _formatDate(DateTime d) {
   const weekdays = ['월', '화', '수', '목', '금', '토', '일'];
@@ -20,7 +21,12 @@ class HomeScreen extends StatelessWidget {
   final VoidCallback? onOpenQuiz;
   final VoidCallback? onOpenSettings;
 
-  const HomeScreen({super.key, this.onOpenNote, this.onOpenQuiz, this.onOpenSettings});
+  const HomeScreen({
+    super.key,
+    this.onOpenNote,
+    this.onOpenQuiz,
+    this.onOpenSettings,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -40,17 +46,36 @@ class HomeScreen extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(_formatDate(today), style: const TextStyle(fontSize: 13, color: AppColors.textMuted)),
+                        Text(
+                          _formatDate(today),
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: AppColors.textMuted,
+                          ),
+                        ),
                         const SizedBox(height: 2),
-                        const Text('안녕하세요, 지민님', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: AppColors.textPrimary)),
+                        const Text(
+                          '안녕하세요, 지민님',
+                          style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
                       ],
                     ),
                   ),
                   GestureDetector(
-                    onTap: onOpenSettings ?? () => Navigator.of(context).pushNamed('/settings'),
+                    onTap:
+                        onOpenSettings ??
+                        () => Navigator.of(context).pushNamed('/settings'),
                     child: const Padding(
                       padding: EdgeInsets.only(right: 14, top: 2),
-                      child: Icon(Icons.settings_outlined, color: AppColors.textPrimary, size: 24),
+                      child: Icon(
+                        Icons.settings_outlined,
+                        color: AppColors.textPrimary,
+                        size: 24,
+                      ),
                     ),
                   ),
                   _NotificationBell(),
@@ -64,13 +89,22 @@ class HomeScreen extends StatelessWidget {
               _QuickActions(onOpenNote: onOpenNote, onOpenQuiz: onOpenQuiz),
               const SizedBox(height: 16),
               const SectionHeader(title: '최근 노트'),
-              ..._recentNotes(MockData.lectures).map((l) => Padding(
-                padding: const EdgeInsets.only(bottom: 10),
-                child: GestureDetector(
-                  onTap: () => Navigator.of(context).pushNamed('/note/detail', arguments: l),
-                  child: _NoteCard(subject: '운영체제', title: '${l.week} - ${l.title}', time: l.date ?? '', progress: 1.0),
+              ..._recentNotes(MockData.lectures).map(
+                (l) => Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: GestureDetector(
+                    onTap: () => Navigator.of(
+                      context,
+                    ).pushNamed('/note/detail', arguments: l),
+                    child: _NoteCard(
+                      subject: '운영체제',
+                      title: '${l.week} - ${l.title}',
+                      time: l.date ?? '',
+                      progress: 1.0,
+                    ),
+                  ),
                 ),
-              )),
+              ),
               const SizedBox(height: 14),
             ],
           ),
@@ -93,11 +127,23 @@ class _NotificationBell extends StatelessWidget {
         child: Stack(
           clipBehavior: Clip.none,
           children: [
-            const Icon(Icons.notifications_outlined, color: AppColors.textPrimary, size: 24),
+            const Icon(
+              Icons.notifications_outlined,
+              color: AppColors.textPrimary,
+              size: 24,
+            ),
             if (hasUnread)
               Positioned(
-                right: -1, top: -1,
-                child: Container(width: 8, height: 8, decoration: const BoxDecoration(color: AppColors.coral, shape: BoxShape.circle)),
+                right: -1,
+                top: -1,
+                child: Container(
+                  width: 8,
+                  height: 8,
+                  decoration: const BoxDecoration(
+                    color: AppColors.coral,
+                    shape: BoxShape.circle,
+                  ),
+                ),
               ),
           ],
         ),
@@ -111,12 +157,22 @@ class _StreakCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      decoration: BoxDecoration(color: AppColors.navy, borderRadius: BorderRadius.circular(16)),
+      decoration: BoxDecoration(
+        color: AppColors.navy,
+        borderRadius: BorderRadius.circular(16),
+      ),
       child: Row(
         children: [
           const MulgilBubbles(size: 28),
           const SizedBox(width: 10),
-          const Text('12일 연속 학습 중', style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w700)),
+          const Text(
+            '12일 연속 학습 중',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
         ],
       ),
     );
@@ -142,22 +198,42 @@ class _UpcomingExamsCardState extends State<_UpcomingExamsCard> {
 
   @override
   Widget build(BuildContext context) {
-    final exams = List.of(MockData.exams)..sort((a, b) => a.examAt.compareTo(b.examAt));
+    final exams = List.of(MockData.exams)
+      ..sort((a, b) => a.examAt.compareTo(b.examAt));
     if (exams.isEmpty) return const SizedBox.shrink();
     return GestureDetector(
       onTap: () => Navigator.of(context).pushNamed('/exams'),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 8, offset: const Offset(0, 2))]),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text('다가오는 시험일정', style: TextStyle(fontSize: 12, color: AppColors.textMuted)),
+                const Text(
+                  '다가오는 시험일정',
+                  style: TextStyle(fontSize: 12, color: AppColors.textMuted),
+                ),
                 if (exams.length > 1)
-                  Text('${_page + 1} / ${exams.length}', style: const TextStyle(fontSize: 11, color: AppColors.textLight)),
+                  Text(
+                    '${_page + 1} / ${exams.length}',
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: AppColors.textLight,
+                    ),
+                  ),
               ],
             ),
             const SizedBox(height: 6),
@@ -177,7 +253,11 @@ class _UpcomingExamsCardState extends State<_UpcomingExamsCard> {
                       Expanded(
                         child: Text(
                           '${exam.courseName} · ${exam.title}',
-                          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+                          style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.textPrimary,
+                          ),
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
@@ -202,13 +282,31 @@ class _QuickActions extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Expanded(child: _ActionTile(icon: '✎', label: '필기', route: '/note', onTap: onOpenNote)),
+        Expanded(
+          child: _ActionTile(
+            icon: '✎',
+            label: '필기',
+            route: '/note',
+            onTap: onOpenNote,
+          ),
+        ),
         const SizedBox(width: 10),
-        Expanded(child: _ActionTile(icon: '◐', label: '퀴즈', route: '/quiz', onTap: onOpenQuiz)),
+        Expanded(
+          child: _ActionTile(
+            icon: '◐',
+            label: '퀴즈',
+            route: '/quiz',
+            onTap: onOpenQuiz,
+          ),
+        ),
         const SizedBox(width: 10),
-        Expanded(child: _ActionTile(icon: '≡', label: '요약', route: '/summary')),
+        Expanded(
+          child: _ActionTile(icon: '≡', label: '요약', route: '/summary'),
+        ),
         const SizedBox(width: 10),
-        Expanded(child: _ActionTile(icon: '🎙', label: '녹음', route: '/recording')),
+        Expanded(
+          child: _ActionTile(icon: '🎙', label: '녹음', route: '/recording'),
+        ),
       ],
     );
   }
@@ -217,7 +315,12 @@ class _QuickActions extends StatelessWidget {
 class _ActionTile extends StatelessWidget {
   final String icon, label, route;
   final VoidCallback? onTap;
-  const _ActionTile({required this.icon, required this.label, required this.route, this.onTap});
+  const _ActionTile({
+    required this.icon,
+    required this.label,
+    required this.route,
+    this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -225,12 +328,28 @@ class _ActionTile extends StatelessWidget {
       onTap: onTap ?? () => Navigator.of(context).pushNamed(route),
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 14),
-        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14), boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 8, offset: const Offset(0, 2))]),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
         child: Column(
           children: [
             Text(icon, style: const TextStyle(fontSize: 20)),
             const SizedBox(height: 4),
-            Text(label, style: const TextStyle(fontSize: 12, color: AppColors.textPrimary)),
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 12,
+                color: AppColors.textPrimary,
+              ),
+            ),
           ],
         ),
       ),
@@ -241,26 +360,60 @@ class _ActionTile extends StatelessWidget {
 class _NoteCard extends StatelessWidget {
   final String subject, title, time;
   final double progress;
-  const _NoteCard({required this.subject, required this.title, required this.time, required this.progress});
+  const _NoteCard({
+    required this.subject,
+    required this.title,
+    required this.time,
+    required this.progress,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14), boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 8, offset: const Offset(0, 2))]),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(subject, style: const TextStyle(fontSize: 11, color: AppColors.teal, fontWeight: FontWeight.w700)),
-              Text(time, style: const TextStyle(fontSize: 11, color: AppColors.textLight)),
+              Text(
+                subject,
+                style: const TextStyle(
+                  fontSize: 11,
+                  color: AppColors.teal,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              Text(
+                time,
+                style: const TextStyle(
+                  fontSize: 11,
+                  color: AppColors.textLight,
+                ),
+              ),
             ],
           ),
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 4),
-            child: Text(title, style: const TextStyle(fontSize: 14, color: AppColors.textPrimary)),
+            child: Text(
+              title,
+              style: const TextStyle(
+                fontSize: 14,
+                color: AppColors.textPrimary,
+              ),
+            ),
           ),
           MulgilProgressBar(value: progress),
         ],
@@ -268,4 +421,3 @@ class _NoteCard extends StatelessWidget {
     );
   }
 }
-

@@ -12,7 +12,9 @@ Future<T?> showMulgilSheet<T>(
     context: context,
     isScrollControlled: isScrollControlled,
     backgroundColor: Colors.white,
-    shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+    ),
     builder: builder,
   );
 }
@@ -46,9 +48,21 @@ class MulgilButton extends StatelessWidget {
         child: Container(
           width: double.infinity,
           padding: const EdgeInsets.symmetric(vertical: 16),
-          decoration: filled ? null : BoxDecoration(border: Border.all(color: AppColors.navy), borderRadius: BorderRadius.circular(14)),
+          decoration: filled
+              ? null
+              : BoxDecoration(
+                  border: Border.all(color: AppColors.navy),
+                  borderRadius: BorderRadius.circular(14),
+                ),
           alignment: Alignment.center,
-          child: Text(label, style: TextStyle(color: fg, fontWeight: FontWeight.w700, fontSize: 15)),
+          child: Text(
+            label,
+            style: TextStyle(
+              color: fg,
+              fontWeight: FontWeight.w700,
+              fontSize: 15,
+            ),
+          ),
         ),
       ),
     );
@@ -60,7 +74,12 @@ class MulgilChip extends StatelessWidget {
   final bool selected;
   final VoidCallback? onTap;
 
-  const MulgilChip({super.key, required this.label, this.selected = false, this.onTap});
+  const MulgilChip({
+    super.key,
+    required this.label,
+    this.selected = false,
+    this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -89,7 +108,11 @@ class MulgilChip extends StatelessWidget {
 class MulgilProgressBar extends StatelessWidget {
   final double value;
   final Color color;
-  const MulgilProgressBar({super.key, required this.value, this.color = AppColors.teal});
+  const MulgilProgressBar({
+    super.key,
+    required this.value,
+    this.color = AppColors.teal,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -131,7 +154,10 @@ class MulgilToggle extends StatelessWidget {
               margin: const EdgeInsets.all(3),
               width: 18,
               height: 18,
-              decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+              ),
             ),
           ),
         ),
@@ -173,10 +199,17 @@ class ExamDayBadge extends StatelessWidget {
     final color = examUrgencyColor(dDay);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: BoxDecoration(color: color.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(10)),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(10),
+      ),
       child: Text(
         'D-$dDay',
-        style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900, color: color),
+        style: TextStyle(
+          fontSize: 17,
+          fontWeight: FontWeight.w900,
+          color: color,
+        ),
       ),
     );
   }
@@ -194,7 +227,14 @@ class BackIfPushed extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        GestureDetector(onTap: () => Navigator.pop(context), child: const Icon(Icons.arrow_back_ios, size: 18, color: AppColors.textPrimary)),
+        GestureDetector(
+          onTap: () => Navigator.pop(context),
+          child: const Icon(
+            Icons.arrow_back_ios,
+            size: 18,
+            color: AppColors.textPrimary,
+          ),
+        ),
         const SizedBox(width: 8),
       ],
     );
@@ -206,7 +246,13 @@ class CourseDropdown extends StatelessWidget {
   final List<String> options;
   final ValueChanged<String> onChanged;
   final double fontSize;
-  const CourseDropdown({super.key, required this.selected, required this.options, required this.onChanged, this.fontSize = 20});
+  const CourseDropdown({
+    super.key,
+    required this.selected,
+    required this.options,
+    required this.onChanged,
+    this.fontSize = 20,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -214,14 +260,19 @@ class CourseDropdown extends StatelessWidget {
       onSelected: onChanged,
       offset: const Offset(0, 36),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      itemBuilder: (_) => options.map((o) => PopupMenuItem(value: o, child: Text(o))).toList(),
+      itemBuilder: (_) =>
+          options.map((o) => PopupMenuItem(value: o, child: Text(o))).toList(),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Flexible(
             child: Text(
               selected,
-              style: TextStyle(fontSize: fontSize, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
+              style: TextStyle(
+                fontSize: fontSize,
+                fontWeight: FontWeight.w800,
+                color: AppColors.textPrimary,
+              ),
               overflow: TextOverflow.ellipsis,
               maxLines: 1,
             ),
@@ -246,7 +297,14 @@ class SectionHeader extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(title, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textPrimary,
+            ),
+          ),
           ?trailing,
         ],
       ),

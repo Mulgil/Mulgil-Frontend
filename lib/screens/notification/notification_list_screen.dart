@@ -16,7 +16,9 @@ class _NotificationListScreenState extends State<NotificationListScreen> {
   void _markAllRead() {
     setState(() {
       for (var i = 0; i < MockData.notifications.length; i++) {
-        MockData.notifications[i] = MockData.notifications[i].copyWith(isRead: true);
+        MockData.notifications[i] = MockData.notifications[i].copyWith(
+          isRead: true,
+        );
       }
     });
   }
@@ -46,20 +48,54 @@ class _NotificationListScreenState extends State<NotificationListScreen> {
             children: [
               Row(
                 children: [
-                  GestureDetector(onTap: () => Navigator.pop(context), child: const Icon(Icons.arrow_back_ios, size: 18, color: AppColors.textPrimary)),
+                  GestureDetector(
+                    onTap: () => Navigator.pop(context),
+                    child: const Icon(
+                      Icons.arrow_back_ios,
+                      size: 18,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
                   const SizedBox(width: 8),
-                  const Expanded(child: Text('알림', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: AppColors.textPrimary))),
-                  TextButton(onPressed: _markAllRead, child: const Text('모두 읽음', style: TextStyle(fontSize: 12, color: AppColors.tealDark, fontWeight: FontWeight.w600))),
+                  const Expanded(
+                    child: Text(
+                      '알림',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: _markAllRead,
+                    child: const Text(
+                      '모두 읽음',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppColors.tealDark,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
                 ],
               ),
               const SizedBox(height: 8),
               Expanded(
                 child: _items.isEmpty
-                    ? const Center(child: Text('알림이 없어요', style: TextStyle(color: AppColors.textMuted)))
+                    ? const Center(
+                        child: Text(
+                          '알림이 없어요',
+                          style: TextStyle(color: AppColors.textMuted),
+                        ),
+                      )
                     : ListView.separated(
                         itemCount: _items.length,
                         separatorBuilder: (_, _) => const SizedBox(height: 10),
-                        itemBuilder: (_, i) => _NotificationCard(item: _items[i], onTap: () => _open(_items[i])),
+                        itemBuilder: (_, i) => _NotificationCard(
+                          item: _items[i],
+                          onTap: () => _open(_items[i]),
+                        ),
                       ),
               ),
             ],
@@ -98,7 +134,10 @@ class _NotificationCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(14),
         child: Container(
           padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(border: Border.all(color: const Color(0xFFEEEEEE)), borderRadius: BorderRadius.circular(14)),
+          decoration: BoxDecoration(
+            border: Border.all(color: const Color(0xFFEEEEEE)),
+            borderRadius: BorderRadius.circular(14),
+          ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -108,16 +147,45 @@ class _NotificationCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(item.title, style: TextStyle(fontSize: 13.5, fontWeight: item.isRead ? FontWeight.w600 : FontWeight.w800, color: AppColors.textPrimary)),
+                    Text(
+                      item.title,
+                      style: TextStyle(
+                        fontSize: 13.5,
+                        fontWeight: item.isRead
+                            ? FontWeight.w600
+                            : FontWeight.w800,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
                     const SizedBox(height: 3),
-                    Text(item.body, style: const TextStyle(fontSize: 12, color: AppColors.textMuted)),
+                    Text(
+                      item.body,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textMuted,
+                      ),
+                    ),
                     const SizedBox(height: 6),
-                    Text(_timeAgo, style: const TextStyle(fontSize: 11, color: AppColors.textLight)),
+                    Text(
+                      _timeAgo,
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: AppColors.textLight,
+                      ),
+                    ),
                   ],
                 ),
               ),
               if (!item.isRead)
-                Container(width: 8, height: 8, margin: const EdgeInsets.only(top: 4), decoration: const BoxDecoration(color: AppColors.coral, shape: BoxShape.circle)),
+                Container(
+                  width: 8,
+                  height: 8,
+                  margin: const EdgeInsets.only(top: 4),
+                  decoration: const BoxDecoration(
+                    color: AppColors.coral,
+                    shape: BoxShape.circle,
+                  ),
+                ),
             ],
           ),
         ),

@@ -35,19 +35,23 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
   bool _eraseChanged = false;
   DrawStroke? _currentStroke;
 
-  List<DrawStroke> get _strokes =>
-      _pageStrokes.putIfAbsent(_currentPage, () => List.of(NotesStore.instance.pageStrokes(_lecture, _currentPage)));
-  List<_DrawAction> get _history => _pageHistory.putIfAbsent(_currentPage, () => []);
-  List<_DrawAction> get _redoHistory => _pageRedo.putIfAbsent(_currentPage, () => []);
+  List<DrawStroke> get _strokes => _pageStrokes.putIfAbsent(
+    _currentPage,
+    () => List.of(NotesStore.instance.pageStrokes(_lecture, _currentPage)),
+  );
+  List<_DrawAction> get _history =>
+      _pageHistory.putIfAbsent(_currentPage, () => []);
+  List<_DrawAction> get _redoHistory =>
+      _pageRedo.putIfAbsent(_currentPage, () => []);
   // Mirrors PATCH /notes/{id} — saved on debounce, matching the drawing mode's "저장됨" indicator.
   bool _typedSaving = false;
   Timer? _saveTimer;
 
   DrawTool get _currentTool => switch (_tool) {
-        1 => DrawTool.highlighter,
-        2 => DrawTool.eraser,
-        _ => DrawTool.pen,
-      };
+    1 => DrawTool.highlighter,
+    2 => DrawTool.eraser,
+    _ => DrawTool.pen,
+  };
 
   void _onTypedChanged() {
     NotesStore.instance.updateTypedText(_lecture, _typedCtrl.text);
@@ -57,6 +61,7 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
       if (mounted) setState(() => _typedSaving = false);
     });
   }
+
   // Mirrors PATCH /handwriting-blocks/{id}/confirm — OCR confidence < 0.80 needs user confirm before AI can use it.
   final List<_PendingHandwritingBlock> _pendingReview = [
     _PendingHandwritingBlock(id: 'hb1', guess: '세마포어는 P/V 연산으로 제어된다'),
@@ -98,7 +103,9 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
     setState(() {
       _currentStroke = DrawStroke(
         tool: _currentTool,
-        color: _currentTool == DrawTool.highlighter ? AppColors.yellow.withValues(alpha: 0.45) : AppColors.navy,
+        color: _currentTool == DrawTool.highlighter
+            ? AppColors.yellow.withValues(alpha: 0.45)
+            : AppColors.navy,
         width: _currentTool == DrawTool.highlighter ? 16 : 2.5,
         points: [pos],
       );
@@ -140,7 +147,9 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
   // splitting the rest into the surviving pieces either side of the gap.
   void _eraseAt(Offset pos) {
     const hitRadius = 14.0;
-    final touched = _strokes.where((s) => _strokeNearPoint(s, pos, hitRadius)).toList();
+    final touched = _strokes
+        .where((s) => _strokeNearPoint(s, pos, hitRadius))
+        .toList();
     if (touched.isEmpty) return;
     setState(() {
       for (final s in touched) {
@@ -157,7 +166,9 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
   List<DrawStroke> _erasePortion(DrawStroke stroke, Offset pos, double radius) {
     final pts = stroke.points;
     if (pts.length < 2) {
-      return (pts.isNotEmpty && (pts.first - pos).distance < radius) ? const [] : [stroke];
+      return (pts.isNotEmpty && (pts.first - pos).distance < radius)
+          ? const []
+          : [stroke];
     }
     bool inside(Offset p) => (p - pos).distance < radius;
 
@@ -165,7 +176,14 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
     var current = <Offset>[];
     void flush() {
       if (current.length >= 2) {
-        pieces.add(DrawStroke(tool: stroke.tool, color: stroke.color, width: stroke.width, points: List.of(current)));
+        pieces.add(
+          DrawStroke(
+            tool: stroke.tool,
+            color: stroke.color,
+            width: stroke.width,
+            points: List.of(current),
+          ),
+        );
       }
       current = [];
     }
@@ -205,7 +223,12 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
     return pieces;
   }
 
-  List<double> _circleSegmentIntersections(Offset center, double radius, Offset a, Offset b) {
+  List<double> _circleSegmentIntersections(
+    Offset center,
+    double radius,
+    Offset a,
+    Offset b,
+  ) {
     final d = b - a;
     final f = a - center;
     final aCoef = d.dx * d.dx + d.dy * d.dy;
@@ -229,7 +252,9 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
       return stroke.points.any((p) => (p - pos).distance < radius);
     }
     for (var i = 0; i < stroke.points.length - 1; i++) {
-      if (_distanceToSegment(pos, stroke.points[i], stroke.points[i + 1]) < radius) return true;
+      if (_distanceToSegment(pos, stroke.points[i], stroke.points[i + 1]) <
+          radius)
+        return true;
     }
     return false;
   }
@@ -238,12 +263,16 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
     final ab = b - a;
     final lengthSquared = ab.dx * ab.dx + ab.dy * ab.dy;
     if (lengthSquared == 0) return (p - a).distance;
-    final t = (((p - a).dx * ab.dx + (p - a).dy * ab.dy) / lengthSquared).clamp(0.0, 1.0);
+    final t = (((p - a).dx * ab.dx + (p - a).dy * ab.dy) / lengthSquared).clamp(
+      0.0,
+      1.0,
+    );
     final projection = a + ab * t;
     return (p - projection).distance;
   }
 
-  void _persistCurrentPage() => NotesStore.instance.updatePageStrokes(_lecture, _currentPage, _strokes);
+  void _persistCurrentPage() =>
+      NotesStore.instance.updatePageStrokes(_lecture, _currentPage, _strokes);
 
   bool get _canUndo => _history.isNotEmpty;
   bool get _canRedo => _redoHistory.isNotEmpty;
@@ -287,7 +316,9 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
           ],
           Expanded(
             child: isDrawing
-                ? (context.isTablet ? _buildTabletLayout() : _buildMobileCanvas())
+                ? (context.isTablet
+                      ? _buildTabletLayout()
+                      : _buildMobileCanvas())
                 : _buildTypedEditor(),
           ),
           if (isDrawing) _buildFooter() else _buildTypedFooter(),
@@ -301,19 +332,37 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
       bottom: false,
       child: Container(
         padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
-        decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: Color(0xFFEEEEEE)))),
+        decoration: const BoxDecoration(
+          border: Border(bottom: BorderSide(color: Color(0xFFEEEEEE))),
+        ),
         child: Row(
           children: [
-            GestureDetector(onTap: () => Navigator.pop(context), child: const Text('←', style: TextStyle(fontSize: 18))),
+            GestureDetector(
+              onTap: () => Navigator.pop(context),
+              child: const Text('←', style: TextStyle(fontSize: 18)),
+            ),
             const Spacer(),
             Column(
               children: [
-                Text('${_lecture.week} · ${_lecture.title}', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
-                const Text('● 저장됨', style: TextStyle(fontSize: 10, color: AppColors.teal)),
+                Text(
+                  '${_lecture.week} · ${_lecture.title}',
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const Text(
+                  '● 저장됨',
+                  style: TextStyle(fontSize: 10, color: AppColors.teal),
+                ),
               ],
             ),
             const Spacer(),
-            GestureDetector(onTap: () => _openMenuSheet(context), child: const Text('☰', style: TextStyle(fontSize: 16))),
+            GestureDetector(
+              onTap: () => _openMenuSheet(context),
+              child: const Text('☰', style: TextStyle(fontSize: 16)),
+            ),
           ],
         ),
       ),
@@ -328,7 +377,10 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-              leading: const Icon(Icons.picture_as_pdf_outlined, color: AppColors.navy),
+              leading: const Icon(
+                Icons.picture_as_pdf_outlined,
+                color: AppColors.navy,
+              ),
               title: const Text('원본 PDF 보기'),
               onTap: () {
                 Navigator.pop(sheetCtx);
@@ -338,7 +390,10 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.auto_awesome_outlined, color: AppColors.navy),
+              leading: const Icon(
+                Icons.auto_awesome_outlined,
+                color: AppColors.navy,
+              ),
               title: const Text('AI 요약으로 이동'),
               onTap: () {
                 Navigator.pop(sheetCtx);
@@ -346,7 +401,10 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.edit_note_outlined, color: AppColors.navy),
+              leading: const Icon(
+                Icons.edit_note_outlined,
+                color: AppColors.navy,
+              ),
               title: const Text('손글씨 확인 항목 다시 열기'),
               onTap: () {
                 Navigator.pop(sheetCtx);
@@ -369,12 +427,26 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
   Widget _buildModeToggle() {
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
-      decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: Color(0xFFEEEEEE)))),
+      decoration: const BoxDecoration(
+        border: Border(bottom: BorderSide(color: Color(0xFFEEEEEE))),
+      ),
       child: Row(
         children: [
-          Expanded(child: _ModeTab(label: '✎ 필기', selected: _mode == _NoteMode.drawing, onTap: () => setState(() => _mode = _NoteMode.drawing))),
+          Expanded(
+            child: _ModeTab(
+              label: '✎ 필기',
+              selected: _mode == _NoteMode.drawing,
+              onTap: () => setState(() => _mode = _NoteMode.drawing),
+            ),
+          ),
           const SizedBox(width: 8),
-          Expanded(child: _ModeTab(label: '⌨ 타이핑 노트', selected: _mode == _NoteMode.typed, onTap: () => setState(() => _mode = _NoteMode.typed))),
+          Expanded(
+            child: _ModeTab(
+              label: '⌨ 타이핑 노트',
+              selected: _mode == _NoteMode.typed,
+              onTap: () => setState(() => _mode = _NoteMode.typed),
+            ),
+          ),
         ],
       ),
     );
@@ -388,7 +460,11 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
         maxLines: null,
         expands: true,
         textAlignVertical: TextAlignVertical.top,
-        style: const TextStyle(fontSize: 14, color: AppColors.textPrimary, height: 1.6),
+        style: const TextStyle(
+          fontSize: 14,
+          color: AppColors.textPrimary,
+          height: 1.6,
+        ),
         decoration: const InputDecoration(
           border: InputBorder.none,
           hintText: '마크다운으로 정리해보세요...',
@@ -398,17 +474,27 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
   }
 
   Widget _buildTypedFooter() {
-    final wordCount = _typedCtrl.text.trim().isEmpty ? 0 : _typedCtrl.text.trim().split(RegExp(r'\s+')).length;
+    final wordCount = _typedCtrl.text.trim().isEmpty
+        ? 0
+        : _typedCtrl.text.trim().split(RegExp(r'\s+')).length;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      decoration: const BoxDecoration(border: Border(top: BorderSide(color: Color(0xFFEEEEEE)))),
+      decoration: const BoxDecoration(
+        border: Border(top: BorderSide(color: Color(0xFFEEEEEE))),
+      ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text('$wordCount 단어', style: const TextStyle(fontSize: 11, color: AppColors.textLight)),
+          Text(
+            '$wordCount 단어',
+            style: const TextStyle(fontSize: 11, color: AppColors.textLight),
+          ),
           Text(
             _typedSaving ? '저장 중...' : '● 저장됨',
-            style: TextStyle(fontSize: 11, color: _typedSaving ? AppColors.textLight : AppColors.teal),
+            style: TextStyle(
+              fontSize: 11,
+              color: _typedSaving ? AppColors.textLight : AppColors.teal,
+            ),
           ),
         ],
       ),
@@ -418,7 +504,9 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
   Widget _buildToolbar() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: Color(0xFFEEEEEE)))),
+      decoration: const BoxDecoration(
+        border: Border(bottom: BorderSide(color: Color(0xFFEEEEEE))),
+      ),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: Row(
@@ -430,53 +518,103 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
                 child: GestureDetector(
                   onTap: () => setState(() => _tool = e.key),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
                     decoration: BoxDecoration(
                       color: sel ? AppColors.navy : const Color(0xFFF2F2F2),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Text(
                       '${e.value['icon']} ${e.value['label']}',
-                      style: TextStyle(fontSize: 13, color: sel ? Colors.white : AppColors.textPrimary),
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: sel ? Colors.white : AppColors.textPrimary,
+                      ),
                     ),
                   ),
                 ),
               );
             }),
-            Container(width: 1, height: 24, margin: const EdgeInsets.symmetric(horizontal: 4), color: const Color(0xFFDDDDDD)),
+            Container(
+              width: 1,
+              height: 24,
+              margin: const EdgeInsets.symmetric(horizontal: 4),
+              color: const Color(0xFFDDDDDD),
+            ),
             GestureDetector(
               onTap: _canUndo ? _undo : null,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                decoration: BoxDecoration(color: const Color(0xFFF2F2F2), borderRadius: BorderRadius.circular(10)),
-                child: Icon(Icons.undo, size: 18, color: _canUndo ? AppColors.textPrimary : AppColors.textLight),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF2F2F2),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(
+                  Icons.undo,
+                  size: 18,
+                  color: _canUndo ? AppColors.textPrimary : AppColors.textLight,
+                ),
               ),
             ),
             const SizedBox(width: 6),
             GestureDetector(
               onTap: _canRedo ? _redo : null,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                decoration: BoxDecoration(color: const Color(0xFFF2F2F2), borderRadius: BorderRadius.circular(10)),
-                child: Icon(Icons.redo, size: 18, color: _canRedo ? AppColors.textPrimary : AppColors.textLight),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF2F2F2),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(
+                  Icons.redo,
+                  size: 18,
+                  color: _canRedo ? AppColors.textPrimary : AppColors.textLight,
+                ),
               ),
             ),
-            Container(width: 1, height: 24, margin: const EdgeInsets.symmetric(horizontal: 4), color: const Color(0xFFDDDDDD)),
+            Container(
+              width: 1,
+              height: 24,
+              margin: const EdgeInsets.symmetric(horizontal: 4),
+              color: const Color(0xFFDDDDDD),
+            ),
             GestureDetector(
               onTap: () => setState(() => _showProfTag = !_showProfTag),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
                 decoration: BoxDecoration(
-                  color: _showProfTag ? AppColors.coral : const Color(0xFFF2F2F2),
+                  color: _showProfTag
+                      ? AppColors.coral
+                      : const Color(0xFFF2F2F2),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: Text('교수★', style: TextStyle(fontSize: 13, color: _showProfTag ? Colors.white : AppColors.textPrimary)),
+                child: Text(
+                  '교수★',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: _showProfTag ? Colors.white : AppColors.textPrimary,
+                  ),
+                ),
               ),
             ),
             const SizedBox(width: 6),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(color: const Color(0xFFF2F2F2), borderRadius: BorderRadius.circular(10)),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF2F2F2),
+                borderRadius: BorderRadius.circular(10),
+              ),
               child: const Text('가 텍스트', style: TextStyle(fontSize: 13)),
             ),
           ],
@@ -516,23 +654,40 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
       builder: (_) => StatefulBuilder(
         builder: (sheetCtx, sheetSetState) {
           return Padding(
-            padding: EdgeInsets.fromLTRB(20, 20, 20, MediaQuery.of(sheetCtx).viewInsets.bottom + 20),
+            padding: EdgeInsets.fromLTRB(
+              20,
+              20,
+              20,
+              MediaQuery.of(sheetCtx).viewInsets.bottom + 20,
+            ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('손글씨 인식 확인', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: AppColors.textPrimary)),
+                const Text(
+                  '손글씨 인식 확인',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
                 const SizedBox(height: 4),
-                const Text('AI가 읽은 내용이 맞는지 확인하고 필요하면 수정해주세요', style: TextStyle(fontSize: 12, color: AppColors.textMuted)),
+                const Text(
+                  'AI가 읽은 내용이 맞는지 확인하고 필요하면 수정해주세요',
+                  style: TextStyle(fontSize: 12, color: AppColors.textMuted),
+                ),
                 const SizedBox(height: 16),
-                ..._pendingReview.map((b) => _ReviewBlockField(
-                  block: b,
-                  onConfirm: (text) {
-                    setState(() => _pendingReview.remove(b));
-                    sheetSetState(() {});
-                    if (_pendingReview.isEmpty) Navigator.pop(sheetCtx);
-                  },
-                )),
+                ..._pendingReview.map(
+                  (b) => _ReviewBlockField(
+                    block: b,
+                    onConfirm: (text) {
+                      setState(() => _pendingReview.remove(b));
+                      sheetSetState(() {});
+                      if (_pendingReview.isEmpty) Navigator.pop(sheetCtx);
+                    },
+                  ),
+                ),
               ],
             ),
           );
@@ -547,70 +702,141 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
       onPanUpdate: (d) => _extendStroke(d.localPosition),
       onPanEnd: (_) => _endStroke(),
       child: Stack(
-      children: [
-        Container(color: const Color(0xFFFAFAFA), padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('텍스트입니다 텍스트입니다', style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
-              const SizedBox(height: 8),
-              const Text('텍스트입니다', style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
-              const SizedBox(height: 16),
-              Container(
-                height: 70, width: double.infinity,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFEEF0F2),
-                  border: Border.all(color: const Color(0xFFC8CCD0), style: BorderStyle.solid),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                alignment: Alignment.center,
-                child: const Text('이미지 / 다이어그램', style: TextStyle(fontSize: 11, color: AppColors.textLight)),
-              ),
-              const SizedBox(height: 16),
-              const Text('텍스트입니다 텍스트입니다', style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
-              const SizedBox(height: 8),
-              Stack(
-                children: [
-                  Container(height: 16, color: const Color(0x80F5C842)),
-                  const Text('텍스트입니다', style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
-                ],
-              ),
-            ],
-          ),
-        ),
-        if (_showProfTag)
-          Positioned(
-            left: 40, top: 160,
-            child: Stack(
-              clipBehavior: Clip.none,
+        children: [
+          Container(
+            color: const Color(0xFFFAFAFA),
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  width: 110, height: 20,
-                  decoration: BoxDecoration(border: Border.all(color: AppColors.coral, width: 2, style: BorderStyle.solid), borderRadius: BorderRadius.circular(8)),
-                ),
-                Positioned(
-                  top: -10, left: 90,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                    decoration: BoxDecoration(color: AppColors.coral, borderRadius: BorderRadius.circular(6)),
-                    child: const Text('⭐⭐', style: TextStyle(fontSize: 9, color: Colors.white)),
+                const Text(
+                  '텍스트입니다 텍스트입니다',
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 13,
                   ),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  '텍스트입니다',
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 13,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Container(
+                  height: 70,
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEEF0F2),
+                    border: Border.all(
+                      color: const Color(0xFFC8CCD0),
+                      style: BorderStyle.solid,
+                    ),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  alignment: Alignment.center,
+                  child: const Text(
+                    '이미지 / 다이어그램',
+                    style: TextStyle(fontSize: 11, color: AppColors.textLight),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  '텍스트입니다 텍스트입니다',
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 13,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Stack(
+                  children: [
+                    Container(height: 16, color: const Color(0x80F5C842)),
+                    const Text(
+                      '텍스트입니다',
+                      style: TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
           ),
-        Positioned(
-          left: 24, bottom: 80,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: BoxDecoration(color: AppColors.textPrimary, borderRadius: BorderRadius.circular(10), boxShadow: const [BoxShadow(color: Color(0x33000000), blurRadius: 10, offset: Offset(0, 4))]),
-            child: const Text('언급 빈도 +1 · ⭐⭐', style: TextStyle(color: Colors.white, fontSize: 11)),
+          if (_showProfTag)
+            Positioned(
+              left: 40,
+              top: 160,
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Container(
+                    width: 110,
+                    height: 20,
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                        color: AppColors.coral,
+                        width: 2,
+                        style: BorderStyle.solid,
+                      ),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  Positioned(
+                    top: -10,
+                    left: 90,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 5,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.coral,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: const Text(
+                        '⭐⭐',
+                        style: TextStyle(fontSize: 9, color: Colors.white),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          Positioned(
+            left: 24,
+            bottom: 80,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: AppColors.textPrimary,
+                borderRadius: BorderRadius.circular(10),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color(0x33000000),
+                    blurRadius: 10,
+                    offset: Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: const Text(
+                '언급 빈도 +1 · ⭐⭐',
+                style: TextStyle(color: Colors.white, fontSize: 11),
+              ),
+            ),
           ),
-        ),
-        Positioned.fill(
-          child: CustomPaint(painter: _StrokesPainter(strokes: _strokes, current: _currentStroke)),
-        ),
-      ],
+          Positioned.fill(
+            child: CustomPaint(
+              painter: _StrokesPainter(
+                strokes: _strokes,
+                current: _currentStroke,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -623,13 +849,17 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
           onHorizontalDragStart: (_) => _sidebarDragDx = 0,
           onHorizontalDragUpdate: (d) => _sidebarDragDx += d.delta.dx,
           onHorizontalDragEnd: (_) {
-            if (_sidebarDragDx < -20 && _pageSidebarVisible) setState(() => _pageSidebarVisible = false);
-            if (_sidebarDragDx > 20 && !_pageSidebarVisible) setState(() => _pageSidebarVisible = true);
+            if (_sidebarDragDx < -20 && _pageSidebarVisible)
+              setState(() => _pageSidebarVisible = false);
+            if (_sidebarDragDx > 20 && !_pageSidebarVisible)
+              setState(() => _pageSidebarVisible = true);
           },
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 200),
             width: _pageSidebarVisible ? 100 : 18,
-            decoration: const BoxDecoration(border: Border(right: BorderSide(color: Color(0xFFEEEEEE)))),
+            decoration: const BoxDecoration(
+              border: Border(right: BorderSide(color: Color(0xFFEEEEEE))),
+            ),
             child: _pageSidebarVisible
                 ? ListView.builder(
                     padding: const EdgeInsets.all(8),
@@ -640,18 +870,36 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
                         height: 70,
                         margin: const EdgeInsets.only(bottom: 8),
                         decoration: BoxDecoration(
-                          color: i == _currentPage ? const Color(0xFFEEF7F8) : const Color(0xFFF7F7F7),
-                          border: i == _currentPage ? Border.all(color: AppColors.teal, width: 1.5) : null,
+                          color: i == _currentPage
+                              ? const Color(0xFFEEF7F8)
+                              : const Color(0xFFF7F7F7),
+                          border: i == _currentPage
+                              ? Border.all(color: AppColors.teal, width: 1.5)
+                              : null,
                           borderRadius: BorderRadius.circular(8),
                         ),
                         alignment: Alignment.center,
-                        child: Text('${i + 1} 페이지', style: TextStyle(fontSize: 11, color: i == _currentPage ? AppColors.tealDark : AppColors.textLight)),
+                        child: Text(
+                          '${i + 1} 페이지',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: i == _currentPage
+                                ? AppColors.tealDark
+                                : AppColors.textLight,
+                          ),
+                        ),
                       ),
                     ),
                   )
                 : GestureDetector(
                     onTap: () => setState(() => _pageSidebarVisible = true),
-                    child: const Center(child: Icon(Icons.chevron_right, size: 16, color: AppColors.textLight)),
+                    child: const Center(
+                      child: Icon(
+                        Icons.chevron_right,
+                        size: 16,
+                        color: AppColors.textLight,
+                      ),
+                    ),
                   ),
           ),
         ),
@@ -664,26 +912,53 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
   Widget _buildFooter() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      decoration: const BoxDecoration(border: Border(top: BorderSide(color: Color(0xFFEEEEEE)))),
+      decoration: const BoxDecoration(
+        border: Border(top: BorderSide(color: Color(0xFFEEEEEE))),
+      ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Row(
             children: [
               GestureDetector(
-                onTap: _currentPage > 0 ? () => setState(() => _currentPage--) : null,
-                child: Icon(Icons.chevron_left, size: 18, color: _currentPage > 0 ? AppColors.textPrimary : AppColors.textLight),
+                onTap: _currentPage > 0
+                    ? () => setState(() => _currentPage--)
+                    : null,
+                child: Icon(
+                  Icons.chevron_left,
+                  size: 18,
+                  color: _currentPage > 0
+                      ? AppColors.textPrimary
+                      : AppColors.textLight,
+                ),
               ),
               const SizedBox(width: 4),
-              Text('${_currentPage + 1} / $_pageCount 페이지', style: const TextStyle(fontSize: 11, color: AppColors.textLight)),
+              Text(
+                '${_currentPage + 1} / $_pageCount 페이지',
+                style: const TextStyle(
+                  fontSize: 11,
+                  color: AppColors.textLight,
+                ),
+              ),
               const SizedBox(width: 4),
               GestureDetector(
-                onTap: _currentPage < _pageCount - 1 ? () => setState(() => _currentPage++) : null,
-                child: Icon(Icons.chevron_right, size: 18, color: _currentPage < _pageCount - 1 ? AppColors.textPrimary : AppColors.textLight),
+                onTap: _currentPage < _pageCount - 1
+                    ? () => setState(() => _currentPage++)
+                    : null,
+                child: Icon(
+                  Icons.chevron_right,
+                  size: 18,
+                  color: _currentPage < _pageCount - 1
+                      ? AppColors.textPrimary
+                      : AppColors.textLight,
+                ),
               ),
             ],
           ),
-          const Text('확대 100%', style: TextStyle(fontSize: 11, color: AppColors.textLight)),
+          const Text(
+            '확대 100%',
+            style: TextStyle(fontSize: 11, color: AppColors.textLight),
+          ),
         ],
       ),
     );
@@ -694,7 +969,11 @@ class _ModeTab extends StatelessWidget {
   final String label;
   final bool selected;
   final VoidCallback onTap;
-  const _ModeTab({required this.label, required this.selected, required this.onTap});
+  const _ModeTab({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -707,7 +986,14 @@ class _ModeTab extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 10),
           child: Center(
-            child: Text(label, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: selected ? Colors.white : AppColors.textPrimary)),
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: selected ? Colors.white : AppColors.textPrimary,
+              ),
+            ),
           ),
         ),
       ),
@@ -786,7 +1072,9 @@ class _ReviewBlockFieldState extends State<_ReviewBlockField> {
             maxLines: 2,
             decoration: InputDecoration(
               labelText: 'AI 인식 결과 (신뢰도 낮음)',
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
           ),
           const SizedBox(height: 8),

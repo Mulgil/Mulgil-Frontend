@@ -40,15 +40,26 @@ class _NoteListScreenState extends State<NoteListScreen> {
                           options: MockData.courseNames,
                           onChanged: (v) => setState(() => _course = v),
                         ),
-                        Text(MockData.courseProfessors[_course] ?? '', style: const TextStyle(fontSize: 12, color: AppColors.textMuted)),
+                        Text(
+                          MockData.courseProfessors[_course] ?? '',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: AppColors.textMuted,
+                          ),
+                        ),
                       ],
                     ),
                   ),
                   OutlinedButton.icon(
-                    onPressed: () => Navigator.of(context).pushNamed('/exams', arguments: _course),
+                    onPressed: () => Navigator.of(
+                      context,
+                    ).pushNamed('/exams', arguments: _course),
                     icon: const Icon(Icons.event_note, size: 16),
                     label: const Text('시험', style: TextStyle(fontSize: 12)),
-                    style: OutlinedButton.styleFrom(foregroundColor: AppColors.navy, side: const BorderSide(color: AppColors.navy)),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.navy,
+                      side: const BorderSide(color: AppColors.navy),
+                    ),
                   ),
                 ],
               ),
@@ -56,35 +67,53 @@ class _NoteListScreenState extends State<NoteListScreen> {
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: Row(
-                  children: _filters.asMap().entries.map((e) => Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: MulgilChip(
-                      label: e.value,
-                      selected: _filter == e.key,
-                      onTap: () => setState(() => _filter = e.key),
-                    ),
-                  )).toList(),
+                  children: _filters
+                      .asMap()
+                      .entries
+                      .map(
+                        (e) => Padding(
+                          padding: const EdgeInsets.only(right: 8),
+                          child: MulgilChip(
+                            label: e.value,
+                            selected: _filter == e.key,
+                            onTap: () => setState(() => _filter = e.key),
+                          ),
+                        ),
+                      )
+                      .toList(),
                 ),
               ),
               const SizedBox(height: 14),
               Expanded(
-                child: ListenableBuilder(listenable: NotesStore.instance, builder: (context, _) {
-                  final lectures = _filteredLectures();
-                  if (lectures.isEmpty) {
-                    return const Center(child: Text('해당하는 강의가 없어요', style: TextStyle(color: AppColors.textMuted)));
-                  }
-                  return ListView.separated(
-                    itemCount: lectures.length,
-                    separatorBuilder: (_, _) => const SizedBox(height: 10),
-                    itemBuilder: (ctx, i) {
-                      final lecture = lectures[i];
-                      return GestureDetector(
-                        onTap: lecture.done ? () => Navigator.of(context).pushNamed('/note/detail', arguments: lecture) : null,
-                        child: _LectureCard(lecture: lecture),
+                child: ListenableBuilder(
+                  listenable: NotesStore.instance,
+                  builder: (context, _) {
+                    final lectures = _filteredLectures();
+                    if (lectures.isEmpty) {
+                      return const Center(
+                        child: Text(
+                          '해당하는 강의가 없어요',
+                          style: TextStyle(color: AppColors.textMuted),
+                        ),
                       );
-                    },
-                  );
-                }),
+                    }
+                    return ListView.separated(
+                      itemCount: lectures.length,
+                      separatorBuilder: (_, _) => const SizedBox(height: 10),
+                      itemBuilder: (ctx, i) {
+                        final lecture = lectures[i];
+                        return GestureDetector(
+                          onTap: lecture.done
+                              ? () => Navigator.of(
+                                  context,
+                                ).pushNamed('/note/detail', arguments: lecture)
+                              : null,
+                          child: _LectureCard(lecture: lecture),
+                        );
+                      },
+                    );
+                  },
+                ),
               ),
             ],
           ),
@@ -118,7 +147,10 @@ class _NoteListScreenState extends State<NoteListScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-              leading: const Icon(Icons.picture_as_pdf_outlined, color: AppColors.navy),
+              leading: const Icon(
+                Icons.picture_as_pdf_outlined,
+                color: AppColors.navy,
+              ),
               title: const Text('PDF 자료 업로드'),
               subtitle: const Text('강의자료·기출 PDF를 올려요 (최대 50MB, 150페이지)'),
               onTap: () {
@@ -127,7 +159,10 @@ class _NoteListScreenState extends State<NoteListScreen> {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.edit_note_outlined, color: AppColors.navy),
+              leading: const Icon(
+                Icons.edit_note_outlined,
+                color: AppColors.navy,
+              ),
               title: const Text('새 노트 작성'),
               subtitle: const Text('타이핑 또는 필기로 바로 시작해요'),
               onTap: () {
@@ -155,8 +190,14 @@ class _NoteListScreenState extends State<NoteListScreen> {
           onSubmitted: (_) => _createAndOpenNote(dialogCtx, ctrl.text),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(dialogCtx), child: const Text('취소')),
-          TextButton(onPressed: () => _createAndOpenNote(dialogCtx, ctrl.text), child: const Text('만들기')),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogCtx),
+            child: const Text('취소'),
+          ),
+          TextButton(
+            onPressed: () => _createAndOpenNote(dialogCtx, ctrl.text),
+            child: const Text('만들기'),
+          ),
         ],
       ),
     );
@@ -182,19 +223,35 @@ class _LectureCard extends StatelessWidget {
         color: Colors.white,
         border: Border.all(color: const Color(0xFFEEEEEE)),
         borderRadius: BorderRadius.circular(14),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 8, offset: const Offset(0, 2))],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Opacity(
         opacity: lecture.done ? 1.0 : 0.5,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('${lecture.week} - ${lecture.title}', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
+            Text(
+              '${lecture.week} - ${lecture.title}',
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textPrimary,
+              ),
+            ),
             Padding(
               padding: EdgeInsets.only(top: 2, bottom: lecture.done ? 8 : 0),
               child: Text(
                 lecture.done ? "${lecture.date} · 필기 완료" : '필기 없음',
-                style: const TextStyle(fontSize: 11, color: AppColors.textLight),
+                style: const TextStyle(
+                  fontSize: 11,
+                  color: AppColors.textLight,
+                ),
               ),
             ),
             if (lecture.done)
@@ -202,13 +259,29 @@ class _LectureCard extends StatelessWidget {
                 children: [
                   if (lecture.quiz != null) ...[
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                      decoration: BoxDecoration(color: const Color(0xFFEEF7F8), borderRadius: BorderRadius.circular(8)),
-                      child: Text('퀴즈 ${lecture.quiz}', style: const TextStyle(fontSize: 11, color: AppColors.tealDark)),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEEF7F8),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        '퀴즈 ${lecture.quiz}',
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: AppColors.tealDark,
+                        ),
+                      ),
                     ),
                     const SizedBox(width: 8),
                   ],
-                  if (lecture.stars > 0) Text('⭐' * lecture.stars, style: const TextStyle(fontSize: 12)),
+                  if (lecture.stars > 0)
+                    Text(
+                      '⭐' * lecture.stars,
+                      style: const TextStyle(fontSize: 12),
+                    ),
                 ],
               ),
           ],

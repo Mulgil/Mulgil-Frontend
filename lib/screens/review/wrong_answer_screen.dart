@@ -20,15 +20,15 @@ class _WrongAnswerScreenState extends State<WrongAnswerScreen> {
 
   List<WrongAnswer> get _filteredAnswers => _courseFilter == _kAll
       ? MockData.wrongAnswers
-      : MockData.wrongAnswers.where((w) => w.courseName == _courseFilter).toList();
+      : MockData.wrongAnswers
+            .where((w) => w.courseName == _courseFilter)
+            .toList();
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.cream,
-      body: SafeArea(
-        child: context.isTablet ? _buildTablet() : _buildMobile(),
-      ),
+      body: SafeArea(child: context.isTablet ? _buildTablet() : _buildMobile()),
     );
   }
 
@@ -42,16 +42,33 @@ class _WrongAnswerScreenState extends State<WrongAnswerScreen> {
           Row(
             children: [
               const BackIfPushed(),
-              const Text('오답 노트', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: AppColors.textPrimary)),
+              const Text(
+                '오답 노트',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.textPrimary,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 12),
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
-            child: Row(children: _filters.map((s) => Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: MulgilChip(label: s, selected: _courseFilter == s, onTap: () => setState(() => _courseFilter = s)),
-            )).toList()),
+            child: Row(
+              children: _filters
+                  .map(
+                    (s) => Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: MulgilChip(
+                        label: s,
+                        selected: _courseFilter == s,
+                        onTap: () => setState(() => _courseFilter = s),
+                      ),
+                    ),
+                  )
+                  .toList(),
+            ),
           ),
           const SizedBox(height: 14),
           Expanded(
@@ -64,7 +81,10 @@ class _WrongAnswerScreenState extends State<WrongAnswerScreen> {
                   ),
           ),
           const SizedBox(height: 16),
-          MulgilButton(label: '오답만 다시 퀴즈', onTap: () => Navigator.of(context).pushNamed('/quiz')),
+          MulgilButton(
+            label: '오답만 다시 퀴즈',
+            onTap: () => Navigator.of(context).pushNamed('/quiz'),
+          ),
           const SizedBox(height: 8),
         ],
       ),
@@ -82,14 +102,31 @@ class _WrongAnswerScreenState extends State<WrongAnswerScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('오답 노트', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: AppColors.textPrimary)),
+                const Text(
+                  '오답 노트',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
                 const SizedBox(height: 6),
                 SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
-                  child: Row(children: _filters.map((s) => Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: MulgilChip(label: s, selected: _courseFilter == s, onTap: () => setState(() => _courseFilter = s)),
-                  )).toList()),
+                  child: Row(
+                    children: _filters
+                        .map(
+                          (s) => Padding(
+                            padding: const EdgeInsets.only(right: 8),
+                            child: MulgilChip(
+                              label: s,
+                              selected: _courseFilter == s,
+                              onTap: () => setState(() => _courseFilter = s),
+                            ),
+                          ),
+                        )
+                        .toList(),
+                  ),
                 ),
                 const SizedBox(height: 16),
                 Expanded(
@@ -97,7 +134,8 @@ class _WrongAnswerScreenState extends State<WrongAnswerScreen> {
                       ? const _EmptyBox()
                       : ListView.separated(
                           itemCount: answers.length,
-                          separatorBuilder: (_, _) => const SizedBox(height: 12),
+                          separatorBuilder: (_, _) =>
+                              const SizedBox(height: 12),
                           itemBuilder: (_, i) => _WrongCard(item: answers[i]),
                         ),
                 ),
@@ -111,18 +149,37 @@ class _WrongAnswerScreenState extends State<WrongAnswerScreen> {
               children: [
                 Container(
                   padding: const EdgeInsets.all(22),
-                  decoration: BoxDecoration(color: AppColors.navy, borderRadius: BorderRadius.circular(16)),
+                  decoration: BoxDecoration(
+                    color: AppColors.navy,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('이번 학기 오답', style: TextStyle(fontSize: 13, color: Color(0xFF9fb6c4))),
+                      const Text(
+                        '이번 학기 오답',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Color(0xFF9fb6c4),
+                        ),
+                      ),
                       const SizedBox(height: 4),
-                      Text('${MockData.wrongAnswers.length}개', style: const TextStyle(fontSize: 30, fontWeight: FontWeight.w800, color: Colors.white)),
+                      Text(
+                        '${MockData.wrongAnswers.length}개',
+                        style: const TextStyle(
+                          fontSize: 30,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.white,
+                        ),
+                      ),
                     ],
                   ),
                 ),
                 const SizedBox(height: 16),
-                MulgilButton(label: '오답만 다시 퀴즈', onTap: () => Navigator.of(context).pushNamed('/quiz')),
+                MulgilButton(
+                  label: '오답만 다시 퀴즈',
+                  onTap: () => Navigator.of(context).pushNamed('/quiz'),
+                ),
               ],
             ),
           ),
@@ -146,7 +203,10 @@ class _EmptyBox extends StatelessWidget {
         border: Border.all(color: const Color(0xFFEEEEEE)),
         borderRadius: BorderRadius.circular(14),
       ),
-      child: const Text('해당하는 오답이 없어요', style: TextStyle(color: AppColors.textMuted)),
+      child: const Text(
+        '해당하는 오답이 없어요',
+        style: TextStyle(color: AppColors.textMuted),
+      ),
     );
   }
 }
@@ -165,28 +225,56 @@ class _WrongCard extends StatelessWidget {
         color: Colors.white,
         border: Border.all(color: const Color(0xFFEEEEEE)),
         borderRadius: BorderRadius.circular(14),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 8, offset: const Offset(0, 2))],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(item.courseName, style: const TextStyle(fontSize: 11, color: AppColors.teal, fontWeight: FontWeight.w700)),
+          Text(
+            item.courseName,
+            style: const TextStyle(
+              fontSize: 11,
+              color: AppColors.teal,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
           const SizedBox(height: 2),
-          Text(item.question, style: const TextStyle(fontSize: 13, color: AppColors.textPrimary)),
+          Text(
+            item.question,
+            style: const TextStyle(fontSize: 13, color: AppColors.textPrimary),
+          ),
           const SizedBox(height: 8),
           Row(
             children: [
-              Text('내 답: ${item.myAnswer}', style: const TextStyle(fontSize: 12, color: AppColors.coral)),
+              Text(
+                '내 답: ${item.myAnswer}',
+                style: const TextStyle(fontSize: 12, color: AppColors.coral),
+              ),
               const SizedBox(width: 10),
-              Text('정답: ${item.correct}', style: const TextStyle(fontSize: 12, color: AppColors.tealDark)),
+              Text(
+                '정답: ${item.correct}',
+                style: const TextStyle(fontSize: 12, color: AppColors.tealDark),
+              ),
             ],
           ),
           if (item.isProfEmphasis) ...[
             const SizedBox(height: 6),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-              decoration: BoxDecoration(color: const Color(0xFFFFF3E9), borderRadius: BorderRadius.circular(8)),
-              child: const Text('교수님 강조 개념', style: TextStyle(fontSize: 10.5, color: Color(0xFFB15400))),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFF3E9),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Text(
+                '교수님 강조 개념',
+                style: TextStyle(fontSize: 10.5, color: Color(0xFFB15400)),
+              ),
             ),
           ],
           const SizedBox(height: 10),
@@ -194,9 +282,15 @@ class _WrongCard extends StatelessWidget {
             onTap: () => _retry(context),
             child: Container(
               padding: const EdgeInsets.symmetric(vertical: 8),
-              decoration: BoxDecoration(border: Border.all(color: AppColors.navy), borderRadius: BorderRadius.circular(10)),
+              decoration: BoxDecoration(
+                border: Border.all(color: AppColors.navy),
+                borderRadius: BorderRadius.circular(10),
+              ),
               alignment: Alignment.center,
-              child: const Text('다시 풀기', style: TextStyle(fontSize: 12, color: AppColors.navy)),
+              child: const Text(
+                '다시 풀기',
+                style: TextStyle(fontSize: 12, color: AppColors.navy),
+              ),
             ),
           ),
         ],

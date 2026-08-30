@@ -26,8 +26,16 @@ class _BubblesPainter extends CustomPainter {
     final p = Paint()..color = color;
     final w = size.width;
     final h = size.height;
-    canvas.drawCircle(Offset(w * 0.13, h * 0.87), w * 0.07, p..color = color.withValues(alpha: 0.5));
-    canvas.drawCircle(Offset(w * 0.37, h * 0.64), w * 0.11, p..color = color.withValues(alpha: 0.75));
+    canvas.drawCircle(
+      Offset(w * 0.13, h * 0.87),
+      w * 0.07,
+      p..color = color.withValues(alpha: 0.5),
+    );
+    canvas.drawCircle(
+      Offset(w * 0.37, h * 0.64),
+      w * 0.11,
+      p..color = color.withValues(alpha: 0.75),
+    );
     canvas.drawCircle(Offset(w * 0.71, h * 0.30), w * 0.17, p..color = color);
   }
 
@@ -38,7 +46,11 @@ class _BubblesPainter extends CustomPainter {
 class MulgilWordmark extends StatelessWidget {
   final double fontSize;
   final Color color;
-  const MulgilWordmark({super.key, this.fontSize = 48, this.color = Colors.white});
+  const MulgilWordmark({
+    super.key,
+    this.fontSize = 48,
+    this.color = Colors.white,
+  });
 
   @override
   Widget build(BuildContext context) {

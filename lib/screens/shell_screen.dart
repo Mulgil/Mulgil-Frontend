@@ -29,7 +29,11 @@ class _ShellScreenState extends State<ShellScreen> {
   ];
 
   List<Widget> get _tabletScreens => [
-    HomeScreen(onOpenNote: () => _goToTab(1), onOpenQuiz: () => _goToTab(2), onOpenSettings: () => _goToTab(5)),
+    HomeScreen(
+      onOpenNote: () => _goToTab(1),
+      onOpenQuiz: () => _goToTab(2),
+      onOpenSettings: () => _goToTab(5),
+    ),
     const NoteListScreen(),
     const QuizScreen(),
     const WrongAnswerScreen(),
@@ -54,17 +58,40 @@ class _ShellScreenState extends State<ShellScreen> {
         onTap: _goToTab,
         selectedItemColor: AppColors.navy,
         unselectedItemColor: AppColors.textLight,
-        selectedLabelStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+        selectedLabelStyle: const TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+        ),
         unselectedLabelStyle: const TextStyle(fontSize: 11),
         type: BottomNavigationBarType.fixed,
         backgroundColor: Colors.white,
         elevation: 8,
         items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home_outlined), activeIcon: Icon(Icons.home), label: '홈'),
-          BottomNavigationBarItem(icon: Icon(Icons.edit_note_outlined), activeIcon: Icon(Icons.edit_note), label: '필기'),
-          BottomNavigationBarItem(icon: Icon(Icons.quiz_outlined), activeIcon: Icon(Icons.quiz), label: '퀴즈'),
-          BottomNavigationBarItem(icon: Icon(Icons.report_outlined), activeIcon: Icon(Icons.report), label: '오답노트'),
-          BottomNavigationBarItem(icon: Icon(Icons.bar_chart_outlined), activeIcon: Icon(Icons.bar_chart), label: '마이'),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home_outlined),
+            activeIcon: Icon(Icons.home),
+            label: '홈',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.edit_note_outlined),
+            activeIcon: Icon(Icons.edit_note),
+            label: '필기',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.quiz_outlined),
+            activeIcon: Icon(Icons.quiz),
+            label: '퀴즈',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.report_outlined),
+            activeIcon: Icon(Icons.report),
+            label: '오답노트',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.bar_chart_outlined),
+            activeIcon: Icon(Icons.bar_chart),
+            label: '마이',
+          ),
         ],
       ),
     );
@@ -75,11 +102,27 @@ class _ShellScreenState extends State<ShellScreen> {
     final safeIndex = _index < screens.length ? _index : 0;
     final navItems = [
       {'icon': Icons.home_outlined, 'activeIcon': Icons.home, 'label': '홈'},
-      {'icon': Icons.edit_note_outlined, 'activeIcon': Icons.edit_note, 'label': '과목'},
+      {
+        'icon': Icons.edit_note_outlined,
+        'activeIcon': Icons.edit_note,
+        'label': '과목',
+      },
       {'icon': Icons.quiz_outlined, 'activeIcon': Icons.quiz, 'label': '퀴즈'},
-      {'icon': Icons.report_outlined, 'activeIcon': Icons.report, 'label': '오답노트'},
-      {'icon': Icons.bar_chart_outlined, 'activeIcon': Icons.bar_chart, 'label': '리포트'},
-      {'icon': Icons.settings_outlined, 'activeIcon': Icons.settings, 'label': '설정'},
+      {
+        'icon': Icons.report_outlined,
+        'activeIcon': Icons.report,
+        'label': '오답노트',
+      },
+      {
+        'icon': Icons.bar_chart_outlined,
+        'activeIcon': Icons.bar_chart,
+        'label': '리포트',
+      },
+      {
+        'icon': Icons.settings_outlined,
+        'activeIcon': Icons.settings,
+        'label': '설정',
+      },
     ];
 
     return Scaffold(
@@ -108,14 +151,20 @@ class _ShellScreenState extends State<ShellScreen> {
                       height: 48,
                       margin: const EdgeInsets.only(bottom: 4),
                       decoration: BoxDecoration(
-                        color: sel ? Colors.white.withValues(alpha: 0.15) : Colors.transparent,
+                        color: sel
+                            ? Colors.white.withValues(alpha: 0.15)
+                            : Colors.transparent,
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Tooltip(
                         message: e.value['label'] as String,
                         child: Icon(
-                          sel ? e.value['activeIcon'] as IconData : e.value['icon'] as IconData,
-                          color: sel ? Colors.white : Colors.white.withValues(alpha: 0.5),
+                          sel
+                              ? e.value['activeIcon'] as IconData
+                              : e.value['icon'] as IconData,
+                          color: sel
+                              ? Colors.white
+                              : Colors.white.withValues(alpha: 0.5),
                           size: 22,
                         ),
                       ),
@@ -130,7 +179,14 @@ class _ShellScreenState extends State<ShellScreen> {
                     children: const [
                       Text('🔥', style: TextStyle(fontSize: 20)),
                       SizedBox(height: 2),
-                      Text('12', style: TextStyle(fontSize: 11, color: Colors.white, fontWeight: FontWeight.w700)),
+                      Text(
+                        '12',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
                     ],
                   ),
                 ),

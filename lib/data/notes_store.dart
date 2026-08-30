@@ -26,7 +26,8 @@ class NotesStore extends ChangeNotifier {
 
   List<Lecture> get lectures => List.unmodifiable(_lectures);
 
-  NoteContent contentFor(Lecture lecture) => _contents.putIfAbsent(lecture.id, () => NoteContent());
+  NoteContent contentFor(Lecture lecture) =>
+      _contents.putIfAbsent(lecture.id, () => NoteContent());
 
   Lecture createNote({required String title}) {
     _newNoteCount++;

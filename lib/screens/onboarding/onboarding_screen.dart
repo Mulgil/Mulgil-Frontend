@@ -25,7 +25,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         onPageChanged: (_) {},
         physics: const NeverScrollableScrollPhysics(),
         children: [
-          context.isTablet ? _SplashTablet(onStart: _next) : _SplashMobile(onStart: _next),
+          context.isTablet
+              ? _SplashTablet(onStart: _next)
+              : _SplashMobile(onStart: _next),
           _ScheduleStep(onNext: _done),
         ],
       ),
@@ -33,7 +35,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   void _next() {
-    _ctrl.nextPage(duration: const Duration(milliseconds: 350), curve: Curves.easeInOut);
+    _ctrl.nextPage(
+      duration: const Duration(milliseconds: 350),
+      curve: Curves.easeInOut,
+    );
   }
 
   void _done() {
@@ -61,7 +66,10 @@ class _SplashMobile extends StatelessWidget {
               const SizedBox(height: 20),
               const MulgilWordmark(),
               const SizedBox(height: 12),
-              const Text('흐르듯 공부하다', style: TextStyle(color: Color(0xFFc9d8e0), fontSize: 16)),
+              const Text(
+                '흐르듯 공부하다',
+                style: TextStyle(color: Color(0xFFc9d8e0), fontSize: 16),
+              ),
               const SizedBox(height: 48),
               GestureDetector(
                 onTap: onStart,
@@ -75,7 +83,11 @@ class _SplashMobile extends StatelessWidget {
                   alignment: Alignment.center,
                   child: const Text(
                     '시작하기',
-                    style: TextStyle(color: AppColors.navy, fontSize: 16, fontWeight: FontWeight.w700),
+                    style: TextStyle(
+                      color: AppColors.navy,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                 ),
               ),
@@ -105,26 +117,52 @@ class _SplashTablet extends StatelessWidget {
               const SizedBox(height: 20),
               const MulgilWordmark(fontSize: 56),
               const SizedBox(height: 12),
-              const Text('흐르듯 공부하다', style: TextStyle(color: Color(0xFFc9d8e0), fontSize: 18)),
+              const Text(
+                '흐르듯 공부하다',
+                style: TextStyle(color: Color(0xFFc9d8e0), fontSize: 18),
+              ),
             ],
           ),
-          Container(width: 1, height: 220, margin: const EdgeInsets.symmetric(horizontal: 90), color: Colors.white.withValues(alpha: 0.15)),
+          Container(
+            width: 1,
+            height: 220,
+            margin: const EdgeInsets.symmetric(horizontal: 90),
+            color: Colors.white.withValues(alpha: 0.15),
+          ),
           SizedBox(
             width: 380,
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                _FeatureRow(icon: '✎', title: '필기부터 복습까지, 한 앱에서', sub: '분산된 도구 없이 흐름을 이어가요'),
+                _FeatureRow(
+                  icon: '✎',
+                  title: '필기부터 복습까지, 한 앱에서',
+                  sub: '분산된 도구 없이 흐름을 이어가요',
+                ),
                 const SizedBox(height: 18),
-                _FeatureRow(icon: '⭐', title: '교수님 강조 포인트를 놓치지 않아요', sub: '필기 중 바로 마킹, AI가 기억해요'),
+                _FeatureRow(
+                  icon: '⭐',
+                  title: '교수님 강조 포인트를 놓치지 않아요',
+                  sub: '필기 중 바로 마킹, AI가 기억해요',
+                ),
                 const SizedBox(height: 28),
                 GestureDetector(
                   onTap: onStart,
                   child: Container(
                     padding: const EdgeInsets.symmetric(vertical: 16),
-                    decoration: BoxDecoration(color: AppColors.cream, borderRadius: BorderRadius.circular(14)),
+                    decoration: BoxDecoration(
+                      color: AppColors.cream,
+                      borderRadius: BorderRadius.circular(14),
+                    ),
                     alignment: Alignment.center,
-                    child: const Text('시작하기', style: TextStyle(color: AppColors.navy, fontSize: 15, fontWeight: FontWeight.w700)),
+                    child: const Text(
+                      '시작하기',
+                      style: TextStyle(
+                        color: AppColors.navy,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
                   ),
                 ),
               ],
@@ -138,29 +176,60 @@ class _SplashTablet extends StatelessWidget {
 
 class _FeatureRow extends StatelessWidget {
   final String icon, title, sub;
-  const _FeatureRow({required this.icon, required this.title, required this.sub});
+  const _FeatureRow({
+    required this.icon,
+    required this.title,
+    required this.sub,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(16)),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(16),
+      ),
       child: Row(
         children: [
           Container(
-            width: 36, height: 36,
-            decoration: BoxDecoration(color: AppColors.teal, borderRadius: BorderRadius.circular(10)),
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: AppColors.teal,
+              borderRadius: BorderRadius.circular(10),
+            ),
             alignment: Alignment.center,
-            child: Text(icon, style: const TextStyle(fontSize: 18, color: AppColors.navy, fontWeight: FontWeight.w800)),
+            child: Text(
+              icon,
+              style: const TextStyle(
+                fontSize: 18,
+                color: AppColors.navy,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
           ),
           const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w700)),
+                Text(
+                  title,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
                 const SizedBox(height: 2),
-                Text(sub, style: const TextStyle(color: Color(0xFF9fb6c4), fontSize: 12)),
+                Text(
+                  sub,
+                  style: const TextStyle(
+                    color: Color(0xFF9fb6c4),
+                    fontSize: 12,
+                  ),
+                ),
               ],
             ),
           ),
@@ -185,10 +254,12 @@ class _ScheduleStepState extends State<_ScheduleStep> {
     showMulgilSheet(
       context,
       isScrollControlled: true,
-      builder: (_) => CourseFormSheet(onAdd: (course, slots) => setState(() {
-        MockData.courses.add(course);
-        MockData.timetableSlots.addAll(slots);
-      })),
+      builder: (_) => CourseFormSheet(
+        onAdd: (course, slots) => setState(() {
+          MockData.courses.add(course);
+          MockData.timetableSlots.addAll(slots);
+        }),
+      ),
     );
   }
 
@@ -202,11 +273,28 @@ class _ScheduleStepState extends State<_ScheduleStep> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('온보딩 2/2', style: TextStyle(fontSize: 12, color: AppColors.tealDark, fontWeight: FontWeight.w700)),
+              const Text(
+                '온보딩 2/2',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: AppColors.tealDark,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
               const SizedBox(height: 4),
-              const Text('시간표를 등록해주세요', style: TextStyle(fontSize: 19, fontWeight: FontWeight.w800, color: AppColors.textPrimary)),
+              const Text(
+                '시간표를 등록해주세요',
+                style: TextStyle(
+                  fontSize: 19,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.textPrimary,
+                ),
+              ),
               const SizedBox(height: 4),
-              const Text('과목·교수님·시험 일정을 알면 리마인더를 딱 맞게 보내드려요', style: TextStyle(fontSize: 12.5, color: AppColors.textMuted)),
+              const Text(
+                '과목·교수님·시험 일정을 알면 리마인더를 딱 맞게 보내드려요',
+                style: TextStyle(fontSize: 12.5, color: AppColors.textMuted),
+              ),
               const SizedBox(height: 16),
               Expanded(
                 child: SingleChildScrollView(
@@ -215,14 +303,16 @@ class _ScheduleStepState extends State<_ScheduleStep> {
                     children: [
                       WeeklyTimetable(),
                       const SizedBox(height: 14),
-                      ...MockData.courses.map((course) => Padding(
-                        padding: const EdgeInsets.only(bottom: 10),
-                        child: _SubjectCard(
-                          name: course.name,
-                          professor: course.instructor ?? '',
-                          time: MockData.slotsSummary(course.id),
+                      ...MockData.courses.map(
+                        (course) => Padding(
+                          padding: const EdgeInsets.only(bottom: 10),
+                          child: _SubjectCard(
+                            name: course.name,
+                            professor: course.instructor ?? '',
+                            time: MockData.slotsSummary(course.id),
+                          ),
                         ),
-                      )),
+                      ),
                     ],
                   ),
                 ),
@@ -232,9 +322,15 @@ class _ScheduleStepState extends State<_ScheduleStep> {
                 onTap: _openAddSubjectSheet,
                 child: Container(
                   padding: const EdgeInsets.symmetric(vertical: 10),
-                  decoration: BoxDecoration(border: Border.all(color: AppColors.navy), borderRadius: BorderRadius.circular(10)),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: AppColors.navy),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
                   alignment: Alignment.center,
-                  child: const Text('+ 과목 추가', style: TextStyle(fontSize: 13, color: AppColors.navy)),
+                  child: const Text(
+                    '+ 과목 추가',
+                    style: TextStyle(fontSize: 13, color: AppColors.navy),
+                  ),
                 ),
               ),
               const SizedBox(height: 16),
@@ -250,18 +346,35 @@ class _ScheduleStepState extends State<_ScheduleStep> {
 
 class _SubjectCard extends StatelessWidget {
   final String name, professor, time;
-  const _SubjectCard({required this.name, required this.professor, required this.time});
+  const _SubjectCard({
+    required this.name,
+    required this.professor,
+    required this.time,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      decoration: BoxDecoration(color: const Color(0xFFF7F7F7), borderRadius: BorderRadius.circular(14)),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF7F7F7),
+        borderRadius: BorderRadius.circular(14),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(name, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
-          Text('$professor · $time', style: const TextStyle(fontSize: 12, color: AppColors.textMuted)),
+          Text(
+            name,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          Text(
+            '$professor · $time',
+            style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
+          ),
         ],
       ),
     );

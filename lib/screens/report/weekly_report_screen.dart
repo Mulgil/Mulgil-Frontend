@@ -14,7 +14,9 @@ class WeeklyReportScreen extends StatelessWidget {
       body: SafeArea(
         child: SingleChildScrollView(
           padding: EdgeInsets.all(context.isTablet ? 28 : 20),
-          child: context.isTablet ? _buildTablet(context) : _buildMobile(context),
+          child: context.isTablet
+              ? _buildTablet(context)
+              : _buildMobile(context),
         ),
       ),
     );
@@ -78,9 +80,19 @@ class WeeklyReportScreen extends StatelessWidget {
     return Row(
       children: [
         const BackIfPushed(),
-        const Text('주간 리포트', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: AppColors.textPrimary)),
+        const Text(
+          '주간 리포트',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.w800,
+            color: AppColors.textPrimary,
+          ),
+        ),
         const Spacer(),
-        const Text('2026년 8월 4주', style: TextStyle(fontSize: 12, color: AppColors.textMuted)),
+        const Text(
+          '2026년 8월 4주',
+          style: TextStyle(fontSize: 12, color: AppColors.textMuted),
+        ),
       ],
     );
   }
@@ -88,11 +100,17 @@ class WeeklyReportScreen extends StatelessWidget {
   Widget _summaryRow() {
     return const Row(
       children: [
-        Expanded(child: _StatCard(label: '총 학습', value: '18h 42m', icon: '📚')),
+        Expanded(
+          child: _StatCard(label: '총 학습', value: '18h 42m', icon: '📚'),
+        ),
         SizedBox(width: 10),
-        Expanded(child: _StatCard(label: '퀴즈 정답률', value: '74%', icon: '🎯')),
+        Expanded(
+          child: _StatCard(label: '퀴즈 정답률', value: '74%', icon: '🎯'),
+        ),
         SizedBox(width: 10),
-        Expanded(child: _StatCard(label: '연속 학습', value: '12일', icon: '🔥')),
+        Expanded(
+          child: _StatCard(label: '연속 학습', value: '12일', icon: '🔥'),
+        ),
       ],
     );
   }
@@ -100,20 +118,44 @@ class WeeklyReportScreen extends StatelessWidget {
 
 class _StatCard extends StatelessWidget {
   final String label, value, icon;
-  const _StatCard({required this.label, required this.value, required this.icon});
+  const _StatCard({
+    required this.label,
+    required this.value,
+    required this.icon,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14), boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8, offset: const Offset(0, 2))]),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(icon, style: const TextStyle(fontSize: 18)),
           const SizedBox(height: 6),
-          Text(value, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.textPrimary)),
-          Text(label, style: const TextStyle(fontSize: 11, color: AppColors.textMuted)),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          Text(
+            label,
+            style: const TextStyle(fontSize: 11, color: AppColors.textMuted),
+          ),
         ],
       ),
     );
@@ -128,7 +170,17 @@ class _StudyChart extends StatelessWidget {
     final maxH = MockData.studyHours.reduce((a, b) => a > b ? a : b);
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8, offset: const Offset(0, 2))]),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -149,12 +201,20 @@ class _StudyChart extends StatelessWidget {
                         Container(
                           height: 90 * ratio,
                           decoration: BoxDecoration(
-                            color: i == 3 ? AppColors.teal : AppColors.teal.withValues(alpha: 0.35),
+                            color: i == 3
+                                ? AppColors.teal
+                                : AppColors.teal.withValues(alpha: 0.35),
                             borderRadius: BorderRadius.circular(6),
                           ),
                         ),
                         const SizedBox(height: 4),
-                        Text(MockData.studyDays[i], style: const TextStyle(fontSize: 10, color: AppColors.textMuted)),
+                        Text(
+                          MockData.studyDays[i],
+                          style: const TextStyle(
+                            fontSize: 10,
+                            color: AppColors.textMuted,
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -175,7 +235,17 @@ class _SubjectBreakdown extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8, offset: const Offset(0, 2))]),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -203,8 +273,20 @@ class _SubjectRow extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(subject.name, style: const TextStyle(fontSize: 12, color: AppColors.textPrimary)),
-              Text('${subject.hours.toStringAsFixed(1)}h', style: const TextStyle(fontSize: 11, color: AppColors.textMuted)),
+              Text(
+                subject.name,
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              Text(
+                '${subject.hours.toStringAsFixed(1)}h',
+                style: const TextStyle(
+                  fontSize: 11,
+                  color: AppColors.textMuted,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 4),
@@ -230,23 +312,50 @@ class _AchievementBadges extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8, offset: const Offset(0, 2))]),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SectionHeader(title: '이번 주 달성'),
           const SizedBox(height: 12),
           Row(
-            children: MockData.achievements.map((b) => Expanded(
-              child: Column(
-                children: [
-                  Text(b.icon, style: const TextStyle(fontSize: 24)),
-                  const SizedBox(height: 4),
-                  Text(b.label, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
-                  Text(b.desc, style: const TextStyle(fontSize: 10, color: AppColors.textMuted)),
-                ],
-              ),
-            )).toList(),
+            children: MockData.achievements
+                .map(
+                  (b) => Expanded(
+                    child: Column(
+                      children: [
+                        Text(b.icon, style: const TextStyle(fontSize: 24)),
+                        const SizedBox(height: 4),
+                        Text(
+                          b.label,
+                          style: const TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                        Text(
+                          b.desc,
+                          style: const TextStyle(
+                            fontSize: 10,
+                            color: AppColors.textMuted,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+                .toList(),
           ),
         ],
       ),

@@ -12,7 +12,8 @@ class SplashScreen extends StatefulWidget {
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderStateMixin {
+class _SplashScreenState extends State<SplashScreen>
+    with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
   late final Animation<double> _scale;
   late final Animation<double> _opacity;
@@ -20,19 +21,39 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 650))..forward();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 650),
+    )..forward();
     _scale = TweenSequence<double>([
-      TweenSequenceItem(tween: Tween(begin: 0.5, end: 1.12).chain(CurveTween(curve: Curves.easeOutBack)), weight: 65),
-      TweenSequenceItem(tween: Tween(begin: 1.12, end: 1.0).chain(CurveTween(curve: Curves.easeOut)), weight: 35),
+      TweenSequenceItem(
+        tween: Tween(
+          begin: 0.5,
+          end: 1.12,
+        ).chain(CurveTween(curve: Curves.easeOutBack)),
+        weight: 65,
+      ),
+      TweenSequenceItem(
+        tween: Tween(
+          begin: 1.12,
+          end: 1.0,
+        ).chain(CurveTween(curve: Curves.easeOut)),
+        weight: 35,
+      ),
     ]).animate(_controller);
-    _opacity = CurvedAnimation(parent: _controller, curve: const Interval(0.0, 0.5, curve: Curves.easeOut));
+    _opacity = CurvedAnimation(
+      parent: _controller,
+      curve: const Interval(0.0, 0.5, curve: Curves.easeOut),
+    );
     _navigateNext();
   }
 
   Future<void> _navigateNext() async {
     await Future.delayed(const Duration(milliseconds: 1000));
     if (!mounted) return;
-    Navigator.of(context).pushReplacementNamed(AuthStore.isLoggedIn ? '/' : '/login');
+    Navigator.of(
+      context,
+    ).pushReplacementNamed(AuthStore.isLoggedIn ? '/' : '/login');
   }
 
   @override
