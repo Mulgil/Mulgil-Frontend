@@ -11,24 +11,20 @@ class NotificationListScreen extends StatefulWidget {
 }
 
 class _NotificationListScreenState extends State<NotificationListScreen> {
-  late List<AppNotification> _items = List.of(MockData.notifications);
+  List<AppNotification> get _items => MockData.notifications;
 
   void _markAllRead() {
     setState(() {
-      _items = _items.map((n) => AppNotification(
-        id: n.id, type: n.type, title: n.title, body: n.body,
-        deepLink: n.deepLink, status: n.status, scheduledAt: n.scheduledAt, isRead: true,
-      )).toList();
+      for (var i = 0; i < MockData.notifications.length; i++) {
+        MockData.notifications[i] = MockData.notifications[i].copyWith(isRead: true);
+      }
     });
   }
 
   void _open(AppNotification n) {
     setState(() {
-      final i = _items.indexOf(n);
-      _items[i] = AppNotification(
-        id: n.id, type: n.type, title: n.title, body: n.body,
-        deepLink: n.deepLink, status: n.status, scheduledAt: n.scheduledAt, isRead: true,
-      );
+      final i = MockData.notifications.indexWhere((item) => item.id == n.id);
+      MockData.notifications[i] = n.copyWith(isRead: true);
     });
     final route = switch (n.type) {
       NotificationType.processingComplete => '/summary',

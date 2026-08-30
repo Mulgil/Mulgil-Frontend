@@ -19,4 +19,12 @@ class TimetableSlot {
   static const weekdayLabels = ['월', '화', '수', '목', '금', '토', '일'];
 
   String get weekdayLabel => weekdayLabels[weekday - 1];
+
+  int get startMinutes => _parseMinutes(startTime);
+  int get endMinutes => _parseMinutes(endTime);
+
+  static int _parseMinutes(String hhmm) {
+    final parts = hhmm.split(':');
+    return int.parse(parts[0]) * 60 + int.parse(parts[1]);
+  }
 }

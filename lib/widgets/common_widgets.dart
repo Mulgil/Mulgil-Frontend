@@ -1,6 +1,22 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 
+// Shared bottom-sheet chrome (white background, rounded top corners) used across
+// add/edit/menu sheets throughout the app.
+Future<T?> showMulgilSheet<T>(
+  BuildContext context, {
+  required WidgetBuilder builder,
+  bool isScrollControlled = false,
+}) {
+  return showModalBottomSheet<T>(
+    context: context,
+    isScrollControlled: isScrollControlled,
+    backgroundColor: Colors.white,
+    shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+    builder: builder,
+  );
+}
+
 class MulgilButton extends StatelessWidget {
   final String label;
   final VoidCallback? onTap;
@@ -141,15 +157,27 @@ class StarBadge extends StatelessWidget {
   }
 }
 
+// D-2 이하는 임박(빨강), D-3~D-20은 준비 기간(노랑), D-21 이상은 여유(초록).
+Color examUrgencyColor(int dDay) {
+  if (dDay <= 2) return AppColors.coral;
+  if (dDay <= 20) return AppColors.yellow;
+  return AppColors.green;
+}
+
 class ExamDayBadge extends StatelessWidget {
   final int dDay;
   const ExamDayBadge({super.key, required this.dDay});
 
   @override
   Widget build(BuildContext context) {
-    return Text(
-      'D-$dDay',
-      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: AppColors.coral),
+    final color = examUrgencyColor(dDay);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(color: color.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(10)),
+      child: Text(
+        'D-$dDay',
+        style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900, color: color),
+      ),
     );
   }
 }

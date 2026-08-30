@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/common_widgets.dart';
 import '../../data/mock_data.dart';
+import '../../data/notes_store.dart';
 import '../../models/lecture.dart';
 
 class NoteListScreen extends StatefulWidget {
@@ -20,7 +21,7 @@ class _NoteListScreenState extends State<NoteListScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.cream,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
@@ -67,7 +68,7 @@ class _NoteListScreenState extends State<NoteListScreen> {
               ),
               const SizedBox(height: 14),
               Expanded(
-                child: Builder(builder: (context) {
+                child: ListenableBuilder(listenable: NotesStore.instance, builder: (context, _) {
                   final lectures = _filteredLectures();
                   if (lectures.isEmpty) {
                     return const Center(child: Text('해당하는 강의가 없어요', style: TextStyle(color: AppColors.textMuted)));
@@ -98,21 +99,20 @@ class _NoteListScreenState extends State<NoteListScreen> {
   }
 
   List<Lecture> _filteredLectures() {
+    final lectures = NotesStore.instance.lectures;
     switch (_filter) {
       case 1:
-        return MockData.lectures.where((l) => l.done).toList();
+        return lectures.where((l) => l.done).toList();
       case 2:
-        return MockData.lectures.where((l) => l.quiz != null).toList();
+        return lectures.where((l) => l.quiz != null).toList();
       default:
-        return MockData.lectures;
+        return lectures;
     }
   }
 
   void _openAddSheet(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+    showMulgilSheet(
+      context,
       builder: (sheetCtx) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -132,7 +132,7 @@ class _NoteListScreenState extends State<NoteListScreen> {
               subtitle: const Text('타이핑 또는 필기로 바로 시작해요'),
               onTap: () {
                 Navigator.pop(sheetCtx);
-                Navigator.of(context).pushNamed('/note/detail');
+                _promptNewNoteTitle(context);
               },
             ),
             const SizedBox(height: 8),
@@ -140,6 +140,33 @@ class _NoteListScreenState extends State<NoteListScreen> {
         ),
       ),
     );
+  }
+
+  void _promptNewNoteTitle(BuildContext context) {
+    final ctrl = TextEditingController();
+    showDialog<void>(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        title: const Text('새 노트'),
+        content: TextField(
+          controller: ctrl,
+          autofocus: true,
+          decoration: const InputDecoration(hintText: '노트 제목을 입력하세요'),
+          onSubmitted: (_) => _createAndOpenNote(dialogCtx, ctrl.text),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialogCtx), child: const Text('취소')),
+          TextButton(onPressed: () => _createAndOpenNote(dialogCtx, ctrl.text), child: const Text('만들기')),
+        ],
+      ),
+    );
+  }
+
+  void _createAndOpenNote(BuildContext dialogCtx, String rawTitle) {
+    final title = rawTitle.trim().isEmpty ? '제목 없는 노트' : rawTitle.trim();
+    final lecture = NotesStore.instance.createNote(title: title);
+    Navigator.pop(dialogCtx);
+    Navigator.of(context).pushNamed('/note/detail', arguments: lecture);
   }
 }
 
@@ -152,8 +179,10 @@ class _LectureCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
+        color: Colors.white,
         border: Border.all(color: const Color(0xFFEEEEEE)),
         borderRadius: BorderRadius.circular(14),
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 8, offset: const Offset(0, 2))],
       ),
       child: Opacity(
         opacity: lecture.done ? 1.0 : 0.5,
@@ -171,13 +200,15 @@ class _LectureCard extends StatelessWidget {
             if (lecture.done)
               Row(
                 children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                    decoration: BoxDecoration(color: const Color(0xFFEEF7F8), borderRadius: BorderRadius.circular(8)),
-                    child: Text('퀴즈 ${lecture.quiz}', style: const TextStyle(fontSize: 11, color: AppColors.tealDark)),
-                  ),
-                  const SizedBox(width: 8),
-                  Text('⭐' * lecture.stars, style: const TextStyle(fontSize: 12)),
+                  if (lecture.quiz != null) ...[
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(color: const Color(0xFFEEF7F8), borderRadius: BorderRadius.circular(8)),
+                      child: Text('퀴즈 ${lecture.quiz}', style: const TextStyle(fontSize: 11, color: AppColors.tealDark)),
+                    ),
+                    const SizedBox(width: 8),
+                  ],
+                  if (lecture.stars > 0) Text('⭐' * lecture.stars, style: const TextStyle(fontSize: 12)),
                 ],
               ),
           ],

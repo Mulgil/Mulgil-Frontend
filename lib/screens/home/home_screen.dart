@@ -3,7 +3,6 @@ import '../../theme/app_theme.dart';
 import '../../widgets/mulgil_logo.dart';
 import '../../widgets/common_widgets.dart';
 import '../../data/mock_data.dart';
-import '../../models/exam.dart';
 import '../../models/lecture.dart';
 
 List<Lecture> _recentNotes(List<Lecture> lectures) => lectures.where((l) => l.done).take(2).toList();
@@ -54,13 +53,13 @@ class HomeScreen extends StatelessWidget {
                       child: Icon(Icons.settings_outlined, color: AppColors.textPrimary, size: 24),
                     ),
                   ),
-                  const _NotificationBell(),
+                  _NotificationBell(),
                 ],
               ),
               const SizedBox(height: 14),
               _StreakCard(),
               const SizedBox(height: 12),
-              const _UpcomingExamsCard(),
+              _UpcomingExamsCard(),
               const SizedBox(height: 14),
               _QuickActions(onOpenNote: onOpenNote, onOpenQuiz: onOpenQuiz),
               const SizedBox(height: 16),
@@ -135,8 +134,6 @@ class _UpcomingExamsCardState extends State<_UpcomingExamsCard> {
   final _ctrl = PageController();
   int _page = 0;
 
-  late final List<Exam> _exams = List.of(MockData.exams)..sort((a, b) => a.examAt.compareTo(b.examAt));
-
   @override
   void dispose() {
     _ctrl.dispose();
@@ -145,7 +142,8 @@ class _UpcomingExamsCardState extends State<_UpcomingExamsCard> {
 
   @override
   Widget build(BuildContext context) {
-    if (_exams.isEmpty) return const SizedBox.shrink();
+    final exams = List.of(MockData.exams)..sort((a, b) => a.examAt.compareTo(b.examAt));
+    if (exams.isEmpty) return const SizedBox.shrink();
     return GestureDetector(
       onTap: () => Navigator.of(context).pushNamed('/exams'),
       child: Container(
@@ -158,25 +156,31 @@ class _UpcomingExamsCardState extends State<_UpcomingExamsCard> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const Text('다가오는 시험일정', style: TextStyle(fontSize: 12, color: AppColors.textMuted)),
-                if (_exams.length > 1)
-                  Text('${_page + 1} / ${_exams.length}', style: const TextStyle(fontSize: 11, color: AppColors.textLight)),
+                if (exams.length > 1)
+                  Text('${_page + 1} / ${exams.length}', style: const TextStyle(fontSize: 11, color: AppColors.textLight)),
               ],
             ),
             const SizedBox(height: 6),
             SizedBox(
-              height: 26,
+              height: 34,
               child: PageView.builder(
                 controller: _ctrl,
-                itemCount: _exams.length,
+                itemCount: exams.length,
                 onPageChanged: (i) => setState(() => _page = i),
                 itemBuilder: (_, i) {
-                  final exam = _exams[i];
+                  final exam = exams[i];
                   final dDay = exam.examAt.difference(DateTime.now()).inDays;
                   return Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('${exam.courseName} · ${exam.title}', style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
                       ExamDayBadge(dDay: dDay < 0 ? 0 : dDay),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          '${exam.courseName} · ${exam.title}',
+                          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
                     ],
                   );
                 },

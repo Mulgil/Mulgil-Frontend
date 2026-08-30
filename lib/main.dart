@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'theme/app_theme.dart';
 import 'screens/shell_screen.dart';
+import 'screens/splash/splash_screen.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/onboarding/onboarding_screen.dart';
 import 'screens/note/note_list_screen.dart';
@@ -26,8 +27,9 @@ class MulgilApp extends StatelessWidget {
       title: 'Mulgil',
       theme: buildAppTheme(),
       debugShowCheckedModeBanner: false,
-      initialRoute: '/login',
+      initialRoute: '/splash',
       routes: {
+        '/splash': (_) => const SplashScreen(),
         '/login': (_) => const LoginScreen(),
         '/onboarding': (_) => const OnboardingScreen(),
         '/': (_) => const ShellScreen(),

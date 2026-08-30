@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
+import '../data/mock_data.dart';
 import '../models/course.dart';
 import '../models/timetable_slot.dart';
 import 'common_widgets.dart';
+import 'confirm_dialog.dart';
 
 // Bottom sheet for creating a Course plus one TimetableSlot per selected weekday.
 // Shared by onboarding's schedule step and the settings subject manager.
@@ -63,11 +65,40 @@ class _CourseFormSheetState extends State<CourseFormSheet> {
     });
   }
 
-  void _submit() {
+  // Same weekday + overlapping [start,end) range against every already-registered slot.
+  List<TimetableSlot> _findConflictingSlots() {
+    final newStart = _start.hour * 60 + _start.minute;
+    final newEnd = _end.hour * 60 + _end.minute;
+    return MockData.timetableSlots.where((slot) {
+      if (!_weekdays.contains(slot.weekday)) return false;
+      return newStart < slot.endMinutes && newEnd > slot.startMinutes;
+    }).toList();
+  }
+
+  Future<void> _submit() async {
     if (_nameCtrl.text.trim().isEmpty || _weekdays.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('과목명과 요일을 입력해주세요')));
       return;
     }
+
+    final conflicts = _findConflictingSlots();
+    if (conflicts.isNotEmpty) {
+      final names = conflicts.map((slot) {
+        final course = MockData.courses.firstWhere((c) => c.id == slot.courseId);
+        return "'${course.name}' (${slot.weekdayLabel} ${slot.startTime}~${slot.endTime})";
+      }).toSet().join(', ');
+      final proceed = await showMulgilConfirmDialog(
+        context,
+        title: '시간표가 겹쳐요',
+        message: '기존 $names 시간표가 삭제되고 새 과목으로 대체돼요. 계속할까요?',
+        confirmLabel: '삭제하고 추가',
+        danger: true,
+      );
+      if (!proceed) return;
+      MockData.timetableSlots.removeWhere(conflicts.contains);
+    }
+    if (!mounted) return;
+
     final courseId = 'c${DateTime.now().microsecondsSinceEpoch}';
     final course = Course(
       id: courseId,

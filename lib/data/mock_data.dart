@@ -13,10 +13,10 @@ import '../theme/app_theme.dart';
 // e.g. MockData.lectures → await ApiService.getLectures(subjectId)
 abstract final class MockData {
   static const lectures = [
-    Lecture(week: '1주차', title: '컴퓨터 구조 개요', date: '3/1', done: true, quiz: '8/10', stars: 2),
-    Lecture(week: '2주차', title: '프로세스', date: '3/8', done: true, quiz: '4/10', stars: 3),
-    Lecture(week: '3주차', title: '스레드와 동기화', done: false, stars: 0),
-    Lecture(week: '4주차', title: '데드락', done: false, stars: 0),
+    Lecture(id: 'l1', week: '1주차', title: '컴퓨터 구조 개요', date: '3/1', done: true, quiz: '8/10', stars: 2),
+    Lecture(id: 'l2', week: '2주차', title: '프로세스', date: '3/8', done: true, quiz: '4/10', stars: 3),
+    Lecture(id: 'l3', week: '3주차', title: '스레드와 동기화', done: false, stars: 0),
+    Lecture(id: 'l4', week: '4주차', title: '데드락', done: false, stars: 0),
   ];
 
   static const quizQuestions = [

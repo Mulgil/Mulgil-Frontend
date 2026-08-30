@@ -25,7 +25,7 @@ class _WrongAnswerScreenState extends State<WrongAnswerScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.cream,
       body: SafeArea(
         child: context.isTablet ? _buildTablet() : _buildMobile(),
       ),
@@ -56,7 +56,7 @@ class _WrongAnswerScreenState extends State<WrongAnswerScreen> {
           const SizedBox(height: 14),
           Expanded(
             child: answers.isEmpty
-                ? const Center(child: Text('해당하는 오답이 없어요', style: TextStyle(color: AppColors.textMuted)))
+                ? const _EmptyBox()
                 : ListView.separated(
                     itemCount: answers.length,
                     separatorBuilder: (_, _) => const SizedBox(height: 12),
@@ -94,7 +94,7 @@ class _WrongAnswerScreenState extends State<WrongAnswerScreen> {
                 const SizedBox(height: 16),
                 Expanded(
                   child: answers.isEmpty
-                      ? const Center(child: Text('해당하는 오답이 없어요', style: TextStyle(color: AppColors.textMuted)))
+                      ? const _EmptyBox()
                       : ListView.separated(
                           itemCount: answers.length,
                           separatorBuilder: (_, _) => const SizedBox(height: 12),
@@ -128,6 +128,25 @@ class _WrongAnswerScreenState extends State<WrongAnswerScreen> {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _EmptyBox extends StatelessWidget {
+  const _EmptyBox();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 32),
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border.all(color: const Color(0xFFEEEEEE)),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: const Text('해당하는 오답이 없어요', style: TextStyle(color: AppColors.textMuted)),
     );
   }
 }

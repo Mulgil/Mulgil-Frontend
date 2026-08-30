@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/common_widgets.dart';
+import '../../widgets/exam_form_sheet.dart';
 import '../../data/mock_data.dart';
 import '../../models/exam.dart';
 
@@ -13,7 +14,6 @@ class ExamListScreen extends StatefulWidget {
 
 class _ExamListScreenState extends State<ExamListScreen> {
   String? _courseFilter;
-  late List<Exam> _exams;
   bool _initialized = false;
   bool _usedDailyLimit = false;
 
@@ -22,16 +22,21 @@ class _ExamListScreenState extends State<ExamListScreen> {
     super.didChangeDependencies();
     if (!_initialized) {
       _courseFilter = ModalRoute.of(context)?.settings.arguments as String?;
-      _exams = _courseFilter == null
-          ? List.of(MockData.exams)
-          : MockData.exams.where((e) => e.courseName == _courseFilter).toList();
       _initialized = true;
     }
   }
 
+  List<Exam> get _exams => _courseFilter == null
+      ? MockData.exams
+      : MockData.exams.where((e) => e.courseName == _courseFilter).toList();
+
+  void _replaceExam(Exam oldExam, Exam newExam) {
+    final i = MockData.exams.indexWhere((e) => e.id == oldExam.id);
+    setState(() => MockData.exams[i] = newExam);
+  }
+
   void _attachPastExam(Exam exam) {
-    final i = _exams.indexOf(exam);
-    setState(() => _exams[i] = exam.copyWith(hasPastExamAttached: true));
+    _replaceExam(exam, exam.copyWith(hasPastExamAttached: true));
     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('기출 PDF가 첨부됐어요 (mock)')));
   }
 
@@ -50,24 +55,39 @@ class _ExamListScreenState extends State<ExamListScreen> {
       );
       return;
     }
-    final i = _exams.indexOf(exam);
-    setState(() => _exams[i] = isSummary ? exam.copyWith(summaryStatus: AiJobStatus.running) : exam.copyWith(quizStatus: AiJobStatus.running));
+    _replaceExam(exam, isSummary ? exam.copyWith(summaryStatus: AiJobStatus.running) : exam.copyWith(quizStatus: AiJobStatus.running));
     await Future.delayed(const Duration(seconds: 2));
     if (!mounted) return;
-    setState(() => _exams[i] = isSummary ? _exams[i].copyWith(summaryStatus: AiJobStatus.succeeded) : _exams[i].copyWith(quizStatus: AiJobStatus.succeeded));
+    final running = MockData.exams.firstWhere((e) => e.id == exam.id);
+    _replaceExam(running, isSummary ? running.copyWith(summaryStatus: AiJobStatus.succeeded) : running.copyWith(quizStatus: AiJobStatus.succeeded));
   }
 
   void _openCreateSheet() {
-    showModalBottomSheet(
-      context: context,
+    showMulgilSheet(
+      context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (_) => _ExamCreateSheet(
-        courseName: _courseFilter ?? MockData.courseNames.first,
-        onCreate: (exam) => setState(() => _exams = [exam, ..._exams]),
+      builder: (_) => ExamFormSheet(
+        initialCourseName: _courseFilter,
+        onSubmit: (exam) => setState(() => MockData.exams.insert(0, exam)),
       ),
     );
+  }
+
+  void _openEditSheet(Exam exam) {
+    showMulgilSheet(
+      context,
+      isScrollControlled: true,
+      builder: (_) => ExamFormSheet(
+        existingExam: exam,
+        onSubmit: (updated) => _replaceExam(exam, updated),
+      ),
+    );
+  }
+
+  void _deleteExam(Exam exam) {
+    confirmDeleteExam(context, exam, () {
+      setState(() => MockData.exams.removeWhere((e) => e.id == exam.id));
+    });
   }
 
   @override
@@ -104,6 +124,8 @@ class _ExamListScreenState extends State<ExamListScreen> {
                           onAttachPastExam: () => _attachPastExam(_exams[i]),
                           onGenerateSummary: () => _generate(_exams[i], isSummary: true),
                           onGenerateQuiz: () => _generate(_exams[i], isSummary: false),
+                          onEdit: () => _openEditSheet(_exams[i]),
+                          onDelete: () => _deleteExam(_exams[i]),
                         ),
                       ),
               ),
@@ -123,11 +145,15 @@ class _ExamCard extends StatelessWidget {
   final VoidCallback onAttachPastExam;
   final VoidCallback onGenerateSummary;
   final VoidCallback onGenerateQuiz;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
   const _ExamCard({
     required this.exam,
     required this.onAttachPastExam,
     required this.onGenerateSummary,
     required this.onGenerateQuiz,
+    required this.onEdit,
+    required this.onDelete,
   });
 
   int get _dDay => exam.examAt.difference(DateTime.now()).inDays;
@@ -137,6 +163,7 @@ class _ExamCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
+        color: Colors.white,
         border: Border.all(color: const Color(0xFFEEEEEE)),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 8, offset: const Offset(0, 2))],
@@ -145,16 +172,27 @@ class _ExamCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(exam.courseName, style: const TextStyle(fontSize: 11, color: AppColors.teal, fontWeight: FontWeight.w700)),
-                  Text(exam.title, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: AppColors.textPrimary)),
+              ExamDayBadge(dDay: _dDay < 0 ? 0 : _dDay),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(exam.courseName, style: const TextStyle(fontSize: 11, color: AppColors.teal, fontWeight: FontWeight.w700)),
+                    Text(exam.title, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: AppColors.textPrimary)),
+                  ],
+                ),
+              ),
+              PopupMenuButton<String>(
+                icon: const Icon(Icons.more_vert, size: 18, color: AppColors.textLight),
+                padding: EdgeInsets.zero,
+                onSelected: (v) => v == 'edit' ? onEdit() : onDelete(),
+                itemBuilder: (_) => const [
+                  PopupMenuItem(value: 'edit', child: Text('수정')),
+                  PopupMenuItem(value: 'delete', child: Text('삭제')),
                 ],
               ),
-              ExamDayBadge(dDay: _dDay < 0 ? 0 : _dDay),
             ],
           ),
           const SizedBox(height: 8),
@@ -224,106 +262,6 @@ class _JobButton extends StatelessWidget {
                 : Text(text, style: TextStyle(fontSize: 11.5, color: fg, fontWeight: FontWeight.w700)),
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _ExamCreateSheet extends StatefulWidget {
-  final String courseName;
-  final ValueChanged<Exam> onCreate;
-  const _ExamCreateSheet({required this.courseName, required this.onCreate});
-
-  @override
-  State<_ExamCreateSheet> createState() => _ExamCreateSheetState();
-}
-
-class _ExamCreateSheetState extends State<_ExamCreateSheet> {
-  final _titleCtrl = TextEditingController();
-  DateTime _examAt = DateTime.now().add(const Duration(days: 7));
-  final Set<String> _selectedSessions = {};
-
-  static final _availableSessions = MockData.lectures.map((l) => l.week).toList();
-
-  @override
-  void dispose() {
-    _titleCtrl.dispose();
-    super.dispose();
-  }
-
-  Future<void> _pickDate() async {
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: _examAt,
-      firstDate: DateTime.now(),
-      lastDate: DateTime.now().add(const Duration(days: 365)),
-    );
-    if (picked != null) setState(() => _examAt = picked);
-  }
-
-  void _submit() {
-    if (_titleCtrl.text.trim().isEmpty || _selectedSessions.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('시험명과 범위를 모두 입력해주세요')));
-      return;
-    }
-    widget.onCreate(Exam(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      courseName: widget.courseName,
-      title: _titleCtrl.text.trim(),
-      examAt: _examAt,
-      sessionTitles: _selectedSessions.toList()..sort(),
-    ));
-    Navigator.pop(context);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.fromLTRB(20, 20, 20, MediaQuery.of(context).viewInsets.bottom + 20),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text('시험 등록', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: AppColors.textPrimary)),
-          const SizedBox(height: 16),
-          TextField(
-            controller: _titleCtrl,
-            decoration: InputDecoration(
-              labelText: '시험명',
-              hintText: '예: 중간고사',
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-            ),
-          ),
-          const SizedBox(height: 14),
-          GestureDetector(
-            onTap: _pickDate,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-              decoration: BoxDecoration(border: Border.all(color: const Color(0xFFDDDDDD)), borderRadius: BorderRadius.circular(12)),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text('시험 날짜', style: TextStyle(fontSize: 13, color: AppColors.textMuted)),
-                  Text('${_examAt.year}.${_examAt.month}.${_examAt.day}', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 14),
-          const Text('시험 범위', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: _availableSessions.map((s) => MulgilChip(
-              label: s,
-              selected: _selectedSessions.contains(s),
-              onTap: () => setState(() => _selectedSessions.contains(s) ? _selectedSessions.remove(s) : _selectedSessions.add(s)),
-            )).toList(),
-          ),
-          const SizedBox(height: 20),
-          MulgilButton(label: '등록', onTap: _submit),
-        ],
       ),
     );
   }

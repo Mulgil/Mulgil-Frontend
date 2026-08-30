@@ -3,6 +3,7 @@ import '../../theme/app_theme.dart';
 import '../../widgets/mulgil_logo.dart';
 import '../../widgets/common_widgets.dart';
 import '../../widgets/course_form_sheet.dart';
+import '../../widgets/weekly_timetable.dart';
 import '../../data/mock_data.dart';
 
 class OnboardingScreen extends StatefulWidget {
@@ -181,11 +182,9 @@ class _ScheduleStep extends StatefulWidget {
 
 class _ScheduleStepState extends State<_ScheduleStep> {
   void _openAddSubjectSheet() {
-    showModalBottomSheet(
-      context: context,
+    showMulgilSheet(
+      context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (_) => CourseFormSheet(onAdd: (course, slots) => setState(() {
         MockData.courses.add(course);
         MockData.timetableSlots.addAll(slots);
@@ -210,20 +209,25 @@ class _ScheduleStepState extends State<_ScheduleStep> {
               const Text('과목·교수님·시험 일정을 알면 리마인더를 딱 맞게 보내드려요', style: TextStyle(fontSize: 12.5, color: AppColors.textMuted)),
               const SizedBox(height: 16),
               Expanded(
-                child: ListView.separated(
-                  itemCount: MockData.courses.length,
-                  separatorBuilder: (_, _) => const SizedBox(height: 10),
-                  itemBuilder: (_, i) {
-                    final course = MockData.courses[i];
-                    return _SubjectCard(
-                      name: course.name,
-                      professor: course.instructor ?? '',
-                      time: MockData.slotsSummary(course.id),
-                    );
-                  },
+                child: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      WeeklyTimetable(),
+                      const SizedBox(height: 14),
+                      ...MockData.courses.map((course) => Padding(
+                        padding: const EdgeInsets.only(bottom: 10),
+                        child: _SubjectCard(
+                          name: course.name,
+                          professor: course.instructor ?? '',
+                          time: MockData.slotsSummary(course.id),
+                        ),
+                      )),
+                    ],
+                  ),
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
               GestureDetector(
                 onTap: _openAddSubjectSheet,
                 child: Container(

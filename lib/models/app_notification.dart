@@ -22,4 +22,17 @@ class AppNotification {
     required this.scheduledAt,
     this.isRead = false,
   });
+
+  AppNotification copyWith({bool? isRead}) {
+    return AppNotification(
+      id: id,
+      type: type,
+      title: title,
+      body: body,
+      deepLink: deepLink,
+      status: status,
+      scheduledAt: scheduledAt,
+      isRead: isRead ?? this.isRead,
+    );
+  }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/mulgil_logo.dart';
+import '../../data/auth_store.dart';
 
 // Replace with POST /auth/oauth/google once the Google Sign-In SDK is wired up.
 class LoginScreen extends StatefulWidget {
@@ -18,6 +19,7 @@ class _LoginScreenState extends State<LoginScreen> {
     await Future.delayed(const Duration(milliseconds: 900));
     if (!mounted) return;
     setState(() => _loading = false);
+    AuthStore.isLoggedIn = true;
     Navigator.of(context).pushReplacementNamed('/onboarding');
   }
 

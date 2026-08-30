@@ -3,8 +3,11 @@ import '../../theme/app_theme.dart';
 import '../../widgets/common_widgets.dart';
 import '../../widgets/mulgil_logo.dart';
 import '../../widgets/course_form_sheet.dart';
+import '../../widgets/weekly_timetable.dart';
+import '../../widgets/exam_form_sheet.dart';
 import '../../data/mock_data.dart';
-import '../../models/course.dart';
+import '../../data/auth_store.dart';
+import '../../models/exam.dart';
 import 'legal_document_screen.dart';
 
 enum _SettingsTab { profile, subjects, appInfo }
@@ -20,16 +23,42 @@ class _SettingsScreenState extends State<SettingsScreen> {
   _SettingsTab _tab = _SettingsTab.profile;
 
   void _openAddSubjectSheet() {
-    showModalBottomSheet(
-      context: context,
+    showMulgilSheet(
+      context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (_) => CourseFormSheet(onAdd: (course, slots) => setState(() {
         MockData.courses.add(course);
         MockData.timetableSlots.addAll(slots);
       })),
     );
+  }
+
+  void _openAddExamSheet() {
+    showMulgilSheet(
+      context,
+      isScrollControlled: true,
+      builder: (_) => ExamFormSheet(onSubmit: (exam) => setState(() => MockData.exams.insert(0, exam))),
+    );
+  }
+
+  void _openEditExamSheet(Exam exam) {
+    showMulgilSheet(
+      context,
+      isScrollControlled: true,
+      builder: (_) => ExamFormSheet(
+        existingExam: exam,
+        onSubmit: (updated) => setState(() {
+          final i = MockData.exams.indexWhere((e) => e.id == exam.id);
+          MockData.exams[i] = updated;
+        }),
+      ),
+    );
+  }
+
+  void _deleteExamSchedule(Exam exam) {
+    confirmDeleteExam(context, exam, () {
+      setState(() => MockData.exams.removeWhere((e) => e.id == exam.id));
+    });
   }
 
   void _openPrivacyPolicy() {
@@ -66,13 +95,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   // Mirrors POST /auth/logout — revokes the refresh token family server-side once wired up.
   void _logout() {
+    AuthStore.isLoggedIn = false;
     Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.cream,
       body: SafeArea(
         child: context.isTablet ? _buildTablet() : _buildMobile(),
       ),
@@ -94,9 +124,32 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const SizedBox(height: 20),
           const _ProfileCard(),
           const SizedBox(height: 20),
-          const _SectionLabel(label: '과목 관리'),
-          ...MockData.courses.map((c) => _SubjectTile(course: c)),
-          _AddSubjectButton(onTap: _openAddSubjectSheet),
+          Row(
+            children: [
+              const Expanded(child: _SectionLabel(label: '과목 관리')),
+              _AddSubjectButton(onTap: _openAddSubjectSheet),
+            ],
+          ),
+          WeeklyTimetable(),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              const Expanded(child: _SectionLabel(label: '시험 일정')),
+              _AddIconButton(onTap: _openAddExamSheet),
+            ],
+          ),
+          const SizedBox(height: 12),
+          if (MockData.exams.isEmpty)
+            const _EmptyExamBox()
+          else
+            ...MockData.exams.map((e) => Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: _ExamScheduleTile(
+                exam: e,
+                onEdit: () => _openEditExamSheet(e),
+                onDelete: () => _deleteExamSchedule(e),
+              ),
+            )),
           const SizedBox(height: 20),
           const _SectionLabel(label: '앱 정보'),
           const _NavTile(label: '버전 1.0.0', icon: Icons.info_outlined, showArrow: false),
@@ -190,10 +243,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ],
         ),
         const SizedBox(height: 20),
-        ...MockData.courses.map((c) => Padding(
-          padding: const EdgeInsets.only(bottom: 12),
-          child: _SubjectTile(course: c),
-        )),
+        WeeklyTimetable(),
+        const SizedBox(height: 20),
+        Row(
+          children: [
+            const Expanded(child: _SectionLabel(label: '시험 일정')),
+            _AddIconButton(onTap: _openAddExamSheet),
+          ],
+        ),
+        if (MockData.exams.isEmpty)
+          const _EmptyExamBox()
+        else
+          ...MockData.exams.map((e) => Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: _ExamScheduleTile(
+              exam: e,
+              onEdit: () => _openEditExamSheet(e),
+              onDelete: () => _deleteExamSchedule(e),
+            ),
+          )),
         const SizedBox(height: 12),
         Container(
           padding: const EdgeInsets.all(16),
@@ -372,41 +440,83 @@ class _InfoTile extends StatelessWidget {
   }
 }
 
-class _SubjectTile extends StatelessWidget {
-  final Course course;
-  const _SubjectTile({required this.course});
+class _ExamScheduleTile extends StatelessWidget {
+  final Exam exam;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
+  const _ExamScheduleTile({required this.exam, required this.onEdit, required this.onDelete});
+
+  int get _dDay => exam.examAt.difference(DateTime.now()).inDays;
 
   @override
   Widget build(BuildContext context) {
-    final dDay = MockData.nextExamDDay(course.name);
-    final slotsSummary = MockData.slotsSummary(course.id);
+    final dDay = _dDay < 0 ? 0 : _dDay;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(color: const Color(0xFFF7F7F7), borderRadius: BorderRadius.circular(12)),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          Row(
-            children: [
-              Text(course.name, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
-              if (dDay != null) ...[
-                const SizedBox(width: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(color: AppColors.coral.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(6)),
-                  child: Text('D-$dDay', style: const TextStyle(fontSize: 10, color: AppColors.coral, fontWeight: FontWeight.w700)),
+          ExamDayBadge(dDay: dDay),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text.rich(
+                  TextSpan(
+                    children: [
+                      TextSpan(text: exam.courseName, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
+                      const TextSpan(text: ' · ', style: TextStyle(fontSize: 14, color: AppColors.textMuted)),
+                      TextSpan(text: exam.title, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w400, color: AppColors.textPrimary)),
+                    ],
+                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
+                const SizedBox(height: 5),
+                Text('${exam.examAt.year}.${exam.examAt.month}.${exam.examAt.day}', style: const TextStyle(fontSize: 12, color: AppColors.textMuted)),
               ],
-            ],
+            ),
           ),
-          const SizedBox(height: 2),
-          Text(
-            [course.instructor, slotsSummary].where((s) => s != null && s.isNotEmpty).join(' · '),
-            style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
+          IconButton(
+            icon: const Icon(Icons.edit_outlined, size: 16, color: AppColors.textLight),
+            onPressed: onEdit,
+            constraints: const BoxConstraints(),
+            padding: const EdgeInsets.all(8),
+          ),
+          IconButton(
+            icon: const Icon(Icons.delete_outline, size: 16, color: AppColors.coral),
+            onPressed: onDelete,
+            constraints: const BoxConstraints(),
+            padding: const EdgeInsets.all(8),
           ),
         ],
       ),
     );
+  }
+}
+
+class _EmptyExamBox extends StatelessWidget {
+  const _EmptyExamBox();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 20),
+      alignment: Alignment.center,
+      decoration: BoxDecoration(color: const Color(0xFFF7F7F7), borderRadius: BorderRadius.circular(12)),
+      child: const Text('등록된 시험이 없어요', style: TextStyle(fontSize: 12, color: AppColors.textMuted)),
+    );
+  }
+}
+
+class _AddIconButton extends StatelessWidget {
+  final VoidCallback onTap;
+  const _AddIconButton({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return _RaisedAddButton(onTap: onTap);
   }
 }
 
@@ -416,24 +526,30 @@ class _AddSubjectButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    return _RaisedAddButton(onTap: onTap);
+  }
+}
+
+// Filled, elevated "+" button shared by the 과목 추가 / 시험 일정 추가 actions —
+// icon-only so it reads as a single clear affordance rather than a labeled outline button.
+class _RaisedAddButton extends StatelessWidget {
+  final VoidCallback onTap;
+  const _RaisedAddButton({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
     return Material(
-      color: Colors.transparent,
-      borderRadius: BorderRadius.circular(12),
+      color: AppColors.navy,
+      shape: const CircleBorder(),
+      elevation: 3,
+      shadowColor: AppColors.navy.withValues(alpha: 0.45),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          decoration: BoxDecoration(border: Border.all(color: AppColors.navy), borderRadius: BorderRadius.circular(12)),
-          alignment: Alignment.center,
-          child: const Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.add, size: 16, color: AppColors.navy),
-              SizedBox(width: 4),
-              Text('과목 추가', style: TextStyle(fontSize: 13, color: AppColors.navy, fontWeight: FontWeight.w600)),
-            ],
-          ),
+        customBorder: const CircleBorder(),
+        child: const SizedBox(
+          width: 30,
+          height: 30,
+          child: Icon(Icons.add, size: 18, color: Colors.white),
         ),
       ),
     );
