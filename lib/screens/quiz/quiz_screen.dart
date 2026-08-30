@@ -25,7 +25,6 @@ class _QuizScreenState extends State<QuizScreen> {
     final q = MockData.quizQuestions[_qIdx];
 
     return Scaffold(
-      backgroundColor: AppColors.cream,
       body: SafeArea(
         child: Padding(
           padding: EdgeInsets.all(context.isTablet ? 28 : 20),
@@ -44,7 +43,7 @@ class _QuizScreenState extends State<QuizScreen> {
                     '${_current + 1} / $_total',
                     style: const TextStyle(
                       fontSize: 12,
-                      color: AppColors.textMuted,
+                      color: AppColors.ink60,
                     ),
                   ),
                 ],
@@ -67,27 +66,18 @@ class _QuizScreenState extends State<QuizScreen> {
     return Expanded(
       child: Column(
         children: [
-          Container(
+          SizedBox(
             width: double.infinity,
-            padding: const EdgeInsets.all(30),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.06),
-                  blurRadius: 16,
-                  offset: const Offset(0, 4),
+            child: MulgilCard(
+              padding: const EdgeInsets.all(30),
+              child: Text(
+                q.question,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.ink,
                 ),
-              ],
-            ),
-            child: Text(
-              q.question,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-                color: AppColors.textPrimary,
               ),
             ),
           ),
@@ -96,48 +86,40 @@ class _QuizScreenState extends State<QuizScreen> {
           const SizedBox(height: 16),
           Text(
             '남은 문제 ${_total - _current - 1}개 · 예상 시간 ${(_total - _current - 1) * 30}초',
-            style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
+            style: const TextStyle(fontSize: 12, color: AppColors.ink60),
           ),
           const Spacer(),
           if (_showResult)
             Align(
               alignment: Alignment.bottomRight,
-              child: Container(
+              child: SizedBox(
                 width: 170,
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(14),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.15),
-                      blurRadius: 20,
-                      offset: const Offset(0, 6),
-                    ),
-                  ],
-                  border: Border.all(color: const Color(0xFFEEEEEE)),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      _correct ? '정답!' : '오답',
-                      style: TextStyle(
-                        color: _correct ? AppColors.tealDark : AppColors.coral,
-                        fontWeight: FontWeight.w800,
-                        fontSize: 12,
+                child: MulgilCard(
+                  padding: const EdgeInsets.all(12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _correct ? '정답!' : '오답',
+                        style: TextStyle(
+                          color: _correct
+                              ? AppColors.tealDark
+                              : AppColors.coral,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 12,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      q.explanation,
-                      style: const TextStyle(
-                        fontSize: 11,
-                        color: AppColors.textSecondary,
-                        height: 1.5,
+                      const SizedBox(height: 4),
+                      Text(
+                        q.explanation,
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: AppColors.ink80,
+                          height: 1.5,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -155,18 +137,15 @@ class _QuizScreenState extends State<QuizScreen> {
             child: Container(
               padding: const EdgeInsets.all(22),
               decoration: BoxDecoration(
-                color: const Color(0xFFFAFAFA),
-                borderRadius: BorderRadius.circular(16),
+                color: AppColors.surfaceAlt,
+                borderRadius: BorderRadius.circular(AppRadius.lg),
               ),
               child: const Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     '참고 자료',
-                    style: TextStyle(
-                      fontSize: 11.5,
-                      color: AppColors.textLight,
-                    ),
+                    style: TextStyle(fontSize: 11.5, color: AppColors.ink40),
                   ),
                   SizedBox(height: 10),
                   Text(
@@ -174,7 +153,7 @@ class _QuizScreenState extends State<QuizScreen> {
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w800,
-                      color: AppColors.textPrimary,
+                      color: AppColors.ink,
                     ),
                   ),
                   SizedBox(height: 6),
@@ -182,7 +161,7 @@ class _QuizScreenState extends State<QuizScreen> {
                     'SJF(Shortest Job First)는 실행 시간이 짧은 작업을 우선 처리하는 스케줄링 기법이다.',
                     style: TextStyle(
                       fontSize: 12.5,
-                      color: AppColors.textSecondary,
+                      color: AppColors.ink80,
                       height: 1.7,
                     ),
                   ),
@@ -197,32 +176,23 @@ class _QuizScreenState extends State<QuizScreen> {
             child: Container(
               padding: const EdgeInsets.all(22),
               decoration: BoxDecoration(
-                color: AppColors.cream,
-                borderRadius: BorderRadius.circular(16),
+                color: AppColors.bg,
+                borderRadius: BorderRadius.circular(AppRadius.lg),
               ),
               child: Column(
                 children: [
-                  Container(
+                  SizedBox(
                     width: double.infinity,
-                    padding: const EdgeInsets.all(26),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(18),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.06),
-                          blurRadius: 16,
-                          offset: const Offset(0, 4),
+                    child: MulgilCard(
+                      padding: const EdgeInsets.all(26),
+                      child: Text(
+                        q.question,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.ink,
                         ),
-                      ],
-                    ),
-                    child: Text(
-                      q.question,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.textPrimary,
                       ),
                     ),
                   ),
@@ -233,15 +203,15 @@ class _QuizScreenState extends State<QuizScreen> {
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: AppColors.surface,
                         border: Border.all(color: AppColors.yellow),
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(AppRadius.sm),
                       ),
                       child: Text(
                         q.explanation,
                         style: const TextStyle(
                           fontSize: 11.5,
-                          color: AppColors.textSecondary,
+                          color: AppColors.ink80,
                         ),
                       ),
                     ),
@@ -318,16 +288,12 @@ class _TabletHint extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: const Color(0xFFFFF9DB),
-        borderRadius: BorderRadius.circular(8),
+        color: AppColors.yellowSoft,
+        borderRadius: BorderRadius.circular(AppRadius.sm),
       ),
       child: const Text(
         '⭐ 긴 작업이 계속 밀려 실행되지 못하는 기아 현상(starvation)이 발생할 수 있다.',
-        style: TextStyle(
-          fontSize: 12.5,
-          color: AppColors.textSecondary,
-          height: 1.7,
-        ),
+        style: TextStyle(fontSize: 12.5, color: AppColors.ink80, height: 1.7),
       ),
     );
   }
@@ -353,11 +319,11 @@ class _ChoiceButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final bg = selected
         ? AppColors.tealDark
-        : (wrong ? const Color(0xFFFFF0EB) : Colors.white);
+        : (wrong ? AppColors.coralSoft : AppColors.surface);
     final border = selected
         ? AppColors.tealDark
-        : (wrong ? AppColors.coral : const Color(0xFFEEEEEE));
-    final fg = selected ? Colors.white : AppColors.textPrimary;
+        : (wrong ? AppColors.coral : AppColors.border);
+    final fg = selected ? Colors.white : AppColors.ink;
 
     return GestureDetector(
       onTap: onTap,
@@ -367,7 +333,7 @@ class _ChoiceButton extends StatelessWidget {
         decoration: BoxDecoration(
           color: bg,
           border: Border.all(color: border, width: 1.5),
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(AppRadius.md),
         ),
         child: Row(
           children: [
@@ -377,7 +343,7 @@ class _ChoiceButton extends StatelessWidget {
               decoration: BoxDecoration(
                 color: selected
                     ? Colors.white.withValues(alpha: 0.25)
-                    : const Color(0xFFF2F2F2),
+                    : AppColors.chip,
                 shape: BoxShape.circle,
               ),
               alignment: Alignment.center,
@@ -426,7 +392,7 @@ class _OxButton extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 32),
         decoration: BoxDecoration(
           color: color,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(AppRadius.xl),
         ),
         alignment: Alignment.center,
         child: Text(

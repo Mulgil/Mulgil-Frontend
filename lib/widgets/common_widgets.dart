@@ -11,12 +11,51 @@ Future<T?> showMulgilSheet<T>(
   return showModalBottomSheet<T>(
     context: context,
     isScrollControlled: isScrollControlled,
-    backgroundColor: Colors.white,
+    backgroundColor: AppColors.surface,
     shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
     ),
     builder: builder,
   );
+}
+
+// Reusable bordered surface card — replaces the ad hoc box-shadow `Container`s
+// that used to be copy-pasted per screen, so every card in the app shares the
+// same flat, bordered look instead of drifting into inconsistent shadows/radii.
+class MulgilCard extends StatelessWidget {
+  final Widget child;
+  final EdgeInsetsGeometry padding;
+  final VoidCallback? onTap;
+  final Color? color;
+
+  const MulgilCard({
+    super.key,
+    required this.child,
+    this.padding = const EdgeInsets.all(16),
+    this.onTap,
+    this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final radius = BorderRadius.circular(AppRadius.lg);
+    return Material(
+      color: color ?? AppColors.surface,
+      borderRadius: radius,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: radius,
+        child: Container(
+          padding: padding,
+          decoration: BoxDecoration(
+            borderRadius: radius,
+            border: Border.all(color: AppColors.border),
+          ),
+          child: child,
+        ),
+      ),
+    );
+  }
 }
 
 class MulgilButton extends StatelessWidget {
@@ -41,10 +80,10 @@ class MulgilButton extends StatelessWidget {
     final fg = textColor ?? (filled ? Colors.white : AppColors.navy);
     return Material(
       color: bg,
-      borderRadius: BorderRadius.circular(14),
+      borderRadius: BorderRadius.circular(AppRadius.lg),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
         child: Container(
           width: double.infinity,
           padding: const EdgeInsets.symmetric(vertical: 16),
@@ -52,7 +91,7 @@ class MulgilButton extends StatelessWidget {
               ? null
               : BoxDecoration(
                   border: Border.all(color: AppColors.navy),
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(AppRadius.lg),
                 ),
           alignment: Alignment.center,
           child: Text(
@@ -84,19 +123,20 @@ class MulgilChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: selected ? AppColors.navy : const Color(0xFFF2F2F2),
-      borderRadius: BorderRadius.circular(100),
+      color: selected ? AppColors.navy : AppColors.chip,
+      borderRadius: BorderRadius.circular(AppRadius.pill),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(100),
+        borderRadius: BorderRadius.circular(AppRadius.pill),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           child: Text(
             label,
             style: TextStyle(
               fontSize: 12,
-              color: selected ? Colors.white : AppColors.textMuted,
-              fontWeight: FontWeight.w500,
+              color: selected ? Colors.white : AppColors.ink60,
+              fontWeight: FontWeight.w600,
+              letterSpacing: -0.1,
             ),
           ),
         ),
@@ -121,7 +161,7 @@ class MulgilProgressBar extends StatelessWidget {
       child: LinearProgressIndicator(
         value: value,
         minHeight: 5,
-        backgroundColor: const Color(0xFFEEF0F2),
+        backgroundColor: AppColors.border,
         color: color,
       ),
     );
@@ -144,7 +184,7 @@ class MulgilToggle extends StatelessWidget {
           width: 40,
           height: 24,
           decoration: BoxDecoration(
-            color: value ? AppColors.teal : const Color(0xFFD8DDE1),
+            color: value ? AppColors.teal : AppColors.ink20,
             borderRadius: BorderRadius.circular(12),
           ),
           child: AnimatedAlign(
@@ -175,8 +215,8 @@ class StarBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
-        color: const Color(0xFFFFF3E9),
-        borderRadius: BorderRadius.circular(8),
+        color: AppColors.yellowSoft,
+        borderRadius: BorderRadius.circular(AppRadius.sm),
       ),
       child: Text('⭐' * stars, style: const TextStyle(fontSize: 11)),
     );
@@ -190,6 +230,12 @@ Color examUrgencyColor(int dDay) {
   return AppColors.green;
 }
 
+Color examUrgencySoftColor(int dDay) {
+  if (dDay <= 2) return AppColors.coralSoft;
+  if (dDay <= 20) return AppColors.yellowSoft;
+  return AppColors.greenSoft;
+}
+
 class ExamDayBadge extends StatelessWidget {
   final int dDay;
   const ExamDayBadge({super.key, required this.dDay});
@@ -200,8 +246,8 @@ class ExamDayBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(10),
+        color: examUrgencySoftColor(dDay),
+        borderRadius: BorderRadius.circular(AppRadius.sm),
       ),
       child: Text(
         'D-$dDay',
@@ -259,7 +305,9 @@ class CourseDropdown extends StatelessWidget {
     return PopupMenuButton<String>(
       onSelected: onChanged,
       offset: const Offset(0, 36),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadius.md),
+      ),
       itemBuilder: (_) =>
           options.map((o) => PopupMenuItem(value: o, child: Text(o))).toList(),
       child: Row(
@@ -285,27 +333,85 @@ class CourseDropdown extends StatelessWidget {
   }
 }
 
+// Title + optional muted subtitle, with either a custom trailing widget or a
+// "전체 →" more-link — mirrors Festi's section-header pattern (bold title,
+// quiet subtitle, chevron link) instead of the old label-only version.
 class SectionHeader extends StatelessWidget {
   final String title;
+  final String? subtitle;
   final Widget? trailing;
-  const SectionHeader({super.key, required this.title, this.trailing});
+  final String? moreLabel;
+  final VoidCallback? onMore;
+
+  const SectionHeader({
+    super.key,
+    required this.title,
+    this.subtitle,
+    this.trailing,
+    this.moreLabel,
+    this.onMore,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.only(bottom: 10),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w700,
-              color: AppColors.textPrimary,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.3,
+                    color: AppColors.ink,
+                  ),
+                ),
+                if (subtitle != null) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle!,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppColors.ink60,
+                    ),
+                  ),
+                ],
+              ],
             ),
           ),
-          ?trailing,
+          if (trailing != null)
+            trailing!
+          else if (onMore != null)
+            GestureDetector(
+              onTap: onMore,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    moreLabel ?? '전체',
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.ink60,
+                    ),
+                  ),
+                  const SizedBox(width: 2),
+                  const Icon(
+                    Icons.chevron_right,
+                    size: 16,
+                    color: AppColors.ink60,
+                  ),
+                ],
+              ),
+            ),
         ],
       ),
     );

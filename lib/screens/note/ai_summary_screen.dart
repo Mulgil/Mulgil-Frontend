@@ -71,7 +71,7 @@ class _AiSummaryScreenState extends State<AiSummaryScreen>
             child: const Icon(
               Icons.arrow_back_ios,
               size: 18,
-              color: AppColors.textPrimary,
+              color: AppColors.ink,
             ),
           ),
           const SizedBox(width: 8),
@@ -80,7 +80,7 @@ class _AiSummaryScreenState extends State<AiSummaryScreen>
             style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w700,
-              color: AppColors.textPrimary,
+              color: AppColors.ink,
             ),
           ),
           CourseDropdown(
@@ -95,15 +95,15 @@ class _AiSummaryScreenState extends State<AiSummaryScreen>
               style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w700,
-                color: AppColors.textPrimary,
+                color: AppColors.ink,
               ),
             ),
           ),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
-              color: const Color(0xFFEEF7F8),
-              borderRadius: BorderRadius.circular(10),
+              color: AppColors.tealSoft,
+              borderRadius: BorderRadius.circular(AppRadius.sm),
             ),
             child: const Text(
               '✨ AI 생성',
@@ -123,18 +123,18 @@ class _AiSummaryScreenState extends State<AiSummaryScreen>
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
       decoration: BoxDecoration(
-        color: const Color(0xFFF2F3F5),
-        borderRadius: BorderRadius.circular(12),
+        color: AppColors.chip,
+        borderRadius: BorderRadius.circular(AppRadius.md),
       ),
       child: TabBar(
         controller: _tab,
         indicator: BoxDecoration(
           color: AppColors.navy,
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(AppRadius.sm),
         ),
         indicatorSize: TabBarIndicatorSize.tab,
         labelColor: Colors.white,
-        unselectedLabelColor: AppColors.textMuted,
+        unselectedLabelColor: AppColors.ink60,
         labelStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
         dividerColor: Colors.transparent,
         tabs: const [
@@ -213,20 +213,13 @@ class _SummaryItemCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface,
         border: Border.all(
           color: item.isEmphasis
               ? AppColors.coral.withValues(alpha: 0.4)
-              : const Color(0xFFEEEEEE),
+              : AppColors.border,
         ),
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(AppRadius.md),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -238,7 +231,7 @@ class _SummaryItemCard extends StatelessWidget {
                 style: const TextStyle(
                   fontSize: 13.5,
                   fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimary,
+                  color: AppColors.ink,
                 ),
               ),
               if (item.isEmphasis) ...[
@@ -249,8 +242,8 @@ class _SummaryItemCard extends StatelessWidget {
                     vertical: 2,
                   ),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFFFF0EB),
-                    borderRadius: BorderRadius.circular(6),
+                    color: AppColors.coralSoft,
+                    borderRadius: BorderRadius.circular(AppRadius.sm),
                   ),
                   child: const Text(
                     '⭐ 교수님 강조',
@@ -265,7 +258,7 @@ class _SummaryItemCard extends StatelessWidget {
             item.body,
             style: const TextStyle(
               fontSize: 12.5,
-              color: AppColors.textSecondary,
+              color: AppColors.ink80,
               height: 1.6,
             ),
           ),
@@ -283,9 +276,9 @@ class _ProfEmphasisBlock extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: const Color(0xFFFFF8F5),
+        color: AppColors.coralSoft,
         border: Border.all(color: AppColors.coral.withValues(alpha: 0.3)),
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(AppRadius.md),
       ),
       child: const Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -303,18 +296,14 @@ class _ProfEmphasisBlock extends StatelessWidget {
             '세마포어의 P(wait) / V(signal) 연산',
             style: TextStyle(
               fontSize: 12.5,
-              color: AppColors.textPrimary,
+              color: AppColors.ink,
               fontWeight: FontWeight.w600,
             ),
           ),
           SizedBox(height: 4),
           Text(
             '세마포어는 공유 자원 접근을 제어하는 정수형 변수로, 이진/계수 세마포어로 나뉜다.',
-            style: TextStyle(
-              fontSize: 12,
-              color: AppColors.textSecondary,
-              height: 1.6,
-            ),
+            style: TextStyle(fontSize: 12, color: AppColors.ink80, height: 1.6),
           ),
         ],
       ),
@@ -334,9 +323,9 @@ class _MindmapTab extends StatelessWidget {
           width: double.infinity,
           height: 340,
           decoration: BoxDecoration(
-            color: const Color(0xFFF8FAFB),
-            border: Border.all(color: const Color(0xFFDDDDDD)),
-            borderRadius: BorderRadius.circular(16),
+            color: AppColors.surfaceAlt,
+            border: Border.all(color: AppColors.border),
+            borderRadius: BorderRadius.circular(AppRadius.lg),
           ),
           child: CustomPaint(painter: _MindmapPainter(), child: const Center()),
         ),
@@ -412,38 +401,26 @@ class _OriginalTab extends StatelessWidget {
       margin: const EdgeInsets.all(20),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFFFAFAFA),
-        border: Border.all(color: const Color(0xFFDDDDDD)),
-        borderRadius: BorderRadius.circular(14),
+        color: AppColors.bg,
+        border: Border.all(color: AppColors.border),
+        borderRadius: BorderRadius.circular(AppRadius.md),
       ),
       child: const Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             '텍스트입니다 텍스트입니다',
-            style: TextStyle(
-              fontSize: 13,
-              color: AppColors.textSecondary,
-              height: 1.7,
-            ),
+            style: TextStyle(fontSize: 13, color: AppColors.ink80, height: 1.7),
           ),
           SizedBox(height: 8),
           Text(
             '텍스트입니다 텍스트입니다 텍스트입니다',
-            style: TextStyle(
-              fontSize: 13,
-              color: AppColors.textSecondary,
-              height: 1.7,
-            ),
+            style: TextStyle(fontSize: 13, color: AppColors.ink80, height: 1.7),
           ),
           SizedBox(height: 8),
           Text(
             '텍스트입니다',
-            style: TextStyle(
-              fontSize: 13,
-              color: AppColors.textSecondary,
-              height: 1.7,
-            ),
+            style: TextStyle(fontSize: 13, color: AppColors.ink80, height: 1.7),
           ),
         ],
       ),

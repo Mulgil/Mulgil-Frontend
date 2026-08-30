@@ -107,7 +107,6 @@ class _ExamListScreenState extends State<ExamListScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
@@ -130,11 +129,7 @@ class _ExamListScreenState extends State<ExamListScreen> {
                       _courseFilter == null
                           ? '시험 관리'
                           : '시험 관리 · $_courseFilter',
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.textPrimary,
-                      ),
+                      style: AppTextStyles.h2,
                     ),
                   ),
                 ],
@@ -194,20 +189,8 @@ class _ExamCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return MulgilCard(
       padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: const Color(0xFFEEEEEE)),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -331,8 +314,8 @@ class _JobButton extends StatelessWidget {
     final isDone = status == AiJobStatus.succeeded;
 
     final bg = isFailed
-        ? const Color(0xFFFFF0EB)
-        : (isDone ? const Color(0xFFEEF7F8) : const Color(0xFFF2F2F2));
+        ? AppColors.coralSoft
+        : (isDone ? AppColors.tealSoft : AppColors.chip);
     final fg = isFailed
         ? AppColors.coral
         : (isDone ? AppColors.tealDark : AppColors.textPrimary);
@@ -342,10 +325,10 @@ class _JobButton extends StatelessWidget {
 
     return Material(
       color: bg,
-      borderRadius: BorderRadius.circular(10),
+      borderRadius: BorderRadius.circular(AppRadius.sm),
       child: InkWell(
         onTap: isRunning ? null : onTap,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(AppRadius.sm),
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 10),
           child: Center(

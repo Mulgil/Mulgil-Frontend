@@ -11,15 +11,3 @@ class SubjectRecord {
     required this.color,
   });
 }
-
-class Achievement {
-  final String icon;
-  final String label;
-  final String desc;
-
-  const Achievement({
-    required this.icon,
-    required this.label,
-    required this.desc,
-  });
-}

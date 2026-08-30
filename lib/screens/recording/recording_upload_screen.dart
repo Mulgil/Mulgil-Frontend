@@ -48,7 +48,6 @@ class _RecordingUploadScreenState extends State<RecordingUploadScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(20),
@@ -66,14 +65,7 @@ class _RecordingUploadScreenState extends State<RecordingUploadScreen> {
                     ),
                   ),
                   const SizedBox(width: 8),
-                  const Text(
-                    '강의 녹음 업로드',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
+                  Text('강의 녹음 업로드', style: AppTextStyles.h2),
                 ],
               ),
               const SizedBox(height: 28),
@@ -112,15 +104,11 @@ class _PickStage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        GestureDetector(
-          onTap: onPick,
-          child: Container(
-            width: double.infinity,
+        SizedBox(
+          width: double.infinity,
+          child: MulgilCard(
+            onTap: onPick,
             padding: const EdgeInsets.symmetric(vertical: 40),
-            decoration: BoxDecoration(
-              border: Border.all(color: const Color(0xFFc8ccd0)),
-              borderRadius: BorderRadius.circular(14),
-            ),
             child: const Column(
               children: [
                 Icon(Icons.mic_none, size: 32, color: AppColors.tealDark),
@@ -211,15 +199,15 @@ class _MappingStage extends StatelessWidget {
                 ),
                 decoration: BoxDecoration(
                   color: selectedId == c.id
-                      ? const Color(0xFFEEF7F8)
-                      : const Color(0xFFF7F7F7),
+                      ? AppColors.tealSoft
+                      : AppColors.surfaceAlt,
                   border: Border.all(
                     color: selectedId == c.id
                         ? AppColors.teal
                         : Colors.transparent,
                     width: 1.5,
                   ),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(AppRadius.md),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,

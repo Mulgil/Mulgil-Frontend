@@ -31,12 +31,12 @@ class WeeklyTimetable extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 32),
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: const Color(0xFFF7F7F7),
-          borderRadius: BorderRadius.circular(14),
+          color: AppColors.surfaceAlt,
+          borderRadius: BorderRadius.circular(AppRadius.md),
         ),
         child: const Text(
           '등록된 시간표가 없어요',
-          style: TextStyle(color: AppColors.textMuted, fontSize: 13),
+          style: TextStyle(color: AppColors.ink60, fontSize: 13),
         ),
       );
     }
@@ -52,9 +52,9 @@ class WeeklyTimetable extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFEEEEEE)),
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        border: Border.all(color: AppColors.border),
       ),
       clipBehavior: Clip.antiAlias,
       child: Column(
@@ -69,7 +69,7 @@ class WeeklyTimetable extends StatelessWidget {
                     alignment: Alignment.center,
                     decoration: const BoxDecoration(
                       border: Border(
-                        bottom: BorderSide(color: Color(0xFFEEEEEE)),
+                        bottom: BorderSide(color: AppColors.border),
                       ),
                     ),
                     child: Text(
@@ -77,7 +77,7 @@ class WeeklyTimetable extends StatelessWidget {
                       style: const TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
-                        color: AppColors.textPrimary,
+                        color: AppColors.ink,
                       ),
                     ),
                   ),
@@ -105,7 +105,7 @@ class WeeklyTimetable extends StatelessWidget {
                                   '$h',
                                   style: const TextStyle(
                                     fontSize: 10,
-                                    color: AppColors.textLight,
+                                    color: AppColors.ink40,
                                   ),
                                 ),
                               ),
@@ -127,10 +127,8 @@ class WeeklyTimetable extends StatelessWidget {
                                   height: _hourHeight,
                                   decoration: const BoxDecoration(
                                     border: Border(
-                                      left: BorderSide(
-                                        color: Color(0xFFF2F2F2),
-                                      ),
-                                      top: BorderSide(color: Color(0xFFF2F2F2)),
+                                      left: BorderSide(color: AppColors.border),
+                                      top: BorderSide(color: AppColors.border),
                                     ),
                                   ),
                                 ),
@@ -161,7 +159,9 @@ class WeeklyTimetable extends StatelessWidget {
                               ),
                               decoration: BoxDecoration(
                                 color: _courseColor(course),
-                                borderRadius: BorderRadius.circular(6),
+                                borderRadius: BorderRadius.circular(
+                                  AppRadius.sm,
+                                ),
                               ),
                               alignment: Alignment.topLeft,
                               child: Text(

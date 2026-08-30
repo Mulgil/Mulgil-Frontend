@@ -77,8 +77,8 @@ class _SplashMobile extends StatelessWidget {
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   decoration: BoxDecoration(
-                    color: AppColors.cream,
-                    borderRadius: BorderRadius.circular(14),
+                    color: AppColors.surface,
+                    borderRadius: BorderRadius.circular(AppRadius.lg),
                   ),
                   alignment: Alignment.center,
                   child: const Text(
@@ -151,8 +151,8 @@ class _SplashTablet extends StatelessWidget {
                   child: Container(
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     decoration: BoxDecoration(
-                      color: AppColors.cream,
-                      borderRadius: BorderRadius.circular(14),
+                      color: AppColors.surface,
+                      borderRadius: BorderRadius.circular(AppRadius.lg),
                     ),
                     alignment: Alignment.center,
                     child: const Text(
@@ -188,7 +188,7 @@ class _FeatureRow extends StatelessWidget {
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
       ),
       child: Row(
         children: [
@@ -197,7 +197,7 @@ class _FeatureRow extends StatelessWidget {
             height: 36,
             decoration: BoxDecoration(
               color: AppColors.teal,
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(AppRadius.sm),
             ),
             alignment: Alignment.center,
             child: Text(
@@ -266,7 +266,6 @@ class _ScheduleStepState extends State<_ScheduleStep> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(20),
@@ -282,14 +281,7 @@ class _ScheduleStepState extends State<_ScheduleStep> {
                 ),
               ),
               const SizedBox(height: 4),
-              const Text(
-                '시간표를 등록해주세요',
-                style: TextStyle(
-                  fontSize: 19,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.textPrimary,
-                ),
-              ),
+              Text('시간표를 등록해주세요', style: AppTextStyles.h2),
               const SizedBox(height: 4),
               const Text(
                 '과목·교수님·시험 일정을 알면 리마인더를 딱 맞게 보내드려요',
@@ -324,7 +316,7 @@ class _ScheduleStepState extends State<_ScheduleStep> {
                   padding: const EdgeInsets.symmetric(vertical: 10),
                   decoration: BoxDecoration(
                     border: Border.all(color: AppColors.navy),
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(AppRadius.sm),
                   ),
                   alignment: Alignment.center,
                   child: const Text(
@@ -357,8 +349,8 @@ class _SubjectCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
-        color: const Color(0xFFF7F7F7),
-        borderRadius: BorderRadius.circular(14),
+        color: AppColors.surfaceAlt,
+        borderRadius: BorderRadius.circular(AppRadius.md),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

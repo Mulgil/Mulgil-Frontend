@@ -21,7 +21,6 @@ class _NoteListScreenState extends State<NoteListScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.cream,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
@@ -102,13 +101,13 @@ class _NoteListScreenState extends State<NoteListScreen> {
                       separatorBuilder: (_, _) => const SizedBox(height: 10),
                       itemBuilder: (ctx, i) {
                         final lecture = lectures[i];
-                        return GestureDetector(
+                        return _LectureCard(
+                          lecture: lecture,
                           onTap: lecture.done
                               ? () => Navigator.of(
                                   context,
                                 ).pushNamed('/note/detail', arguments: lecture)
                               : null,
-                          child: _LectureCard(lecture: lecture),
                         );
                       },
                     );
@@ -213,24 +212,14 @@ class _NoteListScreenState extends State<NoteListScreen> {
 
 class _LectureCard extends StatelessWidget {
   final Lecture lecture;
-  const _LectureCard({required this.lecture});
+  final VoidCallback? onTap;
+  const _LectureCard({required this.lecture, this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return MulgilCard(
+      onTap: onTap,
       padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: const Color(0xFFEEEEEE)),
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
       child: Opacity(
         opacity: lecture.done ? 1.0 : 0.5,
         child: Column(
@@ -241,17 +230,14 @@ class _LectureCard extends StatelessWidget {
               style: const TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w700,
-                color: AppColors.textPrimary,
+                color: AppColors.ink,
               ),
             ),
             Padding(
               padding: EdgeInsets.only(top: 2, bottom: lecture.done ? 8 : 0),
               child: Text(
                 lecture.done ? "${lecture.date} · 필기 완료" : '필기 없음',
-                style: const TextStyle(
-                  fontSize: 11,
-                  color: AppColors.textLight,
-                ),
+                style: const TextStyle(fontSize: 11, color: AppColors.ink40),
               ),
             ),
             if (lecture.done)
@@ -264,8 +250,8 @@ class _LectureCard extends StatelessWidget {
                         vertical: 3,
                       ),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFEEF7F8),
-                        borderRadius: BorderRadius.circular(8),
+                        color: AppColors.tealSoft,
+                        borderRadius: BorderRadius.circular(AppRadius.sm),
                       ),
                       child: Text(
                         '퀴즈 ${lecture.quiz}',

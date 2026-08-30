@@ -30,7 +30,6 @@ class _PdfUploadScreenState extends State<PdfUploadScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(20),
@@ -44,18 +43,11 @@ class _PdfUploadScreenState extends State<PdfUploadScreen> {
                     child: const Icon(
                       Icons.arrow_back_ios,
                       size: 18,
-                      color: AppColors.textPrimary,
+                      color: AppColors.ink,
                     ),
                   ),
                   const SizedBox(width: 8),
-                  const Text(
-                    'PDF 자료 업로드',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
+                  Text('PDF 자료 업로드', style: AppTextStyles.h2),
                 ],
               ),
               const SizedBox(height: 28),
@@ -103,13 +95,13 @@ class _PhaseStage extends StatelessWidget {
           style: TextStyle(
             fontSize: 15,
             fontWeight: FontWeight.w700,
-            color: AppColors.textPrimary,
+            color: AppColors.ink,
           ),
         ),
         const SizedBox(height: 4),
         const Text(
           '용도에 따라 AI가 미리보기/복습 자료를 다르게 생성해요',
-          style: TextStyle(fontSize: 12, color: AppColors.textMuted),
+          style: TextStyle(fontSize: 12, color: AppColors.ink60),
         ),
         const SizedBox(height: 20),
         _PhaseOption(
@@ -142,48 +134,34 @@ class _PhaseOption extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return MulgilCard(
       onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          border: Border.all(color: const Color(0xFFEEEEEE)),
-          borderRadius: BorderRadius.circular(14),
-        ),
-        child: Row(
-          children: [
-            Text(icon, style: const TextStyle(fontSize: 22)),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textPrimary,
-                    ),
+      child: Row(
+        children: [
+          Text(icon, style: const TextStyle(fontSize: 22)),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.ink,
                   ),
-                  const SizedBox(height: 2),
-                  Text(
-                    desc,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: AppColors.textMuted,
-                    ),
-                  ),
-                ],
-              ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  desc,
+                  style: const TextStyle(fontSize: 12, color: AppColors.ink60),
+                ),
+              ],
             ),
-            const Icon(
-              Icons.chevron_right,
-              size: 18,
-              color: AppColors.textLight,
-            ),
-          ],
-        ),
+          ),
+          const Icon(Icons.chevron_right, size: 18, color: AppColors.ink40),
+        ],
       ),
     );
   }
@@ -198,16 +176,12 @@ class _PickFileStage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        GestureDetector(
+        MulgilCard(
           onTap: onPick,
-          child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 40),
+          child: const SizedBox(
             width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 40),
-            decoration: BoxDecoration(
-              border: Border.all(color: const Color(0xFFc8ccd0)),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: const Column(
+            child: Column(
               children: [
                 Icon(
                   Icons.picture_as_pdf_outlined,
@@ -230,7 +204,7 @@ class _PickFileStage extends StatelessWidget {
         const SizedBox(height: 12),
         const Text(
           '최대 50MB · 150페이지 · 세션당 5개까지',
-          style: TextStyle(fontSize: 11, color: AppColors.textLight),
+          style: TextStyle(fontSize: 11, color: AppColors.ink40),
         ),
       ],
     );
@@ -251,7 +225,7 @@ class _UploadingStage extends StatelessWidget {
           const SizedBox(height: 16),
           Text(
             '$fileName 업로드 중...',
-            style: const TextStyle(fontSize: 13, color: AppColors.textMuted),
+            style: const TextStyle(fontSize: 13, color: AppColors.ink60),
           ),
         ],
       ),
@@ -276,14 +250,14 @@ class _DoneStage extends StatelessWidget {
           style: const TextStyle(
             fontSize: 15,
             fontWeight: FontWeight.w700,
-            color: AppColors.textPrimary,
+            color: AppColors.ink,
           ),
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 4),
         const Text(
           'AI가 텍스트를 분석하면 알림으로 알려드려요',
-          style: TextStyle(fontSize: 12, color: AppColors.textMuted),
+          style: TextStyle(fontSize: 12, color: AppColors.ink60),
         ),
         const SizedBox(height: 24),
         MulgilButton(label: '확인', onTap: onClose),

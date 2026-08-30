@@ -27,7 +27,6 @@ class _WrongAnswerScreenState extends State<WrongAnswerScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.cream,
       body: SafeArea(child: context.isTablet ? _buildTablet() : _buildMobile()),
     );
   }
@@ -102,14 +101,7 @@ class _WrongAnswerScreenState extends State<WrongAnswerScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  '오답 노트',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
+                Text('오답 노트', style: AppTextStyles.h2),
                 const SizedBox(height: 6),
                 SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
@@ -151,7 +143,7 @@ class _WrongAnswerScreenState extends State<WrongAnswerScreen> {
                   padding: const EdgeInsets.all(22),
                   decoration: BoxDecoration(
                     color: AppColors.navy,
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(AppRadius.lg),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -194,18 +186,16 @@ class _EmptyBox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return SizedBox(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 32),
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: const Color(0xFFEEEEEE)),
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: const Text(
-        '해당하는 오답이 없어요',
-        style: TextStyle(color: AppColors.textMuted),
+      child: MulgilCard(
+        padding: const EdgeInsets.symmetric(vertical: 32),
+        child: const Center(
+          child: Text(
+            '해당하는 오답이 없어요',
+            style: TextStyle(color: AppColors.textMuted),
+          ),
+        ),
       ),
     );
   }
@@ -219,20 +209,8 @@ class _WrongCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return MulgilCard(
       padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: const Color(0xFFEEEEEE)),
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -268,12 +246,16 @@ class _WrongCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
               decoration: BoxDecoration(
-                color: const Color(0xFFFFF3E9),
-                borderRadius: BorderRadius.circular(8),
+                color: AppColors.coralSoft,
+                borderRadius: BorderRadius.circular(AppRadius.sm),
               ),
               child: const Text(
                 '교수님 강조 개념',
-                style: TextStyle(fontSize: 10.5, color: Color(0xFFB15400)),
+                style: TextStyle(
+                  fontSize: 10.5,
+                  color: AppColors.coral,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
             ),
           ],
@@ -284,7 +266,7 @@ class _WrongCard extends StatelessWidget {
               padding: const EdgeInsets.symmetric(vertical: 8),
               decoration: BoxDecoration(
                 border: Border.all(color: AppColors.navy),
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(AppRadius.sm),
               ),
               alignment: Alignment.center,
               child: const Text(

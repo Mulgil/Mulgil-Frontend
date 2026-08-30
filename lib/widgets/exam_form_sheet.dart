@@ -116,18 +116,13 @@ class _ExamFormSheetState extends State<ExamFormSheet> {
             style: const TextStyle(
               fontSize: 17,
               fontWeight: FontWeight.w800,
-              color: AppColors.textPrimary,
+              color: AppColors.ink,
             ),
           ),
           const SizedBox(height: 16),
           DropdownButtonFormField<String>(
             initialValue: _courseName,
-            decoration: InputDecoration(
-              labelText: '과목',
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
+            decoration: const InputDecoration(labelText: '과목'),
             items: MockData.courseNames
                 .map((name) => DropdownMenuItem(value: name, child: Text(name)))
                 .toList(),
@@ -136,40 +131,31 @@ class _ExamFormSheetState extends State<ExamFormSheet> {
           const SizedBox(height: 12),
           TextField(
             controller: _titleCtrl,
-            decoration: InputDecoration(
+            decoration: const InputDecoration(
               labelText: '시험명',
               hintText: '예: 중간고사',
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
             ),
           ),
           const SizedBox(height: 14),
-          GestureDetector(
+          MulgilCard(
             onTap: _pickDate,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-              decoration: BoxDecoration(
-                border: Border.all(color: const Color(0xFFDDDDDD)),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    '시험 날짜',
-                    style: TextStyle(fontSize: 13, color: AppColors.textMuted),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  '시험 날짜',
+                  style: TextStyle(fontSize: 13, color: AppColors.ink60),
+                ),
+                Text(
+                  '${_examAt.year}.${_examAt.month}.${_examAt.day}',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.ink,
                   ),
-                  Text(
-                    '${_examAt.year}.${_examAt.month}.${_examAt.day}',
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
           const SizedBox(height: 14),
@@ -178,7 +164,7 @@ class _ExamFormSheetState extends State<ExamFormSheet> {
             style: TextStyle(
               fontSize: 12.5,
               fontWeight: FontWeight.w700,
-              color: AppColors.textPrimary,
+              color: AppColors.ink,
             ),
           ),
           const SizedBox(height: 8),

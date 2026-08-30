@@ -333,7 +333,7 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
       child: Container(
         padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
         decoration: const BoxDecoration(
-          border: Border(bottom: BorderSide(color: Color(0xFFEEEEEE))),
+          border: Border(bottom: BorderSide(color: AppColors.border)),
         ),
         child: Row(
           children: [
@@ -349,7 +349,7 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
                   style: const TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
+                    color: AppColors.ink,
                   ),
                 ),
                 const Text(
@@ -428,7 +428,7 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
       decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: Color(0xFFEEEEEE))),
+        border: Border(bottom: BorderSide(color: AppColors.border)),
       ),
       child: Row(
         children: [
@@ -460,11 +460,7 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
         maxLines: null,
         expands: true,
         textAlignVertical: TextAlignVertical.top,
-        style: const TextStyle(
-          fontSize: 14,
-          color: AppColors.textPrimary,
-          height: 1.6,
-        ),
+        style: const TextStyle(fontSize: 14, color: AppColors.ink, height: 1.6),
         decoration: const InputDecoration(
           border: InputBorder.none,
           hintText: '마크다운으로 정리해보세요...',
@@ -480,20 +476,20 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: const BoxDecoration(
-        border: Border(top: BorderSide(color: Color(0xFFEEEEEE))),
+        border: Border(top: BorderSide(color: AppColors.border)),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
             '$wordCount 단어',
-            style: const TextStyle(fontSize: 11, color: AppColors.textLight),
+            style: const TextStyle(fontSize: 11, color: AppColors.ink40),
           ),
           Text(
             _typedSaving ? '저장 중...' : '● 저장됨',
             style: TextStyle(
               fontSize: 11,
-              color: _typedSaving ? AppColors.textLight : AppColors.teal,
+              color: _typedSaving ? AppColors.ink40 : AppColors.teal,
             ),
           ),
         ],
@@ -505,7 +501,7 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: Color(0xFFEEEEEE))),
+        border: Border(bottom: BorderSide(color: AppColors.border)),
       ),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
@@ -523,14 +519,14 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
                       vertical: 8,
                     ),
                     decoration: BoxDecoration(
-                      color: sel ? AppColors.navy : const Color(0xFFF2F2F2),
-                      borderRadius: BorderRadius.circular(10),
+                      color: sel ? AppColors.navy : AppColors.chip,
+                      borderRadius: BorderRadius.circular(AppRadius.sm),
                     ),
                     child: Text(
                       '${e.value['icon']} ${e.value['label']}',
                       style: TextStyle(
                         fontSize: 13,
-                        color: sel ? Colors.white : AppColors.textPrimary,
+                        color: sel ? Colors.white : AppColors.ink,
                       ),
                     ),
                   ),
@@ -541,7 +537,7 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
               width: 1,
               height: 24,
               margin: const EdgeInsets.symmetric(horizontal: 4),
-              color: const Color(0xFFDDDDDD),
+              color: AppColors.border,
             ),
             GestureDetector(
               onTap: _canUndo ? _undo : null,
@@ -551,13 +547,13 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
                   vertical: 8,
                 ),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF2F2F2),
-                  borderRadius: BorderRadius.circular(10),
+                  color: AppColors.chip,
+                  borderRadius: BorderRadius.circular(AppRadius.sm),
                 ),
                 child: Icon(
                   Icons.undo,
                   size: 18,
-                  color: _canUndo ? AppColors.textPrimary : AppColors.textLight,
+                  color: _canUndo ? AppColors.ink : AppColors.ink40,
                 ),
               ),
             ),
@@ -570,13 +566,13 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
                   vertical: 8,
                 ),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF2F2F2),
-                  borderRadius: BorderRadius.circular(10),
+                  color: AppColors.chip,
+                  borderRadius: BorderRadius.circular(AppRadius.sm),
                 ),
                 child: Icon(
                   Icons.redo,
                   size: 18,
-                  color: _canRedo ? AppColors.textPrimary : AppColors.textLight,
+                  color: _canRedo ? AppColors.ink : AppColors.ink40,
                 ),
               ),
             ),
@@ -584,7 +580,7 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
               width: 1,
               height: 24,
               margin: const EdgeInsets.symmetric(horizontal: 4),
-              color: const Color(0xFFDDDDDD),
+              color: AppColors.border,
             ),
             GestureDetector(
               onTap: () => setState(() => _showProfTag = !_showProfTag),
@@ -594,16 +590,14 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
                   vertical: 8,
                 ),
                 decoration: BoxDecoration(
-                  color: _showProfTag
-                      ? AppColors.coral
-                      : const Color(0xFFF2F2F2),
-                  borderRadius: BorderRadius.circular(10),
+                  color: _showProfTag ? AppColors.coral : AppColors.chip,
+                  borderRadius: BorderRadius.circular(AppRadius.sm),
                 ),
                 child: Text(
                   '교수★',
                   style: TextStyle(
                     fontSize: 13,
-                    color: _showProfTag ? Colors.white : AppColors.textPrimary,
+                    color: _showProfTag ? Colors.white : AppColors.ink,
                   ),
                 ),
               ),
@@ -612,8 +606,8 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
-                color: const Color(0xFFF2F2F2),
-                borderRadius: BorderRadius.circular(10),
+                color: AppColors.chip,
+                borderRadius: BorderRadius.circular(AppRadius.sm),
               ),
               child: const Text('가 텍스트', style: TextStyle(fontSize: 13)),
             ),
@@ -629,7 +623,7 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
       child: Container(
         width: double.infinity,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        color: const Color(0xFFFFF3E9),
+        color: AppColors.yellowSoft,
         child: Row(
           children: [
             const Icon(Icons.edit_note, size: 16, color: Color(0xFFB15400)),
@@ -664,18 +658,11 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  '손글씨 인식 확인',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
+                Text('손글씨 인식 확인', style: AppTextStyles.h3),
                 const SizedBox(height: 4),
                 const Text(
                   'AI가 읽은 내용이 맞는지 확인하고 필요하면 수정해주세요',
-                  style: TextStyle(fontSize: 12, color: AppColors.textMuted),
+                  style: TextStyle(fontSize: 12, color: AppColors.ink60),
                 ),
                 const SizedBox(height: 16),
                 ..._pendingReview.map(
@@ -704,62 +691,53 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
       child: Stack(
         children: [
           Container(
-            color: const Color(0xFFFAFAFA),
+            color: AppColors.bg,
             padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
                   '텍스트입니다 텍스트입니다',
-                  style: TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 13,
-                  ),
+                  style: TextStyle(color: AppColors.ink80, fontSize: 13),
                 ),
                 const SizedBox(height: 8),
                 const Text(
                   '텍스트입니다',
-                  style: TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 13,
-                  ),
+                  style: TextStyle(color: AppColors.ink80, fontSize: 13),
                 ),
                 const SizedBox(height: 16),
                 Container(
                   height: 70,
                   width: double.infinity,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFEEF0F2),
+                    color: AppColors.chip,
                     border: Border.all(
-                      color: const Color(0xFFC8CCD0),
+                      color: AppColors.ink20,
                       style: BorderStyle.solid,
                     ),
-                    borderRadius: BorderRadius.circular(6),
+                    borderRadius: BorderRadius.circular(AppRadius.sm),
                   ),
                   alignment: Alignment.center,
                   child: const Text(
                     '이미지 / 다이어그램',
-                    style: TextStyle(fontSize: 11, color: AppColors.textLight),
+                    style: TextStyle(fontSize: 11, color: AppColors.ink40),
                   ),
                 ),
                 const SizedBox(height: 16),
                 const Text(
                   '텍스트입니다 텍스트입니다',
-                  style: TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 13,
-                  ),
+                  style: TextStyle(color: AppColors.ink80, fontSize: 13),
                 ),
                 const SizedBox(height: 8),
                 Stack(
                   children: [
-                    Container(height: 16, color: const Color(0x80F5C842)),
+                    Container(
+                      height: 16,
+                      color: AppColors.yellow.withValues(alpha: 0.5),
+                    ),
                     const Text(
                       '텍스트입니다',
-                      style: TextStyle(
-                        color: AppColors.textSecondary,
-                        fontSize: 13,
-                      ),
+                      style: TextStyle(color: AppColors.ink80, fontSize: 13),
                     ),
                   ],
                 ),
@@ -782,7 +760,7 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
                         width: 2,
                         style: BorderStyle.solid,
                       ),
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(AppRadius.sm),
                     ),
                   ),
                   Positioned(
@@ -795,7 +773,7 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
                       ),
                       decoration: BoxDecoration(
                         color: AppColors.coral,
-                        borderRadius: BorderRadius.circular(6),
+                        borderRadius: BorderRadius.circular(AppRadius.sm),
                       ),
                       child: const Text(
                         '⭐⭐',
@@ -812,13 +790,13 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
-                color: AppColors.textPrimary,
-                borderRadius: BorderRadius.circular(10),
-                boxShadow: const [
+                color: AppColors.ink,
+                borderRadius: BorderRadius.circular(AppRadius.sm),
+                boxShadow: [
                   BoxShadow(
-                    color: Color(0x33000000),
+                    color: AppColors.ink.withValues(alpha: 0.2),
                     blurRadius: 10,
-                    offset: Offset(0, 4),
+                    offset: const Offset(0, 4),
                   ),
                 ],
               ),
@@ -858,7 +836,7 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
             duration: const Duration(milliseconds: 200),
             width: _pageSidebarVisible ? 100 : 18,
             decoration: const BoxDecoration(
-              border: Border(right: BorderSide(color: Color(0xFFEEEEEE))),
+              border: Border(right: BorderSide(color: AppColors.border)),
             ),
             child: _pageSidebarVisible
                 ? ListView.builder(
@@ -871,12 +849,12 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
                         margin: const EdgeInsets.only(bottom: 8),
                         decoration: BoxDecoration(
                           color: i == _currentPage
-                              ? const Color(0xFFEEF7F8)
-                              : const Color(0xFFF7F7F7),
+                              ? AppColors.tealSoft
+                              : AppColors.surfaceAlt,
                           border: i == _currentPage
                               ? Border.all(color: AppColors.teal, width: 1.5)
                               : null,
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(AppRadius.sm),
                         ),
                         alignment: Alignment.center,
                         child: Text(
@@ -885,7 +863,7 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
                             fontSize: 11,
                             color: i == _currentPage
                                 ? AppColors.tealDark
-                                : AppColors.textLight,
+                                : AppColors.ink40,
                           ),
                         ),
                       ),
@@ -897,7 +875,7 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
                       child: Icon(
                         Icons.chevron_right,
                         size: 16,
-                        color: AppColors.textLight,
+                        color: AppColors.ink40,
                       ),
                     ),
                   ),
@@ -913,7 +891,7 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: const BoxDecoration(
-        border: Border(top: BorderSide(color: Color(0xFFEEEEEE))),
+        border: Border(top: BorderSide(color: AppColors.border)),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -927,18 +905,13 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
                 child: Icon(
                   Icons.chevron_left,
                   size: 18,
-                  color: _currentPage > 0
-                      ? AppColors.textPrimary
-                      : AppColors.textLight,
+                  color: _currentPage > 0 ? AppColors.ink : AppColors.ink40,
                 ),
               ),
               const SizedBox(width: 4),
               Text(
                 '${_currentPage + 1} / $_pageCount 페이지',
-                style: const TextStyle(
-                  fontSize: 11,
-                  color: AppColors.textLight,
-                ),
+                style: const TextStyle(fontSize: 11, color: AppColors.ink40),
               ),
               const SizedBox(width: 4),
               GestureDetector(
@@ -949,15 +922,15 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
                   Icons.chevron_right,
                   size: 18,
                   color: _currentPage < _pageCount - 1
-                      ? AppColors.textPrimary
-                      : AppColors.textLight,
+                      ? AppColors.ink
+                      : AppColors.ink40,
                 ),
               ),
             ],
           ),
           const Text(
             '확대 100%',
-            style: TextStyle(fontSize: 11, color: AppColors.textLight),
+            style: TextStyle(fontSize: 11, color: AppColors.ink40),
           ),
         ],
       ),
@@ -978,11 +951,11 @@ class _ModeTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: selected ? AppColors.navy : const Color(0xFFF2F2F2),
-      borderRadius: BorderRadius.circular(10),
+      color: selected ? AppColors.navy : AppColors.chip,
+      borderRadius: BorderRadius.circular(AppRadius.sm),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(AppRadius.sm),
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 10),
           child: Center(
@@ -991,7 +964,7 @@ class _ModeTab extends StatelessWidget {
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
-                color: selected ? Colors.white : AppColors.textPrimary,
+                color: selected ? Colors.white : AppColors.ink,
               ),
             ),
           ),
@@ -1073,7 +1046,7 @@ class _ReviewBlockFieldState extends State<_ReviewBlockField> {
             decoration: InputDecoration(
               labelText: 'AI 인식 결과 (신뢰도 낮음)',
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(AppRadius.md),
               ),
             ),
           ),

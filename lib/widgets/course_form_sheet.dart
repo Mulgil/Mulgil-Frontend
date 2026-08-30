@@ -154,28 +154,18 @@ class _CourseFormSheetState extends State<CourseFormSheet> {
             style: TextStyle(
               fontSize: 17,
               fontWeight: FontWeight.w800,
-              color: AppColors.textPrimary,
+              color: AppColors.ink,
             ),
           ),
           const SizedBox(height: 16),
           TextField(
             controller: _nameCtrl,
-            decoration: InputDecoration(
-              labelText: '과목명',
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
+            decoration: const InputDecoration(labelText: '과목명'),
           ),
           const SizedBox(height: 12),
           TextField(
             controller: _professorCtrl,
-            decoration: InputDecoration(
-              labelText: '교수님 (선택)',
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
+            decoration: const InputDecoration(labelText: '교수님 (선택)'),
           ),
           const SizedBox(height: 14),
           const Text(
@@ -183,7 +173,7 @@ class _CourseFormSheetState extends State<CourseFormSheet> {
             style: TextStyle(
               fontSize: 12.5,
               fontWeight: FontWeight.w700,
-              color: AppColors.textPrimary,
+              color: AppColors.ink,
             ),
           ),
           const SizedBox(height: 8),

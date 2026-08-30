@@ -17,7 +17,6 @@ class LegalDocumentScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
@@ -31,7 +30,7 @@ class LegalDocumentScreen extends StatelessWidget {
                     child: const Icon(
                       Icons.arrow_back_ios,
                       size: 18,
-                      color: AppColors.textPrimary,
+                      color: AppColors.ink,
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -40,7 +39,8 @@ class LegalDocumentScreen extends StatelessWidget {
                     style: const TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.w800,
-                      color: AppColors.textPrimary,
+                      letterSpacing: -0.4,
+                      color: AppColors.ink,
                     ),
                   ),
                 ],
@@ -50,10 +50,7 @@ class LegalDocumentScreen extends StatelessWidget {
                 padding: const EdgeInsets.only(left: 26),
                 child: Text(
                   '시행일 $updatedAt',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: AppColors.textMuted,
-                  ),
+                  style: const TextStyle(fontSize: 12, color: AppColors.ink60),
                 ),
               ),
               const SizedBox(height: 16),
@@ -63,7 +60,7 @@ class LegalDocumentScreen extends StatelessWidget {
                     body,
                     style: const TextStyle(
                       fontSize: 13.5,
-                      color: AppColors.textSecondary,
+                      color: AppColors.ink80,
                       height: 1.7,
                     ),
                   ),

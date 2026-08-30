@@ -203,6 +203,18 @@ abstract final class MockData {
     return slots.map((s) => '${s.weekdayLabel} ${s.startTime}').join(', ');
   }
 
+  // Cross-references the weekly timetable against today's weekday (time of
+  // day isn't checked — any class scheduled today counts) and returns the
+  // earliest one, if any.
+  static TimetableSlot? todaysSlot([DateTime? now]) {
+    final n = now ?? DateTime.now();
+    final todays = timetableSlots.where((s) => s.weekday == n.weekday).toList()
+      ..sort((a, b) => a.startMinutes.compareTo(b.startMinutes));
+    return todays.isEmpty ? null : todays.first;
+  }
+
+  static Course courseById(String id) => courses.firstWhere((c) => c.id == id);
+
   static int? nextExamDDay(String courseName) {
     final dDays = exams
         .where((e) => e.courseName == courseName)
@@ -221,12 +233,6 @@ abstract final class MockData {
     SubjectRecord(name: '알고리즘', hours: 2.0, color: AppColors.yellow),
   ];
   static const totalStudyHours = 18.7;
-
-  static const achievements = [
-    Achievement(icon: '🔥', label: '12일 연속', desc: '연속 학습 달성'),
-    Achievement(icon: '🎯', label: '74% 정답률', desc: '이번 주 퀴즈'),
-    Achievement(icon: '📝', label: '23개 강의', desc: '필기 완료'),
-  ];
 
   static final notifications = [
     AppNotification(
