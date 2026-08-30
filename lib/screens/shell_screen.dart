@@ -4,6 +4,7 @@ import '../widgets/mulgil_logo.dart';
 import 'home/home_screen.dart';
 import 'note/note_list_screen.dart';
 import 'quiz/quiz_screen.dart';
+import 'review/wrong_answer_screen.dart';
 import 'report/weekly_report_screen.dart';
 import 'settings/settings_screen.dart';
 
@@ -17,9 +18,24 @@ class ShellScreen extends StatefulWidget {
 class _ShellScreenState extends State<ShellScreen> {
   int _index = 0;
 
-  static const _mobileScreens = <Widget>[HomeScreen(), NoteListScreen(), QuizScreen(), WeeklyReportScreen()];
+  void _goToTab(int index) => setState(() => _index = index);
 
-  static const _tabletScreens = <Widget>[HomeScreen(), NoteListScreen(), QuizScreen(), WeeklyReportScreen(), SettingsScreen()];
+  List<Widget> get _mobileScreens => [
+    HomeScreen(onOpenNote: () => _goToTab(1), onOpenQuiz: () => _goToTab(2)),
+    const NoteListScreen(),
+    const QuizScreen(),
+    const WrongAnswerScreen(),
+    const WeeklyReportScreen(),
+  ];
+
+  List<Widget> get _tabletScreens => [
+    HomeScreen(onOpenNote: () => _goToTab(1), onOpenQuiz: () => _goToTab(2), onOpenSettings: () => _goToTab(5)),
+    const NoteListScreen(),
+    const QuizScreen(),
+    const WrongAnswerScreen(),
+    const WeeklyReportScreen(),
+    const SettingsScreen(),
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -27,11 +43,15 @@ class _ShellScreenState extends State<ShellScreen> {
   }
 
   Widget _buildMobileShell() {
+    final screens = _mobileScreens;
+    // The tablet sidebar has more tabs than the mobile bottom bar, so resizing
+    // across the breakpoint can leave _index pointing past the mobile list.
+    final safeIndex = _index < screens.length ? _index : 0;
     return Scaffold(
-      body: IndexedStack(index: _index, children: _mobileScreens),
+      body: IndexedStack(index: safeIndex, children: screens),
       bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _index,
-        onTap: (i) => setState(() => _index = i),
+        currentIndex: safeIndex,
+        onTap: _goToTab,
         selectedItemColor: AppColors.navy,
         unselectedItemColor: AppColors.textLight,
         selectedLabelStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
@@ -43,6 +63,7 @@ class _ShellScreenState extends State<ShellScreen> {
           BottomNavigationBarItem(icon: Icon(Icons.home_outlined), activeIcon: Icon(Icons.home), label: '홈'),
           BottomNavigationBarItem(icon: Icon(Icons.edit_note_outlined), activeIcon: Icon(Icons.edit_note), label: '필기'),
           BottomNavigationBarItem(icon: Icon(Icons.quiz_outlined), activeIcon: Icon(Icons.quiz), label: '퀴즈'),
+          BottomNavigationBarItem(icon: Icon(Icons.report_outlined), activeIcon: Icon(Icons.report), label: '오답노트'),
           BottomNavigationBarItem(icon: Icon(Icons.bar_chart_outlined), activeIcon: Icon(Icons.bar_chart), label: '마이'),
         ],
       ),
@@ -50,11 +71,14 @@ class _ShellScreenState extends State<ShellScreen> {
   }
 
   Widget _buildTabletShell() {
+    final screens = _tabletScreens;
+    final safeIndex = _index < screens.length ? _index : 0;
     final navItems = [
       {'icon': Icons.home_outlined, 'activeIcon': Icons.home, 'label': '홈'},
       {'icon': Icons.edit_note_outlined, 'activeIcon': Icons.edit_note, 'label': '과목'},
       {'icon': Icons.quiz_outlined, 'activeIcon': Icons.quiz, 'label': '퀴즈'},
       {'icon': Icons.report_outlined, 'activeIcon': Icons.report, 'label': '오답노트'},
+      {'icon': Icons.bar_chart_outlined, 'activeIcon': Icons.bar_chart, 'label': '리포트'},
       {'icon': Icons.settings_outlined, 'activeIcon': Icons.settings, 'label': '설정'},
     ];
 
@@ -76,9 +100,9 @@ class _ShellScreenState extends State<ShellScreen> {
                 ),
                 const SizedBox(height: 8),
                 ...navItems.asMap().entries.map((e) {
-                  final sel = _index == e.key;
+                  final sel = safeIndex == e.key;
                   return GestureDetector(
-                    onTap: () => setState(() => _index = e.key),
+                    onTap: () => _goToTab(e.key),
                     child: Container(
                       width: 48,
                       height: 48,
@@ -115,7 +139,7 @@ class _ShellScreenState extends State<ShellScreen> {
           ),
           // Content
           Expanded(
-            child: IndexedStack(index: _index, children: _tabletScreens),
+            child: IndexedStack(index: safeIndex, children: screens),
           ),
         ],
       ),

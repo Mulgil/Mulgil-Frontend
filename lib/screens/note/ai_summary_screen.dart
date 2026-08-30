@@ -13,6 +13,7 @@ class AiSummaryScreen extends StatefulWidget {
 
 class _AiSummaryScreenState extends State<AiSummaryScreen> with SingleTickerProviderStateMixin {
   late final TabController _tab;
+  String _course = MockData.courseNames.first;
 
   @override
   void initState() {
@@ -38,7 +39,7 @@ class _AiSummaryScreenState extends State<AiSummaryScreen> with SingleTickerProv
             Expanded(child: TabBarView(controller: _tab, children: [_SummaryTab(isTablet: context.isTablet), const _MindmapTab(), const _OriginalTab()])),
             if (!context.isTablet) Padding(
               padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
-              child: MulgilButton(label: '퀴즈 만들기', onTap: () => Navigator.of(context).pushNamed('/quiz')),
+              child: MulgilButton(label: '퀴즈 풀기', onTap: () => Navigator.of(context).pushNamed('/quiz')),
             ),
           ],
         ),
@@ -53,7 +54,14 @@ class _AiSummaryScreenState extends State<AiSummaryScreen> with SingleTickerProv
         children: [
           GestureDetector(onTap: () => Navigator.pop(context), child: const Icon(Icons.arrow_back_ios, size: 18, color: AppColors.textPrimary)),
           const SizedBox(width: 8),
-          const Expanded(child: Text('AI 요약 · 운영체제 2주차', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.textPrimary))),
+          const Text('AI 요약 · ', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
+          CourseDropdown(
+            selected: _course,
+            options: MockData.courseNames,
+            onChanged: (v) => setState(() => _course = v),
+            fontSize: 15,
+          ),
+          const Expanded(child: Text(' 2주차', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.textPrimary))),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(color: const Color(0xFFEEF7F8), borderRadius: BorderRadius.circular(10)),
@@ -90,7 +98,7 @@ class _SummaryTab extends StatelessWidget {
   Widget build(BuildContext context) {
     return SingleChildScrollView(
       padding: EdgeInsets.all(isTablet ? 28 : 20),
-      child: isTablet ? _buildTabletLayout() : _buildMobileLayout(),
+      child: isTablet ? _buildTabletLayout(context) : _buildMobileLayout(),
     );
   }
 
@@ -106,7 +114,7 @@ class _SummaryTab extends StatelessWidget {
     );
   }
 
-  Widget _buildTabletLayout() {
+  Widget _buildTabletLayout(BuildContext context) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -118,13 +126,13 @@ class _SummaryTab extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 24),
-        const Expanded(
+        Expanded(
           flex: 2,
           child: Column(
             children: [
-              _ProfEmphasisBlock(),
-              SizedBox(height: 16),
-              MulgilButton(label: '퀴즈 만들기'),
+              const _ProfEmphasisBlock(),
+              const SizedBox(height: 16),
+              MulgilButton(label: '퀴즈 풀기', onTap: () => Navigator.of(context).pushNamed('/quiz')),
             ],
           ),
         ),

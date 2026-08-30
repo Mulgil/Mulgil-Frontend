@@ -2,6 +2,11 @@ import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/mulgil_logo.dart';
 import '../../widgets/common_widgets.dart';
+import '../../data/mock_data.dart';
+import '../../models/exam.dart';
+import '../../models/lecture.dart';
+
+List<Lecture> _recentNotes(List<Lecture> lectures) => lectures.where((l) => l.done).take(2).toList();
 
 String _formatDate(DateTime d) {
   const weekdays = ['월', '화', '수', '목', '금', '토', '일'];
@@ -9,7 +14,14 @@ String _formatDate(DateTime d) {
 }
 
 class HomeScreen extends StatelessWidget {
-  const HomeScreen({super.key});
+  // When these are supplied (i.e. the destination is also a shell tab), tapping
+  // a quick action switches tabs in place instead of pushing a duplicate screen
+  // that would hide the tablet sidebar / mobile bottom bar.
+  final VoidCallback? onOpenNote;
+  final VoidCallback? onOpenQuiz;
+  final VoidCallback? onOpenSettings;
+
+  const HomeScreen({super.key, this.onOpenNote, this.onOpenQuiz, this.onOpenSettings});
 
   @override
   Widget build(BuildContext context) {
@@ -18,27 +30,77 @@ class HomeScreen extends StatelessWidget {
       backgroundColor: AppColors.cream,
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(_formatDate(today), style: const TextStyle(fontSize: 13, color: AppColors.textMuted)),
-              const SizedBox(height: 2),
-              const Text('안녕하세요, 지민님', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: AppColors.textPrimary)),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(_formatDate(today), style: const TextStyle(fontSize: 13, color: AppColors.textMuted)),
+                        const SizedBox(height: 2),
+                        const Text('안녕하세요, 지민님', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: AppColors.textPrimary)),
+                      ],
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: onOpenSettings ?? () => Navigator.of(context).pushNamed('/settings'),
+                    child: const Padding(
+                      padding: EdgeInsets.only(right: 14, top: 2),
+                      child: Icon(Icons.settings_outlined, color: AppColors.textPrimary, size: 24),
+                    ),
+                  ),
+                  const _NotificationBell(),
+                ],
+              ),
               const SizedBox(height: 14),
               _StreakCard(),
               const SizedBox(height: 12),
-              _NextExamCard(),
+              const _UpcomingExamsCard(),
               const SizedBox(height: 14),
-              _QuickActions(),
+              _QuickActions(onOpenNote: onOpenNote, onOpenQuiz: onOpenQuiz),
               const SizedBox(height: 16),
               const SectionHeader(title: '최근 노트'),
-              _NoteCard(subject: '운영체제', title: '2주차 - 프로세스', time: '2시간 전', progress: 0.7),
-              const SizedBox(height: 10),
-              _NoteCard(subject: '자료구조', title: '5주차 - 트리와 그래프', time: '어제', progress: 0.4),
-              const SizedBox(height: 24),
+              ..._recentNotes(MockData.lectures).map((l) => Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: GestureDetector(
+                  onTap: () => Navigator.of(context).pushNamed('/note/detail', arguments: l),
+                  child: _NoteCard(subject: '운영체제', title: '${l.week} - ${l.title}', time: l.date ?? '', progress: 1.0),
+                ),
+              )),
+              const SizedBox(height: 14),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _NotificationBell extends StatelessWidget {
+  const _NotificationBell();
+
+  @override
+  Widget build(BuildContext context) {
+    final hasUnread = MockData.notifications.any((n) => !n.isRead);
+    return GestureDetector(
+      onTap: () => Navigator.of(context).pushNamed('/notifications'),
+      child: Padding(
+        padding: const EdgeInsets.only(top: 2),
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            const Icon(Icons.notifications_outlined, color: AppColors.textPrimary, size: 24),
+            if (hasUnread)
+              Positioned(
+                right: -1, top: -1,
+                child: Container(width: 8, height: 8, decoration: const BoxDecoration(color: AppColors.coral, shape: BoxShape.circle)),
+              ),
+          ],
         ),
       ),
     );
@@ -62,39 +124,87 @@ class _StreakCard extends StatelessWidget {
   }
 }
 
-class _NextExamCard extends StatelessWidget {
+class _UpcomingExamsCard extends StatefulWidget {
+  const _UpcomingExamsCard();
+
+  @override
+  State<_UpcomingExamsCard> createState() => _UpcomingExamsCardState();
+}
+
+class _UpcomingExamsCardState extends State<_UpcomingExamsCard> {
+  final _ctrl = PageController();
+  int _page = 0;
+
+  late final List<Exam> _exams = List.of(MockData.exams)..sort((a, b) => a.examAt.compareTo(b.examAt));
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 8, offset: const Offset(0, 2))]),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text('다음 시험', style: TextStyle(fontSize: 12, color: AppColors.textMuted)),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text('운영체제', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
-              const ExamDayBadge(dDay: 4),
-            ],
-          ),
-        ],
+    if (_exams.isEmpty) return const SizedBox.shrink();
+    return GestureDetector(
+      onTap: () => Navigator.of(context).pushNamed('/exams'),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 8, offset: const Offset(0, 2))]),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text('다가오는 시험일정', style: TextStyle(fontSize: 12, color: AppColors.textMuted)),
+                if (_exams.length > 1)
+                  Text('${_page + 1} / ${_exams.length}', style: const TextStyle(fontSize: 11, color: AppColors.textLight)),
+              ],
+            ),
+            const SizedBox(height: 6),
+            SizedBox(
+              height: 26,
+              child: PageView.builder(
+                controller: _ctrl,
+                itemCount: _exams.length,
+                onPageChanged: (i) => setState(() => _page = i),
+                itemBuilder: (_, i) {
+                  final exam = _exams[i];
+                  final dDay = exam.examAt.difference(DateTime.now()).inDays;
+                  return Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('${exam.courseName} · ${exam.title}', style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
+                      ExamDayBadge(dDay: dDay < 0 ? 0 : dDay),
+                    ],
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 }
 
 class _QuickActions extends StatelessWidget {
+  final VoidCallback? onOpenNote;
+  final VoidCallback? onOpenQuiz;
+  const _QuickActions({this.onOpenNote, this.onOpenQuiz});
+
   @override
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Expanded(child: _ActionTile(icon: '✎', label: '필기', route: '/note')),
+        Expanded(child: _ActionTile(icon: '✎', label: '필기', route: '/note', onTap: onOpenNote)),
         const SizedBox(width: 10),
-        Expanded(child: _ActionTile(icon: '◐', label: '퀴즈', route: '/quiz')),
+        Expanded(child: _ActionTile(icon: '◐', label: '퀴즈', route: '/quiz', onTap: onOpenQuiz)),
         const SizedBox(width: 10),
         Expanded(child: _ActionTile(icon: '≡', label: '요약', route: '/summary')),
+        const SizedBox(width: 10),
+        Expanded(child: _ActionTile(icon: '🎙', label: '녹음', route: '/recording')),
       ],
     );
   }
@@ -102,12 +212,13 @@ class _QuickActions extends StatelessWidget {
 
 class _ActionTile extends StatelessWidget {
   final String icon, label, route;
-  const _ActionTile({required this.icon, required this.label, required this.route});
+  final VoidCallback? onTap;
+  const _ActionTile({required this.icon, required this.label, required this.route, this.onTap});
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () => Navigator.of(context).pushNamed(route),
+      onTap: onTap ?? () => Navigator.of(context).pushNamed(route),
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 14),
         decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14), boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 8, offset: const Offset(0, 2))]),

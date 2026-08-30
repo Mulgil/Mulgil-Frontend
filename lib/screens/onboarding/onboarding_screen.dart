@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/mulgil_logo.dart';
 import '../../widgets/common_widgets.dart';
+import '../../widgets/course_form_sheet.dart';
+import '../../data/mock_data.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -23,8 +25,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         physics: const NeverScrollableScrollPhysics(),
         children: [
           context.isTablet ? _SplashTablet(onStart: _next) : _SplashMobile(onStart: _next),
-          _ScheduleStep(onNext: _next),
-          _PersonaStep(onDone: _done),
+          _ScheduleStep(onNext: _done),
         ],
       ),
     );
@@ -170,9 +171,27 @@ class _FeatureRow extends StatelessWidget {
 
 // ── Schedule Setup ───────────────────────────────────
 
-class _ScheduleStep extends StatelessWidget {
+class _ScheduleStep extends StatefulWidget {
   final VoidCallback onNext;
   const _ScheduleStep({required this.onNext});
+
+  @override
+  State<_ScheduleStep> createState() => _ScheduleStepState();
+}
+
+class _ScheduleStepState extends State<_ScheduleStep> {
+  void _openAddSubjectSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (_) => CourseFormSheet(onAdd: (course, slots) => setState(() {
+        MockData.courses.add(course);
+        MockData.timetableSlots.addAll(slots);
+      })),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -184,51 +203,41 @@ class _ScheduleStep extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('온보딩 2/4', style: TextStyle(fontSize: 12, color: AppColors.tealDark, fontWeight: FontWeight.w700)),
+              const Text('온보딩 2/2', style: TextStyle(fontSize: 12, color: AppColors.tealDark, fontWeight: FontWeight.w700)),
               const SizedBox(height: 4),
               const Text('시간표를 등록해주세요', style: TextStyle(fontSize: 19, fontWeight: FontWeight.w800, color: AppColors.textPrimary)),
               const SizedBox(height: 4),
               const Text('과목·교수님·시험 일정을 알면 리마인더를 딱 맞게 보내드려요', style: TextStyle(fontSize: 12.5, color: AppColors.textMuted)),
               const SizedBox(height: 16),
-              _DottedUploadBox(),
-              const SizedBox(height: 16),
-              _SubjectCard(name: '운영체제', professor: '김민수 교수님', time: '월 3, 목 3'),
-              const SizedBox(height: 10),
-              _SubjectCard(name: '자료구조', professor: '이하나 교수님', time: '화 2, 금 2'),
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.symmetric(vertical: 10),
-                decoration: BoxDecoration(border: Border.all(color: AppColors.navy), borderRadius: BorderRadius.circular(10)),
-                alignment: Alignment.center,
-                child: const Text('+ 과목 추가', style: TextStyle(fontSize: 13, color: AppColors.navy)),
+              Expanded(
+                child: ListView.separated(
+                  itemCount: MockData.courses.length,
+                  separatorBuilder: (_, _) => const SizedBox(height: 10),
+                  itemBuilder: (_, i) {
+                    final course = MockData.courses[i];
+                    return _SubjectCard(
+                      name: course.name,
+                      professor: course.instructor ?? '',
+                      time: MockData.slotsSummary(course.id),
+                    );
+                  },
+                ),
               ),
-              const Spacer(),
-              MulgilButton(label: '다음', onTap: onNext),
+              const SizedBox(height: 16),
+              GestureDetector(
+                onTap: _openAddSubjectSheet,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  decoration: BoxDecoration(border: Border.all(color: AppColors.navy), borderRadius: BorderRadius.circular(10)),
+                  alignment: Alignment.center,
+                  child: const Text('+ 과목 추가', style: TextStyle(fontSize: 13, color: AppColors.navy)),
+                ),
+              ),
+              const SizedBox(height: 16),
+              MulgilButton(label: '완료', onTap: widget.onNext),
               const SizedBox(height: 8),
             ],
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _DottedUploadBox extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        border: Border.all(color: const Color(0xFFc8ccd0), width: 1, style: BorderStyle.solid),
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Center(
-        child: Column(
-          children: const [
-            Text('시간표 이미지 업로드', style: TextStyle(fontSize: 13, color: AppColors.tealDark, fontWeight: FontWeight.w700)),
-            SizedBox(height: 2),
-            Text('또는 아래에서 직접 입력', style: TextStyle(fontSize: 11, color: AppColors.textLight)),
-          ],
         ),
       ),
     );
@@ -250,114 +259,6 @@ class _SubjectCard extends StatelessWidget {
           Text(name, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
           Text('$professor · $time', style: const TextStyle(fontSize: 12, color: AppColors.textMuted)),
         ],
-      ),
-    );
-  }
-}
-
-// ── Reminder Persona ──────────────────────────────────
-
-class _PersonaStep extends StatefulWidget {
-  final VoidCallback onDone;
-  const _PersonaStep({required this.onDone});
-
-  @override
-  State<_PersonaStep> createState() => _PersonaStepState();
-}
-
-class _PersonaStepState extends State<_PersonaStep> {
-  int _style = 0;
-  int _intensity = 1;
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('온보딩 3/4', style: TextStyle(fontSize: 12, color: AppColors.tealDark, fontWeight: FontWeight.w700)),
-              const SizedBox(height: 4),
-              const Text('리마인더 스타일을 골라주세요', style: TextStyle(fontSize: 19, fontWeight: FontWeight.w800, color: AppColors.textPrimary)),
-              const SizedBox(height: 4),
-              const Text('언제든 설정에서 바꿀 수 있어요', style: TextStyle(fontSize: 12.5, color: AppColors.textMuted)),
-              const SizedBox(height: 20),
-              _StyleOption(
-                selected: _style == 0,
-                icon: '🔔',
-                title: '조용한 배너',
-                desc: '"요약본이 준비됐어요. 확인해보세요" — 담백하게 알려드려요',
-                onTap: () => setState(() => _style = 0),
-              ),
-              const SizedBox(height: 14),
-              _StyleOption(
-                selected: _style == 1,
-                icon: '📣',
-                title: '동기부여형 (과외쌤 톤)',
-                desc: '"지금 복습하면 장기기억으로 갑니다!" — 팍팍 밀어드려요',
-                onTap: () => setState(() => _style = 1),
-              ),
-              const SizedBox(height: 20),
-              const Text('알림 강도', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
-              const SizedBox(height: 10),
-              Row(
-                children: ['낮음', '보통', '높음'].asMap().entries.map((e) {
-                  final sel = e.key == _intensity;
-                  return Expanded(
-                    child: GestureDetector(
-                      onTap: () => setState(() => _intensity = e.key),
-                      child: Container(
-                        margin: EdgeInsets.only(right: e.key < 2 ? 8 : 0),
-                        padding: const EdgeInsets.symmetric(vertical: 10),
-                        decoration: BoxDecoration(
-                          color: sel ? AppColors.navy : const Color(0xFFF7F7F7),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        alignment: Alignment.center,
-                        child: Text(e.value, style: TextStyle(fontSize: 12.5, color: sel ? Colors.white : AppColors.textMuted)),
-                      ),
-                    ),
-                  );
-                }).toList(),
-              ),
-              const Spacer(),
-              MulgilButton(label: '완료', onTap: widget.onDone),
-              const SizedBox(height: 8),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _StyleOption extends StatelessWidget {
-  final bool selected;
-  final String icon, title, desc;
-  final VoidCallback onTap;
-  const _StyleOption({required this.selected, required this.icon, required this.title, required this.desc, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(18),
-        decoration: BoxDecoration(
-          border: Border.all(color: selected ? AppColors.navy : const Color(0xFFEEEEEE), width: selected ? 2 : 1),
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('$icon $title', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
-            const SizedBox(height: 4),
-            Text(desc, style: const TextStyle(fontSize: 12, color: AppColors.textMuted, height: 1.5)),
-          ],
-        ),
       ),
     );
   }

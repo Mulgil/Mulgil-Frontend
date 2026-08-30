@@ -2,8 +2,12 @@ import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/common_widgets.dart';
 import '../../widgets/mulgil_logo.dart';
+import '../../widgets/course_form_sheet.dart';
+import '../../data/mock_data.dart';
+import '../../models/course.dart';
+import 'legal_document_screen.dart';
 
-enum _SettingsTab { profile, notifications, subjects, data, appInfo }
+enum _SettingsTab { profile, subjects, appInfo }
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -15,18 +19,55 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   _SettingsTab _tab = _SettingsTab.profile;
 
-  bool _quizNotif = true;
-  bool _examNotif = true;
-  bool _summaryNotif = false;
-  bool _quietMode = false;
-  final String _quietStart = '22:00';
-  final String _quietEnd = '08:00';
+  void _openAddSubjectSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (_) => CourseFormSheet(onAdd: (course, slots) => setState(() {
+        MockData.courses.add(course);
+        MockData.timetableSlots.addAll(slots);
+      })),
+    );
+  }
 
-  final _subjects = [
-    {'name': '운영체제', 'professor': '김민수 교수님', 'time': '월 3, 목 3', 'dDay': 4},
-    {'name': '자료구조', 'professor': '이하나 교수님', 'time': '화 2, 금 2', 'dDay': 9},
-    {'name': '데이터베이스', 'professor': '박철수 교수님', 'time': '수 1, 금 3', 'dDay': 16},
-  ];
+  void _openPrivacyPolicy() {
+    Navigator.of(context).push(MaterialPageRoute(builder: (_) => const LegalDocumentScreen(
+      title: '개인정보처리방침',
+      updatedAt: '2026.08.01',
+      body: _privacyPolicyBody,
+    )));
+  }
+
+  void _openTermsOfService() {
+    Navigator.of(context).push(MaterialPageRoute(builder: (_) => const LegalDocumentScreen(
+      title: '이용약관',
+      updatedAt: '2026.08.01',
+      body: _termsOfServiceBody,
+    )));
+  }
+
+  void _openOpenSourceLicenses() {
+    showLicensePage(context: context, applicationName: '물길 (Mulgil)', applicationVersion: '1.0.0');
+  }
+
+  void _openContactSupport() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('mulgil@gmail.com로 문의해주세요 (메일 앱 연결 예정)')),
+    );
+  }
+
+  void _openBugReport() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('버그 제보 폼 연결 예정 (mock)')),
+    );
+  }
+
+  // Mirrors POST /auth/logout — revokes the refresh token family server-side once wired up.
+  void _logout() {
+    Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -44,38 +85,28 @@ class _SettingsScreenState extends State<SettingsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('설정', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: AppColors.textPrimary)),
+          Row(
+            children: [
+              const BackIfPushed(),
+              const Text('설정', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: AppColors.textPrimary)),
+            ],
+          ),
           const SizedBox(height: 20),
           const _ProfileCard(),
           const SizedBox(height: 20),
-          const _SectionLabel(label: '알림'),
-          _ToggleTile(label: '퀴즈 알림', sublabel: '복습 시간에 맞춰 알려드려요', value: _quizNotif, onChanged: (v) => setState(() => _quizNotif = v)),
-          _ToggleTile(label: '시험 D-Day 알림', sublabel: '시험 3일 전부터 매일 아침', value: _examNotif, onChanged: (v) => setState(() => _examNotif = v)),
-          _ToggleTile(label: 'AI 요약 완료 알림', sublabel: '필기 분석이 끝나면 알려드려요', value: _summaryNotif, onChanged: (v) => setState(() => _summaryNotif = v)),
-          _ToggleTile(label: '방해 금지 시간', sublabel: '$_quietStart ~ $_quietEnd', value: _quietMode, onChanged: (v) => setState(() => _quietMode = v)),
-          const SizedBox(height: 20),
           const _SectionLabel(label: '과목 관리'),
-          ..._subjects.map((s) => _SubjectTile(subject: s, onDelete: () => setState(() => _subjects.remove(s)))),
-          _AddSubjectButton(onTap: () {}),
-          const SizedBox(height: 20),
-          const _SectionLabel(label: '데이터'),
-          const _NavTile(label: 'PDF로 내보내기', icon: Icons.picture_as_pdf_outlined, sublabel: '모든 노트를 PDF 파일로 저장'),
-          const _NavTile(label: 'CSV로 내보내기', icon: Icons.table_chart_outlined, sublabel: '퀴즈·오답 데이터 스프레드시트'),
-          const _NavTile(label: '클라우드 백업', icon: Icons.cloud_upload_outlined, sublabel: '마지막 백업: 2026년 8월 28일'),
-          const SizedBox(height: 8),
-          const _StorageBar(usedMb: 42, totalMb: 200),
-          const SizedBox(height: 8),
-          _DangerTile(label: '모든 데이터 초기화', onTap: () => _confirmReset(context)),
+          ...MockData.courses.map((c) => _SubjectTile(course: c)),
+          _AddSubjectButton(onTap: _openAddSubjectSheet),
           const SizedBox(height: 20),
           const _SectionLabel(label: '앱 정보'),
           const _NavTile(label: '버전 1.0.0', icon: Icons.info_outlined, showArrow: false),
-          _NavTile(label: '문의 · 피드백', icon: Icons.mail_outlined, sublabel: 'mulgil@gmail.com', onTap: () {}),
-          const _NavTile(label: '개인정보처리방침', icon: Icons.shield_outlined),
-          const _NavTile(label: '이용약관', icon: Icons.article_outlined),
-          const _NavTile(label: '오픈소스 라이선스', icon: Icons.code_outlined),
+          _NavTile(label: '문의 · 피드백', icon: Icons.mail_outlined, sublabel: 'mulgil@gmail.com', onTap: _openContactSupport),
+          _NavTile(label: '개인정보처리방침', icon: Icons.shield_outlined, onTap: _openPrivacyPolicy),
+          _NavTile(label: '이용약관', icon: Icons.article_outlined, onTap: _openTermsOfService),
+          _NavTile(label: '오픈소스 라이선스', icon: Icons.code_outlined, onTap: _openOpenSourceLicenses),
           const SizedBox(height: 24),
           TextButton(
-            onPressed: () {},
+            onPressed: _logout,
             child: const Center(
               child: Text('로그아웃', style: TextStyle(fontSize: 14, color: AppColors.coral, fontWeight: FontWeight.w600)),
             ),
@@ -100,13 +131,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
               const Text('설정', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: AppColors.textPrimary)),
               const SizedBox(height: 20),
               _TabletSideItem(label: '프로필', icon: '👤', selected: _tab == _SettingsTab.profile, onTap: () => setState(() => _tab = _SettingsTab.profile)),
-              _TabletSideItem(label: '알림', icon: '🔔', selected: _tab == _SettingsTab.notifications, onTap: () => setState(() => _tab = _SettingsTab.notifications)),
               _TabletSideItem(label: '과목 관리', icon: '📚', selected: _tab == _SettingsTab.subjects, onTap: () => setState(() => _tab = _SettingsTab.subjects)),
-              _TabletSideItem(label: '데이터', icon: '📊', selected: _tab == _SettingsTab.data, onTap: () => setState(() => _tab = _SettingsTab.data)),
               _TabletSideItem(label: '앱 정보', icon: 'ℹ️', selected: _tab == _SettingsTab.appInfo, onTap: () => setState(() => _tab = _SettingsTab.appInfo)),
               const Spacer(),
               TextButton(
-                onPressed: () {},
+                onPressed: _logout,
                 child: const Text('로그아웃', style: TextStyle(fontSize: 13, color: AppColors.coral, fontWeight: FontWeight.w600)),
               ),
             ],
@@ -126,12 +155,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     switch (_tab) {
       case _SettingsTab.profile:
         return _buildProfilePanel();
-      case _SettingsTab.notifications:
-        return _buildNotificationsPanel();
       case _SettingsTab.subjects:
         return _buildSubjectsPanel();
-      case _SettingsTab.data:
-        return _buildDataPanel();
       case _SettingsTab.appInfo:
         return _buildAppInfoPanel();
     }
@@ -146,57 +171,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
         _ProfileCard(),
         SizedBox(height: 20),
         _SectionLabel(label: '학교 정보'),
-        _InfoTile(label: '학교', value: '한국대학교'),
+        _InfoTile(label: '학교', value: '숭실대학교'),
         _InfoTile(label: '학과', value: '컴퓨터공학과'),
         _InfoTile(label: '학년', value: '3학년'),
-      ],
-    );
-  }
-
-  Widget _buildNotificationsPanel() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const _PanelTitle(title: '알림'),
-        const SizedBox(height: 20),
-        const _SectionLabel(label: '알림 종류'),
-        _ToggleTile(label: '퀴즈 알림', sublabel: '복습 시간에 맞춰 알려드려요', value: _quizNotif, onChanged: (v) => setState(() => _quizNotif = v)),
-        _ToggleTile(label: '시험 D-Day 알림', sublabel: '시험 3일 전부터 매일 아침', value: _examNotif, onChanged: (v) => setState(() => _examNotif = v)),
-        _ToggleTile(label: 'AI 요약 완료 알림', sublabel: '필기 분석이 끝나면 알려드려요', value: _summaryNotif, onChanged: (v) => setState(() => _summaryNotif = v)),
-        const SizedBox(height: 20),
-        const _SectionLabel(label: '방해 금지 시간'),
-        _ToggleTile(label: '방해 금지 모드', sublabel: '설정한 시간 동안 알림을 보내지 않아요', value: _quietMode, onChanged: (v) => setState(() => _quietMode = v)),
-        if (_quietMode) ...[
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(child: _TimeTile(label: '시작', time: _quietStart, onTap: () {})),
-              const SizedBox(width: 12),
-              Expanded(child: _TimeTile(label: '종료', time: _quietEnd, onTap: () {})),
-            ],
-          ),
-        ],
-        const SizedBox(height: 20),
-        const _SectionLabel(label: '알림 스타일'),
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(color: const Color(0xFFF7F7F7), borderRadius: BorderRadius.circular(14)),
-          child: const Row(
-            children: [
-              Text('📣', style: TextStyle(fontSize: 20)),
-              SizedBox(width: 12),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('동기부여형', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
-                  Text('"지금 복습하면 장기기억으로 갑니다!"', style: TextStyle(fontSize: 11, color: AppColors.textMuted)),
-                ],
-              ),
-              Spacer(),
-              Text('변경', style: TextStyle(fontSize: 12, color: AppColors.tealDark, fontWeight: FontWeight.w600)),
-            ],
-          ),
-        ),
       ],
     );
   }
@@ -209,13 +186,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
           children: [
             const _PanelTitle(title: '과목 관리'),
             const Spacer(),
-            _AddSubjectButton(onTap: () {}),
+            _AddSubjectButton(onTap: _openAddSubjectSheet),
           ],
         ),
         const SizedBox(height: 20),
-        ..._subjects.map((s) => Padding(
+        ...MockData.courses.map((c) => Padding(
           padding: const EdgeInsets.only(bottom: 12),
-          child: _SubjectTile(subject: s, onDelete: () => setState(() => _subjects.remove(s))),
+          child: _SubjectTile(course: c),
         )),
         const SizedBox(height: 12),
         Container(
@@ -229,29 +206,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ],
           ),
         ),
-      ],
-    );
-  }
-
-  Widget _buildDataPanel() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const _PanelTitle(title: '데이터'),
-        const SizedBox(height: 20),
-        const _SectionLabel(label: '내보내기'),
-        const _NavTile(label: 'PDF로 내보내기', icon: Icons.picture_as_pdf_outlined, sublabel: '모든 노트를 PDF 파일로 저장'),
-        const _NavTile(label: 'CSV로 내보내기', icon: Icons.table_chart_outlined, sublabel: '퀴즈·오답 데이터 스프레드시트'),
-        const SizedBox(height: 20),
-        const _SectionLabel(label: '백업'),
-        const _NavTile(label: '클라우드 백업', icon: Icons.cloud_upload_outlined, sublabel: '마지막 백업: 2026년 8월 28일'),
-        const _NavTile(label: '백업 복원', icon: Icons.cloud_download_outlined, sublabel: '이전 데이터로 복원'),
-        const SizedBox(height: 20),
-        const _SectionLabel(label: '저장 공간'),
-        const _StorageBar(usedMb: 42, totalMb: 200),
-        const SizedBox(height: 20),
-        const _SectionLabel(label: '위험 구역'),
-        _DangerTile(label: '모든 데이터 초기화', onTap: () => _confirmReset(context)),
       ],
     );
   }
@@ -289,28 +243,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
         const SizedBox(height: 20),
         const _SectionLabel(label: '지원'),
-        _NavTile(label: '문의 · 피드백', icon: Icons.mail_outlined, sublabel: 'mulgil@gmail.com', onTap: () {}),
-        _NavTile(label: '버그 신고', icon: Icons.bug_report_outlined, onTap: () {}),
+        _NavTile(label: '문의 · 피드백', icon: Icons.mail_outlined, sublabel: 'mulgil@gmail.com', onTap: _openContactSupport),
+        _NavTile(label: '버그 신고', icon: Icons.bug_report_outlined, onTap: _openBugReport),
         const SizedBox(height: 20),
         const _SectionLabel(label: '법적 고지'),
-        const _NavTile(label: '개인정보처리방침', icon: Icons.shield_outlined),
-        const _NavTile(label: '이용약관', icon: Icons.article_outlined),
-        const _NavTile(label: '오픈소스 라이선스', icon: Icons.code_outlined),
+        _NavTile(label: '개인정보처리방침', icon: Icons.shield_outlined, onTap: _openPrivacyPolicy),
+        _NavTile(label: '이용약관', icon: Icons.article_outlined, onTap: _openTermsOfService),
+        _NavTile(label: '오픈소스 라이선스', icon: Icons.code_outlined, onTap: _openOpenSourceLicenses),
       ],
-    );
-  }
-
-  void _confirmReset(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('데이터 초기화', style: TextStyle(fontWeight: FontWeight.w800)),
-        content: const Text('모든 노트, 퀴즈, 오답이 삭제됩니다. 이 작업은 되돌릴 수 없어요.'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('취소')),
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('초기화', style: TextStyle(color: AppColors.coral))),
-        ],
-      ),
     );
   }
 }
@@ -335,21 +275,16 @@ class _ProfileCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(color: AppColors.navy, borderRadius: BorderRadius.circular(16)),
-      child: Row(
+      child: const Row(
         children: [
-          const CircleAvatar(radius: 26, backgroundColor: AppColors.teal, child: Text('유', style: TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.w700))),
-          const SizedBox(width: 14),
-          const Column(
+          CircleAvatar(radius: 26, backgroundColor: AppColors.teal, child: Text('유', style: TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.w700))),
+          SizedBox(width: 14),
+          Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text('지민', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Colors.white)),
               Text('소프트웨어학부 · 3학년', style: TextStyle(fontSize: 12, color: Color(0xFF9fb6c4))),
             ],
-          ),
-          const Spacer(),
-          GestureDetector(
-            onTap: () {},
-            child: const Icon(Icons.edit_outlined, color: Color(0xFF9fb6c4), size: 18),
           ),
         ],
       ),
@@ -366,38 +301,6 @@ class _SectionLabel extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Text(label, style: const TextStyle(fontSize: 12, color: AppColors.textMuted, fontWeight: FontWeight.w600, letterSpacing: 0.5)),
-    );
-  }
-}
-
-class _ToggleTile extends StatelessWidget {
-  final String label;
-  final String? sublabel;
-  final bool value;
-  final ValueChanged<bool> onChanged;
-  const _ToggleTile({required this.label, this.sublabel, required this.value, required this.onChanged});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(color: const Color(0xFFF7F7F7), borderRadius: BorderRadius.circular(12)),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(label, style: const TextStyle(fontSize: 14, color: AppColors.textPrimary)),
-                if (sublabel != null)
-                  Text(sublabel!, style: const TextStyle(fontSize: 11, color: AppColors.textMuted)),
-              ],
-            ),
-          ),
-          MulgilToggle(value: value, onChanged: onChanged),
-        ],
-      ),
     );
   }
 }
@@ -470,48 +373,36 @@ class _InfoTile extends StatelessWidget {
 }
 
 class _SubjectTile extends StatelessWidget {
-  final Map subject;
-  final VoidCallback onDelete;
-  const _SubjectTile({required this.subject, required this.onDelete});
+  final Course course;
+  const _SubjectTile({required this.course});
 
   @override
   Widget build(BuildContext context) {
+    final dDay = MockData.nextExamDDay(course.name);
+    final slotsSummary = MockData.slotsSummary(course.id);
     return Container(
-      padding: const EdgeInsets.fromLTRB(14, 12, 8, 12),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(color: const Color(0xFFF7F7F7), borderRadius: BorderRadius.circular(12)),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Text(subject['name'] as String, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
-                    const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(color: AppColors.coral.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(6)),
-                      child: Text('D-${subject['dDay']}', style: const TextStyle(fontSize: 10, color: AppColors.coral, fontWeight: FontWeight.w700)),
-                    ),
-                  ],
+          Row(
+            children: [
+              Text(course.name, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
+              if (dDay != null) ...[
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(color: AppColors.coral.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(6)),
+                  child: Text('D-$dDay', style: const TextStyle(fontSize: 10, color: AppColors.coral, fontWeight: FontWeight.w700)),
                 ),
-                const SizedBox(height: 2),
-                Text('${subject['professor']} · ${subject['time']}', style: const TextStyle(fontSize: 12, color: AppColors.textMuted)),
               ],
-            ),
+            ],
           ),
-          IconButton(
-            icon: const Icon(Icons.edit_outlined, size: 16, color: AppColors.textLight),
-            onPressed: () {},
-            constraints: const BoxConstraints(),
-            padding: const EdgeInsets.all(8),
-          ),
-          IconButton(
-            icon: const Icon(Icons.delete_outline, size: 16, color: AppColors.coral),
-            onPressed: onDelete,
-            constraints: const BoxConstraints(),
-            padding: const EdgeInsets.all(8),
+          const SizedBox(height: 2),
+          Text(
+            [course.instructor, slotsSummary].where((s) => s != null && s.isNotEmpty).join(' · '),
+            style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
           ),
         ],
       ),
@@ -549,102 +440,6 @@ class _AddSubjectButton extends StatelessWidget {
   }
 }
 
-class _StorageBar extends StatelessWidget {
-  final int usedMb, totalMb;
-  const _StorageBar({required this.usedMb, required this.totalMb});
-
-  @override
-  Widget build(BuildContext context) {
-    final ratio = usedMb / totalMb;
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(color: const Color(0xFFF7F7F7), borderRadius: BorderRadius.circular(12)),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text('사용 중인 저장 공간', style: TextStyle(fontSize: 13, color: AppColors.textPrimary)),
-              Text('${usedMb}MB / ${totalMb}MB', style: const TextStyle(fontSize: 12, color: AppColors.textMuted)),
-            ],
-          ),
-          const SizedBox(height: 10),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            child: LinearProgressIndicator(
-              value: ratio,
-              backgroundColor: const Color(0xFFE0E0E0),
-              valueColor: const AlwaysStoppedAnimation(AppColors.teal),
-              minHeight: 6,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _TimeTile extends StatelessWidget {
-  final String label, time;
-  final VoidCallback onTap;
-  const _TimeTile({required this.label, required this.time, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: const Color(0xFFF7F7F7),
-      borderRadius: BorderRadius.circular(12),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(label, style: const TextStyle(fontSize: 12, color: AppColors.textMuted)),
-              Text(time, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _DangerTile extends StatelessWidget {
-  final String label;
-  final VoidCallback onTap;
-  const _DangerTile({required this.label, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: AppColors.coral.withValues(alpha: 0.06),
-      borderRadius: BorderRadius.circular(12),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-          decoration: BoxDecoration(
-            border: Border.all(color: AppColors.coral.withValues(alpha: 0.3)),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Row(
-            children: [
-              const Icon(Icons.warning_amber_outlined, size: 18, color: AppColors.coral),
-              const SizedBox(width: 10),
-              Text(label, style: const TextStyle(fontSize: 14, color: AppColors.coral, fontWeight: FontWeight.w600)),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 class _TabletSideItem extends StatelessWidget {
   final String label, icon;
   final bool selected;
@@ -674,3 +469,43 @@ class _TabletSideItem extends StatelessWidget {
     );
   }
 }
+
+const _privacyPolicyBody = '''
+물길(Mulgil)은 이용자의 개인정보를 소중히 다루며, 관련 법령을 준수합니다.
+
+1. 수집하는 개인정보 항목
+Google 로그인 시 이메일 주소, 이름을 수집합니다. 서비스 이용 과정에서 업로드한 강의자료(PDF), 필기, 녹음 파일, 퀴즈 응답 기록이 함께 저장됩니다.
+
+2. 개인정보의 수집 및 이용 목적
+로그인 및 회원 식별, 강의자료 기반 AI 요약·퀴즈 생성, 학습 리포트 제공, 알림 발송을 위해 사용됩니다.
+
+3. 개인정보의 보유 및 이용 기간
+회원 탈퇴 시 지체 없이 파기합니다. 단, 관계 법령에 따라 보존이 필요한 경우 해당 기간 동안 보관합니다.
+
+4. 개인정보의 제3자 제공
+이용자의 동의 없이 개인정보를 외부에 제공하지 않습니다. 다만 AI 분석을 위해 클라우드 인프라 사업자에게 위탁되는 처리는 계약을 통해 안전하게 관리됩니다.
+
+5. 이용자의 권리
+이용자는 언제든 자신의 개인정보 열람, 정정, 삭제를 요청할 수 있습니다.
+
+(본 문서는 서비스 개발 단계의 예시 문구이며, 실제 배포 전 법무 검토를 거친 내용으로 교체되어야 합니다.)
+''';
+
+const _termsOfServiceBody = '''
+제1조 (목적)
+이 약관은 물길(Mulgil)이 제공하는 학습 지원 서비스의 이용조건 및 절차, 이용자와 회사의 권리·의무 및 책임사항을 규정함을 목적으로 합니다.
+
+제2조 (서비스의 내용)
+회사는 강의자료 업로드, AI 기반 요약·마인드맵·퀴즈 생성, 학습 리포트 제공 등의 서비스를 제공합니다.
+
+제3조 (이용자의 의무)
+이용자는 본인이 정당하게 이용 권한을 가진 강의자료만 업로드해야 하며, 타인의 저작권 및 지식재산권을 침해해서는 안 됩니다.
+
+제4조 (AI 생성물에 대한 안내)
+서비스가 제공하는 요약, 마인드맵, 예상 문제는 AI가 생성한 참고 자료이며, 실제 시험 출제나 정답을 보장하지 않습니다.
+
+제5조 (서비스 이용의 제한)
+이용자가 관계 법령 및 본 약관을 위반할 경우 서비스 이용이 제한될 수 있습니다.
+
+(본 문서는 서비스 개발 단계의 예시 문구이며, 실제 배포 전 법무 검토를 거친 내용으로 교체되어야 합니다.)
+''';

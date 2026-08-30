@@ -154,6 +154,58 @@ class ExamDayBadge extends StatelessWidget {
   }
 }
 
+// Shows a back arrow only when there's actually a previous route to pop to —
+// several screens double as both a shell tab (no back needed) and a pushed
+// detail screen (needs back), so a hardcoded arrow is wrong in one context or the other.
+class BackIfPushed extends StatelessWidget {
+  const BackIfPushed({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    if (!Navigator.canPop(context)) return const SizedBox.shrink();
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        GestureDetector(onTap: () => Navigator.pop(context), child: const Icon(Icons.arrow_back_ios, size: 18, color: AppColors.textPrimary)),
+        const SizedBox(width: 8),
+      ],
+    );
+  }
+}
+
+class CourseDropdown extends StatelessWidget {
+  final String selected;
+  final List<String> options;
+  final ValueChanged<String> onChanged;
+  final double fontSize;
+  const CourseDropdown({super.key, required this.selected, required this.options, required this.onChanged, this.fontSize = 20});
+
+  @override
+  Widget build(BuildContext context) {
+    return PopupMenuButton<String>(
+      onSelected: onChanged,
+      offset: const Offset(0, 36),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      itemBuilder: (_) => options.map((o) => PopupMenuItem(value: o, child: Text(o))).toList(),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Flexible(
+            child: Text(
+              selected,
+              style: TextStyle(fontSize: fontSize, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
+            ),
+          ),
+          const SizedBox(width: 2),
+          const Icon(Icons.expand_more, size: 20, color: AppColors.textPrimary),
+        ],
+      ),
+    );
+  }
+}
+
 class SectionHeader extends StatelessWidget {
   final String title;
   final Widget? trailing;

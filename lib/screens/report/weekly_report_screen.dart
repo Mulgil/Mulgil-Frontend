@@ -77,8 +77,7 @@ class WeeklyReportScreen extends StatelessWidget {
   Widget _header(BuildContext context) {
     return Row(
       children: [
-        GestureDetector(onTap: () => Navigator.pop(context), child: const Icon(Icons.arrow_back_ios, size: 18, color: AppColors.textPrimary)),
-        const SizedBox(width: 8),
+        const BackIfPushed(),
         const Text('주간 리포트', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: AppColors.textPrimary)),
         const Spacer(),
         const Text('2026년 8월 4주', style: TextStyle(fontSize: 12, color: AppColors.textMuted)),

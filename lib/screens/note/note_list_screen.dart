@@ -13,6 +13,7 @@ class NoteListScreen extends StatefulWidget {
 
 class _NoteListScreenState extends State<NoteListScreen> {
   int _filter = 0;
+  String _course = MockData.courseNames.first;
 
   static const _filters = ['전체', '필기있음', '퀴즈완료'];
 
@@ -22,12 +23,34 @@ class _NoteListScreenState extends State<NoteListScreen> {
       backgroundColor: Colors.white,
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('운영체제', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: AppColors.textPrimary)),
-              const Text('김민수 교수님', style: TextStyle(fontSize: 12, color: AppColors.textMuted)),
+              Row(
+                children: [
+                  const BackIfPushed(),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        CourseDropdown(
+                          selected: _course,
+                          options: MockData.courseNames,
+                          onChanged: (v) => setState(() => _course = v),
+                        ),
+                        Text(MockData.courseProfessors[_course] ?? '', style: const TextStyle(fontSize: 12, color: AppColors.textMuted)),
+                      ],
+                    ),
+                  ),
+                  OutlinedButton.icon(
+                    onPressed: () => Navigator.of(context).pushNamed('/exams', arguments: _course),
+                    icon: const Icon(Icons.event_note, size: 16),
+                    label: const Text('시험', style: TextStyle(fontSize: 12)),
+                    style: OutlinedButton.styleFrom(foregroundColor: AppColors.navy, side: const BorderSide(color: AppColors.navy)),
+                  ),
+                ],
+              ),
               const SizedBox(height: 14),
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
@@ -44,17 +67,23 @@ class _NoteListScreenState extends State<NoteListScreen> {
               ),
               const SizedBox(height: 14),
               Expanded(
-                child: ListView.separated(
-                  itemCount: MockData.lectures.length,
-                  separatorBuilder: (_, _) => const SizedBox(height: 10),
-                  itemBuilder: (ctx, i) {
-                    final lecture = MockData.lectures[i];
-                    return GestureDetector(
-                      onTap: lecture.done ? () => Navigator.of(context).pushNamed('/note/detail', arguments: lecture) : null,
-                      child: _LectureCard(lecture: lecture),
-                    );
-                  },
-                ),
+                child: Builder(builder: (context) {
+                  final lectures = _filteredLectures();
+                  if (lectures.isEmpty) {
+                    return const Center(child: Text('해당하는 강의가 없어요', style: TextStyle(color: AppColors.textMuted)));
+                  }
+                  return ListView.separated(
+                    itemCount: lectures.length,
+                    separatorBuilder: (_, _) => const SizedBox(height: 10),
+                    itemBuilder: (ctx, i) {
+                      final lecture = lectures[i];
+                      return GestureDetector(
+                        onTap: lecture.done ? () => Navigator.of(context).pushNamed('/note/detail', arguments: lecture) : null,
+                        child: _LectureCard(lecture: lecture),
+                      );
+                    },
+                  );
+                }),
               ),
             ],
           ),
@@ -62,8 +91,53 @@ class _NoteListScreenState extends State<NoteListScreen> {
       ),
       floatingActionButton: FloatingActionButton(
         backgroundColor: AppColors.navy,
-        onPressed: () {},
+        onPressed: () => _openAddSheet(context),
         child: const Icon(Icons.add, color: Colors.white),
+      ),
+    );
+  }
+
+  List<Lecture> _filteredLectures() {
+    switch (_filter) {
+      case 1:
+        return MockData.lectures.where((l) => l.done).toList();
+      case 2:
+        return MockData.lectures.where((l) => l.quiz != null).toList();
+      default:
+        return MockData.lectures;
+    }
+  }
+
+  void _openAddSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (sheetCtx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.picture_as_pdf_outlined, color: AppColors.navy),
+              title: const Text('PDF 자료 업로드'),
+              subtitle: const Text('강의자료·기출 PDF를 올려요 (최대 50MB, 150페이지)'),
+              onTap: () {
+                Navigator.pop(sheetCtx);
+                Navigator.of(context).pushNamed('/note/pdf-upload');
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.edit_note_outlined, color: AppColors.navy),
+              title: const Text('새 노트 작성'),
+              subtitle: const Text('타이핑 또는 필기로 바로 시작해요'),
+              onTap: () {
+                Navigator.pop(sheetCtx);
+                Navigator.of(context).pushNamed('/note/detail');
+              },
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
       ),
     );
   }

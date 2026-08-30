@@ -16,6 +16,7 @@ class _QuizScreenState extends State<QuizScreen> {
   static const int _total = 10;
   bool _showResult = false;
   bool _correct = false;
+  String _course = MockData.courseNames.first;
 
   int get _qIdx => _current % MockData.quizQuestions.length;
 
@@ -27,12 +28,23 @@ class _QuizScreenState extends State<QuizScreen> {
       backgroundColor: AppColors.cream,
       body: SafeArea(
         child: Padding(
-          padding: EdgeInsets.all(context.isTablet ? 40 : 24),
+          padding: EdgeInsets.all(context.isTablet ? 28 : 20),
           child: Column(
             children: [
+              Row(
+                children: [
+                  const BackIfPushed(),
+                  CourseDropdown(
+                    selected: _course,
+                    options: MockData.courseNames,
+                    onChanged: (v) => setState(() => _course = v),
+                  ),
+                  const Spacer(),
+                  Text('${_current + 1} / $_total', style: const TextStyle(fontSize: 12, color: AppColors.textMuted)),
+                ],
+              ),
+              const SizedBox(height: 10),
               MulgilProgressBar(value: (_current + 1) / _total),
-              const SizedBox(height: 8),
-              Align(alignment: Alignment.centerLeft, child: Text('${_current + 1} / $_total', style: const TextStyle(fontSize: 12, color: AppColors.textMuted))),
               const SizedBox(height: 24),
               if (context.isTablet) _buildTabletQuiz(q) else _buildMobileQuiz(q),
             ],
@@ -57,13 +69,7 @@ class _QuizScreenState extends State<QuizScreen> {
             child: Text(q.question, textAlign: TextAlign.center, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
           ),
           const SizedBox(height: 28),
-          Row(
-            children: [
-              Expanded(child: _OxButton(label: 'O', color: AppColors.tealDark, onTap: () => _answer(0, q))),
-              const SizedBox(width: 14),
-              Expanded(child: _OxButton(label: 'X', color: AppColors.coral, onTap: () => _answer(1, q))),
-            ],
-          ),
+          _buildAnswerControls(q),
           const SizedBox(height: 16),
           Text('남은 문제 ${_total - _current - 1}개 · 예상 시간 ${(_total - _current - 1) * 30}초', style: const TextStyle(fontSize: 12, color: AppColors.textMuted)),
           const Spacer(),
@@ -138,13 +144,7 @@ class _QuizScreenState extends State<QuizScreen> {
                     child: Text(q.question, textAlign: TextAlign.center, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
                   ),
                   const SizedBox(height: 22),
-                  Row(
-                    children: [
-                      Expanded(child: _OxButton(label: 'O', color: AppColors.tealDark, onTap: () => _answer(0, q))),
-                      const SizedBox(width: 14),
-                      Expanded(child: _OxButton(label: 'X', color: AppColors.coral, onTap: () => _answer(1, q))),
-                    ],
-                  ),
+                  _buildAnswerControls(q),
                   if (_showResult) ...[
                     const SizedBox(height: 14),
                     Container(
@@ -163,6 +163,31 @@ class _QuizScreenState extends State<QuizScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildAnswerControls(QuizQuestion q) {
+    if (q.type == QuizType.multipleChoice) {
+      final options = q.options!;
+      return Column(
+        children: List.generate(options.length, (i) => Padding(
+          padding: EdgeInsets.only(bottom: i < options.length - 1 ? 10 : 0),
+          child: _ChoiceButton(
+            index: i,
+            label: options[i],
+            selected: _showResult && i == q.answer,
+            wrong: _showResult && !_correct && i != q.answer,
+            onTap: _showResult ? null : () => _answer(i, q),
+          ),
+        )),
+      );
+    }
+    return Row(
+      children: [
+        Expanded(child: _OxButton(label: 'O', color: AppColors.tealDark, onTap: () => _answer(0, q))),
+        const SizedBox(width: 14),
+        Expanded(child: _OxButton(label: 'X', color: AppColors.coral, onTap: () => _answer(1, q))),
+      ],
     );
   }
 
@@ -192,6 +217,45 @@ class _TabletHint extends StatelessWidget {
       child: const Text(
         '⭐ 긴 작업이 계속 밀려 실행되지 못하는 기아 현상(starvation)이 발생할 수 있다.',
         style: TextStyle(fontSize: 12.5, color: AppColors.textSecondary, height: 1.7),
+      ),
+    );
+  }
+}
+
+class _ChoiceButton extends StatelessWidget {
+  final int index;
+  final String label;
+  final bool selected;
+  final bool wrong;
+  final VoidCallback? onTap;
+  const _ChoiceButton({required this.index, required this.label, required this.selected, required this.wrong, required this.onTap});
+
+  static const _letters = ['A', 'B', 'C', 'D'];
+
+  @override
+  Widget build(BuildContext context) {
+    final bg = selected ? AppColors.tealDark : (wrong ? const Color(0xFFFFF0EB) : Colors.white);
+    final border = selected ? AppColors.tealDark : (wrong ? AppColors.coral : const Color(0xFFEEEEEE));
+    final fg = selected ? Colors.white : AppColors.textPrimary;
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(color: bg, border: Border.all(color: border, width: 1.5), borderRadius: BorderRadius.circular(14)),
+        child: Row(
+          children: [
+            Container(
+              width: 24, height: 24,
+              decoration: BoxDecoration(color: selected ? Colors.white.withValues(alpha: 0.25) : const Color(0xFFF2F2F2), shape: BoxShape.circle),
+              alignment: Alignment.center,
+              child: Text(_letters[index], style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: fg)),
+            ),
+            const SizedBox(width: 12),
+            Expanded(child: Text(label, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: fg))),
+          ],
+        ),
       ),
     );
   }
