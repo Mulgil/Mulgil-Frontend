@@ -32,7 +32,7 @@ abstract final class MockData {
   static const currentUser = UserProfile(
     name: '지민',
     school: '숭실대학교',
-    department: '컴퓨터공학과',
+    department: '소프트웨어학부',
     year: 3,
     avatarInitial: '유',
   );
@@ -260,6 +260,17 @@ abstract final class MockData {
   ];
 
   static List<String> get courseNames => courses.map((c) => c.name).toList();
+
+  // Removes the given courses along with everything keyed off them — their
+  // timetable slots and their exams — so callers can't cascade only partway
+  // (e.g. dropping a course's slots but leaving its exams orphaned).
+  static void deleteCourses(Iterable<Course> coursesToDelete) {
+    final ids = coursesToDelete.map((c) => c.id).toSet();
+    final names = coursesToDelete.map((c) => c.name).toSet();
+    timetableSlots.removeWhere((s) => ids.contains(s.courseId));
+    courses.removeWhere((c) => ids.contains(c.id));
+    exams.removeWhere((e) => names.contains(e.courseName));
+  }
 
   static Map<String, String> get courseProfessors => {
     for (final c in courses) c.name: c.instructor ?? '',

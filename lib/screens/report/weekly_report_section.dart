@@ -125,12 +125,23 @@ class _StatCard extends StatelessWidget {
   }
 }
 
-class _StudyChart extends StatelessWidget {
+class _StudyChart extends StatefulWidget {
   const _StudyChart();
+
+  @override
+  State<_StudyChart> createState() => _StudyChartState();
+}
+
+class _StudyChartState extends State<_StudyChart> {
+  int? _hoveredIndex;
+  int? _tappedIndex;
 
   @override
   Widget build(BuildContext context) {
     final maxH = MockData.studyHours.reduce((a, b) => a > b ? a : b);
+    // Hover wins over a lingering tap so moving the mouse across bars on
+    // web/desktop always reflects the bar currently under the cursor.
+    final activeIndex = _hoveredIndex ?? _tappedIndex;
     return MulgilCard(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -139,35 +150,60 @@ class _StudyChart extends StatelessWidget {
           const SectionHeader(title: '일별 학습 시간'),
           const SizedBox(height: 16),
           SizedBox(
-            height: 120,
+            height: 136,
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: List.generate(MockData.studyDays.length, (i) {
                 final ratio = MockData.studyHours[i] / maxH;
+                final isActive = activeIndex == i;
                 return Expanded(
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 3),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        Container(
-                          height: 90 * ratio,
-                          decoration: BoxDecoration(
-                            color: i == 3
-                                ? AppColors.teal
-                                : AppColors.teal.withValues(alpha: 0.35),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
+                    child: MouseRegion(
+                      onEnter: (_) => setState(() => _hoveredIndex = i),
+                      onExit: (_) => setState(() => _hoveredIndex = null),
+                      child: GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onTap: () => setState(
+                          () => _tappedIndex = _tappedIndex == i ? null : i,
                         ),
-                        const SizedBox(height: 4),
-                        Text(
-                          MockData.studyDays[i],
-                          style: const TextStyle(
-                            fontSize: 10,
-                            color: AppColors.textMuted,
-                          ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            SizedBox(
+                              height: 16,
+                              child: isActive
+                                  ? Text(
+                                      '${MockData.studyHours[i].toStringAsFixed(1)}h',
+                                      style: const TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w700,
+                                        color: AppColors.teal,
+                                      ),
+                                    )
+                                  : null,
+                            ),
+                            const SizedBox(height: 4),
+                            Container(
+                              height: 90 * ratio,
+                              decoration: BoxDecoration(
+                                color: isActive || i == 3
+                                    ? AppColors.teal
+                                    : AppColors.teal.withValues(alpha: 0.35),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              MockData.studyDays[i],
+                              style: const TextStyle(
+                                fontSize: 10,
+                                color: AppColors.textMuted,
+                              ),
+                            ),
+                          ],
                         ),
-                      ],
+                      ),
                     ),
                   ),
                 );

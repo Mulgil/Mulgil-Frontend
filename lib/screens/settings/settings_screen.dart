@@ -149,15 +149,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
           Row(
             children: [
               const Expanded(child: _SectionLabel(label: '과목 관리')),
-              _AddSubjectButton(onTap: _openAddSubjectSheet),
+              MulgilRaisedAddButton(onTap: _openAddSubjectSheet),
             ],
           ),
-          WeeklyTimetable(),
+          WeeklyTimetable(onChanged: () => setState(() {})),
           const SizedBox(height: 16),
           Row(
             children: [
               const Expanded(child: _SectionLabel(label: '시험 일정')),
-              _AddIconButton(onTap: _openAddExamSheet),
+              MulgilRaisedAddButton(onTap: _openAddExamSheet),
             ],
           ),
           const SizedBox(height: 12),
@@ -323,16 +323,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
           children: [
             const _PanelTitle(title: '과목 관리'),
             const Spacer(),
-            _AddSubjectButton(onTap: _openAddSubjectSheet),
+            MulgilRaisedAddButton(onTap: _openAddSubjectSheet),
           ],
         ),
         const SizedBox(height: 20),
-        WeeklyTimetable(),
+        WeeklyTimetable(onChanged: () => setState(() {})),
         const SizedBox(height: 20),
         Row(
           children: [
             const Expanded(child: _SectionLabel(label: '시험 일정')),
-            _AddIconButton(onTap: _openAddExamSheet),
+            MulgilRaisedAddButton(onTap: _openAddExamSheet),
           ],
         ),
         if (MockData.exams.isEmpty)
@@ -760,52 +760,6 @@ class _EmptyExamBox extends StatelessWidget {
       child: const Text(
         '등록된 시험이 없어요',
         style: TextStyle(fontSize: 12, color: AppColors.textMuted),
-      ),
-    );
-  }
-}
-
-class _AddIconButton extends StatelessWidget {
-  final VoidCallback onTap;
-  const _AddIconButton({required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return _RaisedAddButton(onTap: onTap);
-  }
-}
-
-class _AddSubjectButton extends StatelessWidget {
-  final VoidCallback onTap;
-  const _AddSubjectButton({required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return _RaisedAddButton(onTap: onTap);
-  }
-}
-
-// Filled, elevated "+" button shared by the 과목 추가 / 시험 일정 추가 actions —
-// icon-only so it reads as a single clear affordance rather than a labeled outline button.
-class _RaisedAddButton extends StatelessWidget {
-  final VoidCallback onTap;
-  const _RaisedAddButton({required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: AppColors.navy,
-      shape: const CircleBorder(),
-      elevation: 3,
-      shadowColor: AppColors.navy.withValues(alpha: 0.45),
-      child: InkWell(
-        onTap: onTap,
-        customBorder: const CircleBorder(),
-        child: const SizedBox(
-          width: 30,
-          height: 30,
-          child: Icon(Icons.add, size: 18, color: Colors.white),
-        ),
       ),
     );
   }

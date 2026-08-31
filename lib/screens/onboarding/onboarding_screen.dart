@@ -3,9 +3,12 @@ import '../../theme/app_theme.dart';
 import '../../widgets/mulgil_logo.dart';
 import '../../widgets/common_widgets.dart';
 import '../../widgets/course_form_sheet.dart';
+import '../../widgets/exam_form_sheet.dart';
 import '../../widgets/weekly_timetable.dart';
 import '../../data/mock_data.dart';
 import '../../constants/routes.dart';
+import '../../models/course.dart';
+import '../../models/exam.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -264,6 +267,36 @@ class _ScheduleStepState extends State<_ScheduleStep> {
     );
   }
 
+  List<Exam> _examsFor(String courseName) =>
+      MockData.exams.where((e) => e.courseName == courseName).toList();
+
+  // Pass `existing` to edit that exam in place; omit it to add a new one —
+  // a course can have zero, one, or several exams (중간/기말/퀴즈 등), so this
+  // is called once per exam row rather than once per course.
+  Future<void> _openExamSheet(Course course, {Exam? existing}) async {
+    final result = await showMulgilSheet<Exam>(
+      context,
+      isScrollControlled: true,
+      builder: (_) => _ExamQuickSheet(course: course, existing: existing),
+    );
+    if (result == null) return;
+    setState(() {
+      if (existing != null) {
+        MockData.exams.replaceWhere((e) => e.id == existing.id, result);
+      } else {
+        MockData.exams.add(result);
+      }
+    });
+  }
+
+  Future<void> _deleteExam(Exam exam) async {
+    await confirmDeleteExam(
+      context,
+      exam,
+      () => setState(() => MockData.exams.removeWhere((e) => e.id == exam.id)),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -294,35 +327,46 @@ class _ScheduleStepState extends State<_ScheduleStep> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      WeeklyTimetable(),
-                      const SizedBox(height: 14),
+                      Row(
+                        children: [
+                          const Expanded(
+                            child: Padding(
+                              padding: EdgeInsets.only(bottom: 8),
+                              child: Text(
+                                '시간표',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: AppColors.textMuted,
+                                  fontWeight: FontWeight.w600,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                            ),
+                          ),
+                          MulgilRaisedAddButton(onTap: _openAddSubjectSheet),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      WeeklyTimetable(onChanged: () => setState(() {})),
+                      const SizedBox(height: 20),
+                      const SectionHeader(
+                        title: '시험 일정',
+                        subtitle: '과목을 탭해서 시험 날짜를 등록해주세요',
+                      ),
                       ...MockData.courses.map(
                         (course) => Padding(
                           padding: const EdgeInsets.only(bottom: 10),
-                          child: _SubjectCard(
-                            name: course.name,
-                            professor: course.instructor ?? '',
-                            time: MockData.slotsSummary(course.id),
+                          child: _ExamScheduleCard(
+                            course: course,
+                            exams: _examsFor(course.name),
+                            onAddExam: () => _openExamSheet(course),
+                            onEditExam: (exam) =>
+                                _openExamSheet(course, existing: exam),
+                            onDeleteExam: _deleteExam,
                           ),
                         ),
                       ),
                     ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-              GestureDetector(
-                onTap: _openAddSubjectSheet,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 10),
-                  decoration: BoxDecoration(
-                    border: Border.all(color: AppColors.navy),
-                    borderRadius: BorderRadius.circular(AppRadius.sm),
-                  ),
-                  alignment: Alignment.center,
-                  child: const Text(
-                    '+ 과목 추가',
-                    style: TextStyle(fontSize: 13, color: AppColors.navy),
                   ),
                 ),
               ),
@@ -337,12 +381,21 @@ class _ScheduleStepState extends State<_ScheduleStep> {
   }
 }
 
-class _SubjectCard extends StatelessWidget {
-  final String name, professor, time;
-  const _SubjectCard({
-    required this.name,
-    required this.professor,
-    required this.time,
+// A course can have zero, one, or several exams (중간고사·기말고사·퀴즈 등), so this
+// renders the whole list for the course plus a row to add another — not a
+// single exam slot per course.
+class _ExamScheduleCard extends StatelessWidget {
+  final Course course;
+  final List<Exam> exams;
+  final VoidCallback onAddExam;
+  final ValueChanged<Exam> onEditExam;
+  final ValueChanged<Exam> onDeleteExam;
+  const _ExamScheduleCard({
+    required this.course,
+    required this.exams,
+    required this.onAddExam,
+    required this.onEditExam,
+    required this.onDeleteExam,
   });
 
   @override
@@ -357,16 +410,217 @@ class _SubjectCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            name,
+            course.name,
             style: const TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w700,
               color: AppColors.textPrimary,
             ),
           ),
+          if (course.instructor != null)
+            Text(
+              course.instructor!,
+              style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
+            ),
+          const SizedBox(height: 10),
+          if (exams.isEmpty)
+            const Padding(
+              padding: EdgeInsets.only(bottom: 10),
+              child: Text(
+                '등록된 시험이 없어요',
+                style: TextStyle(fontSize: 12.5, color: AppColors.textMuted),
+              ),
+            )
+          else
+            ...exams.map(
+              (exam) => Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: GestureDetector(
+                  onTap: () => onEditExam(exam),
+                  behavior: HitTestBehavior.opaque,
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          '${exam.title} · ${exam.examAt.month}월 ${exam.examAt.day}일',
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.navy,
+                          ),
+                        ),
+                      ),
+                      GestureDetector(
+                        onTap: () => onDeleteExam(exam),
+                        behavior: HitTestBehavior.opaque,
+                        child: const Padding(
+                          padding: EdgeInsets.all(4),
+                          child: Icon(
+                            Icons.close,
+                            size: 16,
+                            color: AppColors.ink40,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          GestureDetector(
+            onTap: onAddExam,
+            behavior: HitTestBehavior.opaque,
+            child: const Row(
+              children: [
+                Icon(Icons.add, size: 15, color: AppColors.tealDark),
+                SizedBox(width: 4),
+                Text(
+                  '시험 추가',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.tealDark,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// Bottom sheet for setting a course's exam name + date during onboarding.
+// Deliberately lighter than ExamFormSheet — no session-range picker, since
+// onboarding runs before any lecture notes exist to pick a range from.
+class _ExamQuickSheet extends StatefulWidget {
+  final Course course;
+  final Exam? existing;
+  const _ExamQuickSheet({required this.course, required this.existing});
+
+  @override
+  State<_ExamQuickSheet> createState() => _ExamQuickSheetState();
+}
+
+class _ExamQuickSheetState extends State<_ExamQuickSheet> {
+  static const _presets = ['중간고사', '기말고사', '퀴즈'];
+
+  late final _titleCtrl = TextEditingController(
+    text: widget.existing?.title ?? _presets.first,
+  );
+  late DateTime _examAt =
+      widget.existing?.examAt ?? DateTime.now().add(const Duration(days: 14));
+
+  @override
+  void dispose() {
+    _titleCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _pickDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _examAt,
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+    );
+    if (picked != null) setState(() => _examAt = picked);
+  }
+
+  void _submit() {
+    final title = _titleCtrl.text.trim();
+    if (title.isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('시험 이름을 입력해주세요')));
+      return;
+    }
+    final existing = widget.existing;
+    Navigator.pop(
+      context,
+      Exam(
+        id: existing?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
+        courseName: widget.course.name,
+        title: title,
+        examAt: _examAt,
+        sessionTitles: existing?.sessionTitles ?? const [],
+        hasPastExamAttached: existing?.hasPastExamAttached ?? false,
+        summaryStatus: existing?.summaryStatus ?? AiJobStatus.none,
+        quizStatus: existing?.quizStatus ?? AiJobStatus.none,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        20,
+        20,
+        20,
+        MediaQuery.of(context).viewInsets.bottom + 20,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
           Text(
-            '$professor · $time',
-            style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
+            '${widget.course.name} 시험 일정',
+            style: const TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w800,
+              color: AppColors.ink,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Wrap(
+            spacing: 8,
+            children: _presets
+                .map(
+                  (p) => MulgilChip(
+                    label: p,
+                    selected: _titleCtrl.text == p,
+                    onTap: () => setState(() => _titleCtrl.text = p),
+                  ),
+                )
+                .toList(),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _titleCtrl,
+            decoration: const InputDecoration(
+              labelText: '시험명',
+              hintText: '예: 중간고사',
+            ),
+            onChanged: (_) => setState(() {}),
+          ),
+          const SizedBox(height: 14),
+          MulgilCard(
+            onTap: _pickDate,
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  '시험 날짜',
+                  style: TextStyle(fontSize: 13, color: AppColors.ink60),
+                ),
+                Text(
+                  '${_examAt.year}.${_examAt.month}.${_examAt.day}',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.ink,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+          MulgilButton(
+            label: widget.existing == null ? '등록' : '수정',
+            onTap: _submit,
           ),
         ],
       ),

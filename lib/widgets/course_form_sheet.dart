@@ -10,7 +10,14 @@ import 'confirm_dialog.dart';
 // Shared by onboarding's schedule step and the settings subject manager.
 class CourseFormSheet extends StatefulWidget {
   final void Function(Course course, List<TimetableSlot> slots) onAdd;
-  const CourseFormSheet({super.key, required this.onAdd});
+  final int? initialWeekday;
+  final TimeOfDay? initialStart;
+  const CourseFormSheet({
+    super.key,
+    required this.onAdd,
+    this.initialWeekday,
+    this.initialStart,
+  });
 
   @override
   State<CourseFormSheet> createState() => _CourseFormSheetState();
@@ -20,8 +27,16 @@ class _CourseFormSheetState extends State<CourseFormSheet> {
   final _nameCtrl = TextEditingController();
   final _professorCtrl = TextEditingController();
   final Set<int> _weekdays = {}; // ISO: Monday=1 ... Sunday=7
-  TimeOfDay _start = const TimeOfDay(hour: 9, minute: 0);
-  TimeOfDay _end = const TimeOfDay(hour: 10, minute: 15);
+  late TimeOfDay _start;
+  late TimeOfDay _end;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialWeekday != null) _weekdays.add(widget.initialWeekday!);
+    _start = widget.initialStart ?? const TimeOfDay(hour: 9, minute: 0);
+    _end = _addMinutes(_start, _defaultDurationMinutesFor(_weekdays.length));
+  }
 
   @override
   void dispose() {
@@ -43,6 +58,8 @@ class _CourseFormSheetState extends State<CourseFormSheet> {
     return TimeOfDay(hour: total ~/ 60, minute: total % 60);
   }
 
+  int _toMinutes(TimeOfDay t) => t.hour * 60 + t.minute;
+
   void _autoFillEndTime() {
     _end = _addMinutes(_start, _defaultDurationMinutesFor(_weekdays.length));
   }
@@ -52,7 +69,13 @@ class _CourseFormSheetState extends State<CourseFormSheet> {
       context: context,
       initialTime: isStart ? _start : _end,
     );
-    if (picked == null) return;
+    if (picked == null || !mounted) return;
+    if (!isStart && _toMinutes(picked) <= _toMinutes(_start)) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('종료 시간은 시작 시간보다 늦어야 해요')));
+      return;
+    }
     setState(() {
       if (isStart) {
         _start = picked;
@@ -90,23 +113,23 @@ class _CourseFormSheetState extends State<CourseFormSheet> {
 
     final conflicts = _findConflictingSlots();
     if (conflicts.isNotEmpty) {
-      final names = conflicts
-          .map((slot) {
-            final courseName =
-                MockData.courseById(slot.courseId)?.name ?? '알 수 없는 과목';
-            return "'$courseName' (${slot.weekdayLabel} ${slot.startTime}~${slot.endTime})";
-          })
-          .toSet()
-          .join(', ');
+      // A conflict on any one slot means that whole course gets replaced —
+      // its other weekdays are the same class, so they'd be left dangling
+      // (and its exams orphaned) if only the overlapping slot were removed.
+      final conflictingCourseIds = conflicts.map((s) => s.courseId).toSet();
+      final conflictingCourses = MockData.courses
+          .where((c) => conflictingCourseIds.contains(c.id))
+          .toList();
+      final names = conflictingCourses.map((c) => "'${c.name}'").join(', ');
       final proceed = await showMulgilConfirmDialog(
         context,
         title: '시간표가 겹쳐요',
-        message: '기존 $names 시간표가 삭제되고 새 과목으로 대체돼요. 계속할까요?',
+        message: '기존 $names 과목이 시간표·시험 일정과 함께 삭제되고 새 과목으로 대체돼요. 계속할까요?',
         confirmLabel: '삭제하고 추가',
         danger: true,
       );
       if (!proceed) return;
-      MockData.timetableSlots.removeWhere(conflicts.contains);
+      MockData.deleteCourses(conflictingCourses);
     }
     if (!mounted) return;
 

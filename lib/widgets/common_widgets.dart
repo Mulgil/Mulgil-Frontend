@@ -417,3 +417,30 @@ class SectionHeader extends StatelessWidget {
     );
   }
 }
+
+// Filled, elevated circular "+" button used to trigger add sheets (과목 추가,
+// 시험 일정 추가, ...) next to a section label — icon-only so it reads as one
+// clear affordance rather than a labeled outline button.
+class MulgilRaisedAddButton extends StatelessWidget {
+  final VoidCallback onTap;
+  const MulgilRaisedAddButton({super.key, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: AppColors.navy,
+      shape: const CircleBorder(),
+      elevation: 3,
+      shadowColor: AppColors.navy.withValues(alpha: 0.45),
+      child: InkWell(
+        onTap: onTap,
+        customBorder: const CircleBorder(),
+        child: const SizedBox(
+          width: 30,
+          height: 30,
+          child: Icon(Icons.add, size: 18, color: Colors.white),
+        ),
+      ),
+    );
+  }
+}

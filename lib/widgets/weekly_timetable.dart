@@ -4,6 +4,9 @@ import '../theme/app_theme.dart';
 import '../data/mock_data.dart';
 import '../models/course.dart';
 import '../models/timetable_slot.dart';
+import 'confirm_dialog.dart';
+import 'common_widgets.dart';
+import 'course_form_sheet.dart';
 
 const _palette = [
   AppColors.teal,
@@ -17,33 +20,90 @@ Color _courseColor(Course course) =>
     _palette[MockData.courses.indexOf(course) % _palette.length];
 
 // Everytime 스타일 요일×시간 그리드. MockData.courses/timetableSlots를 그대로 그린다.
-class WeeklyTimetable extends StatelessWidget {
-  const WeeklyTimetable({super.key});
+// Owns its own add/delete flow (tap a block -> confirm -> remove; tap an
+// empty cell or the "+" -> add) so every screen that embeds this gets it for
+// free without threading a callback through. MockData is plain mutable state
+// (not a ChangeNotifier), so any screen that also renders something derived
+// from it (e.g. an exam list keyed by course) must pass `onChanged` and
+// rebuild itself there — otherwise it'll show stale data after this widget's
+// own setState mutates the shared lists out from under it.
+class WeeklyTimetable extends StatefulWidget {
+  final VoidCallback? onChanged;
+  const WeeklyTimetable({super.key, this.onChanged});
 
+  @override
+  State<WeeklyTimetable> createState() => _WeeklyTimetableState();
+}
+
+class _WeeklyTimetableState extends State<WeeklyTimetable> {
   static const _hourHeight = 52.0;
   static const _timeColWidth = 32.0;
+
+  Future<void> _confirmDeleteCourse(Course course) async {
+    final confirmed = await showMulgilConfirmDialog(
+      context,
+      title: '과목을 삭제할까요?',
+      message: "'${course.name}' 과목과 등록된 시간표·시험 일정이 함께 삭제돼요.",
+      confirmLabel: '삭제',
+      danger: true,
+    );
+    if (!confirmed) return;
+    setState(() => MockData.deleteCourses([course]));
+    widget.onChanged?.call();
+  }
+
+  // weekday/startHour prefill the CourseFormSheet when opened from a tap on
+  // an empty grid cell; both are null for the header's plain "+" button.
+  void _openAddSheet({int? weekday, int? startHour}) {
+    showMulgilSheet(
+      context,
+      isScrollControlled: true,
+      builder: (_) => CourseFormSheet(
+        initialWeekday: weekday,
+        initialStart: startHour == null
+            ? null
+            : TimeOfDay(hour: startHour, minute: 0),
+        onAdd: (course, slots) {
+          setState(() {
+            MockData.courses.add(course);
+            MockData.timetableSlots.addAll(slots);
+          });
+          widget.onChanged?.call();
+        },
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     final slots = MockData.timetableSlots;
     if (slots.isEmpty) {
-      return Container(
-        padding: const EdgeInsets.symmetric(vertical: 32),
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: AppColors.surfaceAlt,
-          borderRadius: BorderRadius.circular(AppRadius.md),
-        ),
-        child: const Text(
-          '등록된 시간표가 없어요',
-          style: TextStyle(color: AppColors.ink60, fontSize: 13),
+      return GestureDetector(
+        onTap: () => _openAddSheet(),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 32),
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: AppColors.surfaceAlt,
+            borderRadius: BorderRadius.circular(AppRadius.md),
+          ),
+          child: const Text(
+            '+ 눌러서 시간표를 등록해주세요',
+            style: TextStyle(color: AppColors.ink60, fontSize: 13),
+          ),
         ),
       );
     }
 
     final days = (slots.map((s) => s.weekday).toSet().toList()..sort());
-    final startHour = slots.map((s) => s.startMinutes ~/ 60).reduce(min);
-    final endHour = slots.map((s) => (s.endMinutes + 59) ~/ 60).reduce(max);
+    // 9~16시를 항상 보여주는 기준 범위로 고정 — 과목을 지우거나 늦은 시간대 수업이 없어도 그리드가
+    // 갑자기 줄어들어 보이지 않도록. 실제 수업이 이 범위를 벗어나면 그만큼, 그리고 가장 늦게 끝나는
+    // 수업 아래로 1시간 15분의 여백을 추가로 보여준다.
+    const marginMinutes = 75;
+    final actualStartHour = slots.map((s) => s.startMinutes ~/ 60).reduce(min);
+    final actualEndMinutes = slots.map((s) => s.endMinutes).reduce(max);
+    final startHour = min(9, actualStartHour);
+    final endHour = max(16, (actualEndMinutes + marginMinutes + 59) ~/ 60);
     final hours = List.generate(
       max(endHour - startHour, 1),
       (i) => startHour + i,
@@ -123,12 +183,21 @@ class WeeklyTimetable extends StatelessWidget {
                         Column(
                           children: hours
                               .map(
-                                (_) => Container(
-                                  height: _hourHeight,
-                                  decoration: const BoxDecoration(
-                                    border: Border(
-                                      left: BorderSide(color: AppColors.border),
-                                      top: BorderSide(color: AppColors.border),
+                                (h) => GestureDetector(
+                                  onTap: () =>
+                                      _openAddSheet(weekday: wd, startHour: h),
+                                  behavior: HitTestBehavior.opaque,
+                                  child: Container(
+                                    height: _hourHeight,
+                                    decoration: const BoxDecoration(
+                                      border: Border(
+                                        left: BorderSide(
+                                          color: AppColors.border,
+                                        ),
+                                        top: BorderSide(
+                                          color: AppColors.border,
+                                        ),
+                                      ),
                                     ),
                                   ),
                                 ),
@@ -157,27 +226,48 @@ class WeeklyTimetable extends StatelessWidget {
                                 left: 2,
                                 right: 2,
                                 height: max(height - 2, 0),
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 4,
-                                    vertical: 3,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: _courseColor(course),
-                                    borderRadius: BorderRadius.circular(
-                                      AppRadius.sm,
+                                child: GestureDetector(
+                                  onTap: () => _confirmDeleteCourse(course),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 4,
+                                      vertical: 3,
                                     ),
-                                  ),
-                                  alignment: Alignment.topLeft,
-                                  child: Text(
-                                    course.name,
-                                    style: const TextStyle(
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.w700,
-                                      color: Colors.white,
+                                    decoration: BoxDecoration(
+                                      color: _courseColor(course),
+                                      borderRadius: BorderRadius.circular(
+                                        AppRadius.sm,
+                                      ),
                                     ),
-                                    maxLines: 3,
-                                    overflow: TextOverflow.ellipsis,
+                                    alignment: Alignment.topLeft,
+                                    child: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          course.name,
+                                          style: const TextStyle(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w700,
+                                            color: Colors.white,
+                                          ),
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                        if (course.instructor != null)
+                                          Text(
+                                            course.instructor!,
+                                            style: const TextStyle(
+                                              fontSize: 9,
+                                              fontWeight: FontWeight.w500,
+                                              color: Colors.white70,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                      ],
+                                    ),
                                   ),
                                 ),
                               );
