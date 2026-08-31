@@ -9,6 +9,7 @@ import '../../data/mock_data.dart';
 import '../../data/auth_store.dart';
 import '../../models/exam.dart';
 import 'legal_document_screen.dart';
+import '../../constants/routes.dart';
 
 enum _SettingsTab { profile, subjects, appInfo }
 
@@ -52,8 +53,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       builder: (_) => ExamFormSheet(
         existingExam: exam,
         onSubmit: (updated) => setState(() {
-          final i = MockData.exams.indexWhere((e) => e.id == exam.id);
-          MockData.exams[i] = updated;
+          MockData.exams.replaceWhere((e) => e.id == exam.id, updated);
         }),
       ),
     );
@@ -112,7 +112,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   // Mirrors POST /auth/logout — revokes the refresh token family server-side once wired up.
   void _logout() {
     AuthStore.isLoggedIn = false;
-    Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
+    Navigator.of(
+      context,
+    ).pushNamedAndRemoveUntil(AppRoutes.login, (route) => false);
   }
 
   @override
@@ -297,17 +299,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Widget _buildProfilePanel() {
-    return const Column(
+    final user = MockData.currentUser;
+    return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _PanelTitle(title: '프로필'),
-        SizedBox(height: 20),
-        _ProfileCard(),
-        SizedBox(height: 20),
-        _SectionLabel(label: '학교 정보'),
-        _InfoTile(label: '학교', value: '숭실대학교'),
-        _InfoTile(label: '학과', value: '컴퓨터공학과'),
-        _InfoTile(label: '학년', value: '3학년'),
+        const _PanelTitle(title: '프로필'),
+        const SizedBox(height: 20),
+        const _ProfileCard(),
+        const SizedBox(height: 20),
+        const _SectionLabel(label: '학교 정보'),
+        _InfoTile(label: '학교', value: user.school),
+        _InfoTile(label: '학과', value: user.department),
+        _InfoTile(label: '학년', value: '${user.year}학년'),
       ],
     );
   }
@@ -476,41 +479,42 @@ class _ProfileCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final user = MockData.currentUser;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppColors.navy,
         borderRadius: BorderRadius.circular(AppRadius.lg),
       ),
-      child: const Row(
+      child: Row(
         children: [
           CircleAvatar(
             radius: 26,
             backgroundColor: AppColors.teal,
             child: Text(
-              '유',
-              style: TextStyle(
+              user.avatarInitial,
+              style: const TextStyle(
                 fontSize: 18,
                 color: Colors.white,
                 fontWeight: FontWeight.w700,
               ),
             ),
           ),
-          SizedBox(width: 14),
+          const SizedBox(width: 14),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                '지민',
-                style: TextStyle(
+                user.name,
+                style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
                   color: Colors.white,
                 ),
               ),
               Text(
-                '소프트웨어학부 · 3학년',
-                style: TextStyle(fontSize: 12, color: Color(0xFF9fb6c4)),
+                '${user.department} · ${user.year}학년',
+                style: const TextStyle(fontSize: 12, color: Color(0xFF9fb6c4)),
               ),
             ],
           ),

@@ -135,48 +135,53 @@ class WeeklyTimetable extends StatelessWidget {
                               )
                               .toList(),
                         ),
-                        ...daySlots.map((slot) {
-                          final course = MockData.courses.firstWhere(
-                            (c) => c.id == slot.courseId,
-                          );
-                          final top =
-                              (slot.startMinutes - startHour * 60) /
-                              60 *
-                              _hourHeight;
-                          final height =
-                              (slot.endMinutes - slot.startMinutes) /
-                              60 *
-                              _hourHeight;
-                          return Positioned(
-                            top: top + 1,
-                            left: 2,
-                            right: 2,
-                            height: max(height - 2, 0),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 4,
-                                vertical: 3,
-                              ),
-                              decoration: BoxDecoration(
-                                color: _courseColor(course),
-                                borderRadius: BorderRadius.circular(
-                                  AppRadius.sm,
+                        ...daySlots
+                            .map(
+                              (slot) =>
+                                  (slot, MockData.courseById(slot.courseId)),
+                            )
+                            .where((pair) => pair.$2 != null)
+                            .map((pair) {
+                              final slot = pair.$1;
+                              final course = pair.$2!;
+                              final top =
+                                  (slot.startMinutes - startHour * 60) /
+                                  60 *
+                                  _hourHeight;
+                              final height =
+                                  (slot.endMinutes - slot.startMinutes) /
+                                  60 *
+                                  _hourHeight;
+                              return Positioned(
+                                top: top + 1,
+                                left: 2,
+                                right: 2,
+                                height: max(height - 2, 0),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 4,
+                                    vertical: 3,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: _courseColor(course),
+                                    borderRadius: BorderRadius.circular(
+                                      AppRadius.sm,
+                                    ),
+                                  ),
+                                  alignment: Alignment.topLeft,
+                                  child: Text(
+                                    course.name,
+                                    style: const TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w700,
+                                      color: Colors.white,
+                                    ),
+                                    maxLines: 3,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
                                 ),
-                              ),
-                              alignment: Alignment.topLeft,
-                              child: Text(
-                                course.name,
-                                style: const TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w700,
-                                  color: Colors.white,
-                                ),
-                                maxLines: 3,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          );
-                        }),
+                              );
+                            }),
                       ],
                     ),
                   );

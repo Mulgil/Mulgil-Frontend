@@ -6,6 +6,7 @@ import '../../data/notes_store.dart';
 import '../../models/lecture.dart';
 import '../../models/timetable_slot.dart';
 import '../report/weekly_report_section.dart';
+import '../../constants/routes.dart';
 
 List<Lecture> _recentNotes(List<Lecture> lectures) =>
     lectures.where((l) => l.done).take(2).toList();
@@ -46,14 +47,18 @@ class HomeScreen extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(height: 2),
-                        Text('안녕하세요, 지민님', style: AppTextStyles.h1),
+                        Text(
+                          '안녕하세요, ${MockData.currentUser.name}님',
+                          style: AppTextStyles.h1,
+                        ),
                       ],
                     ),
                   ),
                   GestureDetector(
                     onTap:
                         onOpenSettings ??
-                        () => Navigator.of(context).pushNamed('/settings'),
+                        () =>
+                            Navigator.of(context).pushNamed(AppRoutes.settings),
                     child: const Padding(
                       padding: EdgeInsets.only(right: 14, top: 2),
                       child: Icon(
@@ -80,13 +85,14 @@ class HomeScreen extends StatelessWidget {
                 (l) => Padding(
                   padding: const EdgeInsets.only(bottom: 10),
                   child: _NoteCard(
-                    subject: '운영체제',
+                    subject:
+                        MockData.courseById(l.courseId)?.name ?? '알 수 없는 과목',
                     title: '${l.week} - ${l.title}',
                     time: l.date ?? '',
                     progress: 1.0,
                     onTap: () => Navigator.of(
                       context,
-                    ).pushNamed('/note/detail', arguments: l),
+                    ).pushNamed(AppRoutes.noteDetail, arguments: l),
                   ),
                 ),
               ),
@@ -106,7 +112,7 @@ class _NotificationBell extends StatelessWidget {
   Widget build(BuildContext context) {
     final hasUnread = MockData.notifications.any((n) => !n.isRead);
     return GestureDetector(
-      onTap: () => Navigator.of(context).pushNamed('/notifications'),
+      onTap: () => Navigator.of(context).pushNamed(AppRoutes.notifications),
       child: Padding(
         padding: const EdgeInsets.only(top: 2),
         child: Stack(
@@ -146,13 +152,17 @@ class _TodayClassCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final course = MockData.courseById(slot.courseId);
+    if (course == null) return const SizedBox.shrink();
     return MulgilCard(
       color: AppColors.tealSoft,
       onTap: () {
         final lecture = NotesStore.instance.createNote(
           title: '${course.name} 수업 필기',
+          courseId: course.id,
         );
-        Navigator.of(context).pushNamed('/note/detail', arguments: lecture);
+        Navigator.of(
+          context,
+        ).pushNamed(AppRoutes.noteDetail, arguments: lecture);
       },
       child: Row(
         children: [
@@ -249,7 +259,7 @@ class _UpcomingExamsCardState extends State<_UpcomingExamsCard> {
                 final dDay = exam.examAt.difference(DateTime.now()).inDays;
                 return GestureDetector(
                   behavior: HitTestBehavior.opaque,
-                  onTap: () => Navigator.of(context).pushNamed('/exams'),
+                  onTap: () => Navigator.of(context).pushNamed(AppRoutes.exams),
                   child: Row(
                     children: [
                       ExamDayBadge(dDay: dDay < 0 ? 0 : dDay),

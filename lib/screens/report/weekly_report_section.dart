@@ -34,16 +34,24 @@ class _WeeklyReportSummaryRow extends StatelessWidget {
 
   static const _totalStudy = _StatCard(
     label: '총 학습',
-    value: '18h 42m',
+    value: MockData.weeklyTotalStudy,
     icon: '📚',
   );
   static const _quizAccuracy = _StatCard(
     label: '퀴즈 정답률',
-    value: '74%',
+    value: MockData.weeklyQuizAccuracy,
     icon: '🎯',
   );
-  static const _streak = _StatCard(label: '연속 학습', value: '12일', icon: '🔥');
-  static const _notesDone = _StatCard(label: '필기 완료', value: '23개', icon: '📝');
+  static const _streak = _StatCard(
+    label: '연속 학습',
+    value: MockData.currentStreak,
+    icon: '🔥',
+  );
+  static const _notesDone = _StatCard(
+    label: '필기 완료',
+    value: MockData.weeklyNotesCompleted,
+    icon: '📝',
+  );
 
   @override
   Widget build(BuildContext context) {

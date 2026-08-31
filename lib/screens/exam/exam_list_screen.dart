@@ -30,9 +30,11 @@ class _ExamListScreenState extends State<ExamListScreen> {
       ? MockData.exams
       : MockData.exams.where((e) => e.courseName == _courseFilter).toList();
 
+  // No-ops if the exam was deleted in the meantime (e.g. mid AI-generation delay).
   void _replaceExam(Exam oldExam, Exam newExam) {
-    final i = MockData.exams.indexWhere((e) => e.id == oldExam.id);
-    setState(() => MockData.exams[i] = newExam);
+    setState(
+      () => MockData.exams.replaceWhere((e) => e.id == oldExam.id, newExam),
+    );
   }
 
   void _attachPastExam(Exam exam) {
@@ -67,7 +69,14 @@ class _ExamListScreenState extends State<ExamListScreen> {
     );
     await Future.delayed(const Duration(seconds: 2));
     if (!mounted) return;
-    final running = MockData.exams.firstWhere((e) => e.id == exam.id);
+    Exam? running;
+    for (final e in MockData.exams) {
+      if (e.id == exam.id) {
+        running = e;
+        break;
+      }
+    }
+    if (running == null) return; // exam was deleted while this was "running"
     _replaceExam(
       running,
       isSummary

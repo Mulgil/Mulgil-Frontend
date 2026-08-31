@@ -5,6 +5,7 @@ import '../../widgets/common_widgets.dart';
 import '../../widgets/course_form_sheet.dart';
 import '../../widgets/weekly_timetable.dart';
 import '../../data/mock_data.dart';
+import '../../constants/routes.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -42,7 +43,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   void _done() {
-    Navigator.of(context).pushReplacementNamed('/');
+    Navigator.of(context).pushReplacementNamed(AppRoutes.home);
   }
 }
 

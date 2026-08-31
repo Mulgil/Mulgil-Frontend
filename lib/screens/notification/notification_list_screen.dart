@@ -3,6 +3,7 @@ import '../../theme/app_theme.dart';
 import '../../widgets/common_widgets.dart';
 import '../../data/mock_data.dart';
 import '../../models/app_notification.dart';
+import '../../constants/routes.dart';
 
 class NotificationListScreen extends StatefulWidget {
   const NotificationListScreen({super.key});
@@ -26,13 +27,15 @@ class _NotificationListScreenState extends State<NotificationListScreen> {
 
   void _open(AppNotification n) {
     setState(() {
-      final i = MockData.notifications.indexWhere((item) => item.id == n.id);
-      MockData.notifications[i] = n.copyWith(isRead: true);
+      MockData.notifications.replaceWhere(
+        (item) => item.id == n.id,
+        n.copyWith(isRead: true),
+      );
     });
     final route = switch (n.type) {
-      NotificationType.processingComplete => '/summary',
-      NotificationType.examReminder => '/exams',
-      NotificationType.postClassReminder => '/note',
+      NotificationType.processingComplete => AppRoutes.summary,
+      NotificationType.examReminder => AppRoutes.exams,
+      NotificationType.postClassReminder => AppRoutes.note,
     };
     Navigator.of(context).pushNamed(route);
   }

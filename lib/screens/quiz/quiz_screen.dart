@@ -149,7 +149,7 @@ class _QuizScreenState extends State<QuizScreen> {
                   ),
                   SizedBox(height: 10),
                   Text(
-                    '프로세스 스케줄링',
+                    MockData.quizReferenceTitle,
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w800,

@@ -1,8 +1,10 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/common_widgets.dart';
 import '../../data/mock_data.dart';
 import '../../models/summary_item.dart';
+import '../../constants/routes.dart';
 
 class AiSummaryScreen extends StatefulWidget {
   const AiSummaryScreen({super.key});
@@ -52,7 +54,7 @@ class _AiSummaryScreenState extends State<AiSummaryScreen>
                 padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
                 child: MulgilButton(
                   label: '퀴즈 풀기',
-                  onTap: () => Navigator.of(context).pushNamed('/quiz'),
+                  onTap: () => Navigator.of(context).pushNamed(AppRoutes.quiz),
                 ),
               ),
           ],
@@ -193,7 +195,7 @@ class _SummaryTab extends StatelessWidget {
               const SizedBox(height: 16),
               MulgilButton(
                 label: '퀴즈 풀기',
-                onTap: () => Navigator.of(context).pushNamed('/quiz'),
+                onTap: () => Navigator.of(context).pushNamed(AppRoutes.quiz),
               ),
             ],
           ),
@@ -280,10 +282,10 @@ class _ProfEmphasisBlock extends StatelessWidget {
         border: Border.all(color: AppColors.coral.withValues(alpha: 0.3)),
         borderRadius: BorderRadius.circular(AppRadius.md),
       ),
-      child: const Column(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
+          const Text(
             '🎯 교수님 강조 포인트',
             style: TextStyle(
               fontSize: 13,
@@ -291,19 +293,23 @@ class _ProfEmphasisBlock extends StatelessWidget {
               color: AppColors.coral,
             ),
           ),
-          SizedBox(height: 8),
+          const SizedBox(height: 8),
           Text(
-            '세마포어의 P(wait) / V(signal) 연산',
-            style: TextStyle(
+            MockData.profEmphasisPoint.title,
+            style: const TextStyle(
               fontSize: 12.5,
               color: AppColors.ink,
               fontWeight: FontWeight.w600,
             ),
           ),
-          SizedBox(height: 4),
+          const SizedBox(height: 4),
           Text(
-            '세마포어는 공유 자원 접근을 제어하는 정수형 변수로, 이진/계수 세마포어로 나뉜다.',
-            style: TextStyle(fontSize: 12, color: AppColors.ink80, height: 1.6),
+            MockData.profEmphasisPoint.body,
+            style: const TextStyle(
+              fontSize: 12,
+              color: AppColors.ink80,
+              height: 1.6,
+            ),
           ),
         ],
       ),
@@ -327,14 +333,34 @@ class _MindmapTab extends StatelessWidget {
             border: Border.all(color: AppColors.border),
             borderRadius: BorderRadius.circular(AppRadius.lg),
           ),
-          child: CustomPaint(painter: _MindmapPainter(), child: const Center()),
+          child: CustomPaint(
+            painter: _MindmapPainter(
+              centerLabel: MockData.mindmapCenterLabel,
+              nodeLabels: MockData.mindmapNodeLabels,
+            ),
+            child: const Center(),
+          ),
         ),
       ),
     );
   }
 }
 
+// Fixed 4-node radial layout — the offsets are a visual template, not data,
+// so `nodeLabels` must have exactly 4 entries to match.
 class _MindmapPainter extends CustomPainter {
+  final String centerLabel;
+  final List<String> nodeLabels;
+  _MindmapPainter({required this.centerLabel, required this.nodeLabels})
+    : assert(nodeLabels.length == 4);
+
+  static const _offsets = [
+    Offset(-120, -80),
+    Offset(120, -80),
+    Offset(-120, 80),
+    Offset(120, 80),
+  ];
+
   @override
   void paint(Canvas canvas, Size size) {
     final cx = size.width / 2;
@@ -349,17 +375,10 @@ class _MindmapPainter extends CustomPainter {
 
     canvas.drawCircle(Offset(cx, cy), 42, centerPaint);
 
-    const nodes = [
-      {'dx': -120.0, 'dy': -80.0, 'label': '프로세스'},
-      {'dx': 120.0, 'dy': -80.0, 'label': '스레드'},
-      {'dx': -120.0, 'dy': 80.0, 'label': '스케줄링'},
-      {'dx': 120.0, 'dy': 80.0, 'label': '동기화'},
-    ];
-
     final tp = TextPainter(textDirection: TextDirection.ltr);
-    tp.text = const TextSpan(
-      text: '운영체제',
-      style: TextStyle(
+    tp.text = TextSpan(
+      text: centerLabel,
+      style: const TextStyle(
         color: Colors.white,
         fontSize: 11,
         fontWeight: FontWeight.w700,
@@ -368,15 +387,20 @@ class _MindmapPainter extends CustomPainter {
     tp.layout();
     tp.paint(canvas, Offset(cx - tp.width / 2, cy - tp.height / 2));
 
-    for (final n in nodes) {
-      final dx = n['dx'] as double;
-      final dy = n['dy'] as double;
+    // Bounds the loop to whichever list is shorter so a `nodeLabels` list
+    // that drifts from 4 entries can't index past either array — the assert
+    // below is a debug-time early warning, not the actual safety net (Dart
+    // strips asserts from release builds).
+    final nodeCount = math.min(_offsets.length, nodeLabels.length);
+    for (var i = 0; i < nodeCount; i++) {
+      final dx = _offsets[i].dx;
+      final dy = _offsets[i].dy;
       canvas.drawLine(Offset(cx, cy), Offset(cx + dx, cy + dy), linePaint);
       canvas.drawCircle(Offset(cx + dx, cy + dy), 28, nodePaint);
       final lbl = TextPainter(
         textDirection: TextDirection.ltr,
         text: TextSpan(
-          text: n['label'] as String,
+          text: nodeLabels[i],
           style: const TextStyle(color: Colors.white, fontSize: 10),
         ),
       );
@@ -405,23 +429,21 @@ class _OriginalTab extends StatelessWidget {
         border: Border.all(color: AppColors.border),
         borderRadius: BorderRadius.circular(AppRadius.md),
       ),
-      child: const Column(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            '텍스트입니다 텍스트입니다',
-            style: TextStyle(fontSize: 13, color: AppColors.ink80, height: 1.7),
-          ),
-          SizedBox(height: 8),
-          Text(
-            '텍스트입니다 텍스트입니다 텍스트입니다',
-            style: TextStyle(fontSize: 13, color: AppColors.ink80, height: 1.7),
-          ),
-          SizedBox(height: 8),
-          Text(
-            '텍스트입니다',
-            style: TextStyle(fontSize: 13, color: AppColors.ink80, height: 1.7),
-          ),
+          for (final (i, p) in MockData.originalNoteParagraphs.indexed) ...[
+            Text(
+              p,
+              style: const TextStyle(
+                fontSize: 13,
+                color: AppColors.ink80,
+                height: 1.7,
+              ),
+            ),
+            if (i != MockData.originalNoteParagraphs.length - 1)
+              const SizedBox(height: 8),
+          ],
         ],
       ),
     );

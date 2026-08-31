@@ -3,6 +3,7 @@ import '../../theme/app_theme.dart';
 import '../../widgets/common_widgets.dart';
 import '../../data/mock_data.dart';
 import '../../models/wrong_answer.dart';
+import '../../constants/routes.dart';
 
 const _kAll = '전체';
 
@@ -82,7 +83,7 @@ class _WrongAnswerScreenState extends State<WrongAnswerScreen> {
           const SizedBox(height: 16),
           MulgilButton(
             label: '오답만 다시 퀴즈',
-            onTap: () => Navigator.of(context).pushNamed('/quiz'),
+            onTap: () => Navigator.of(context).pushNamed(AppRoutes.quiz),
           ),
           const SizedBox(height: 8),
         ],
@@ -170,7 +171,7 @@ class _WrongAnswerScreenState extends State<WrongAnswerScreen> {
                 const SizedBox(height: 16),
                 MulgilButton(
                   label: '오답만 다시 퀴즈',
-                  onTap: () => Navigator.of(context).pushNamed('/quiz'),
+                  onTap: () => Navigator.of(context).pushNamed(AppRoutes.quiz),
                 ),
               ],
             ),
@@ -205,7 +206,8 @@ class _WrongCard extends StatelessWidget {
   final WrongAnswer item;
   const _WrongCard({required this.item});
 
-  void _retry(BuildContext context) => Navigator.of(context).pushNamed('/quiz');
+  void _retry(BuildContext context) =>
+      Navigator.of(context).pushNamed(AppRoutes.quiz);
 
   @override
   Widget build(BuildContext context) {

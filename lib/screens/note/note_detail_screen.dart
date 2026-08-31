@@ -7,6 +7,7 @@ import '../../data/mock_data.dart';
 import '../../data/notes_store.dart';
 import '../../models/lecture.dart';
 import '../../models/draw_stroke.dart';
+import '../../constants/routes.dart';
 
 class NoteDetailScreen extends StatefulWidget {
   const NoteDetailScreen({super.key});
@@ -64,7 +65,10 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
 
   // Mirrors PATCH /handwriting-blocks/{id}/confirm — OCR confidence < 0.80 needs user confirm before AI can use it.
   final List<_PendingHandwritingBlock> _pendingReview = [
-    _PendingHandwritingBlock(id: 'hb1', guess: '세마포어는 P/V 연산으로 제어된다'),
+    _PendingHandwritingBlock(
+      id: 'hb1',
+      guess: MockData.pendingHandwritingGuess,
+    ),
   ];
 
   static const _tools = [
@@ -397,7 +401,7 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
               title: const Text('AI 요약으로 이동'),
               onTap: () {
                 Navigator.pop(sheetCtx);
-                Navigator.of(context).pushNamed('/summary');
+                Navigator.of(context).pushNamed(AppRoutes.summary);
               },
             ),
             ListTile(
@@ -801,7 +805,7 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
                 ],
               ),
               child: const Text(
-                '언급 빈도 +1 · ⭐⭐',
+                MockData.mentionFrequencyLabel,
                 style: TextStyle(color: Colors.white, fontSize: 11),
               ),
             ),

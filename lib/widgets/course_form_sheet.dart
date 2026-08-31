@@ -92,10 +92,9 @@ class _CourseFormSheetState extends State<CourseFormSheet> {
     if (conflicts.isNotEmpty) {
       final names = conflicts
           .map((slot) {
-            final course = MockData.courses.firstWhere(
-              (c) => c.id == slot.courseId,
-            );
-            return "'${course.name}' (${slot.weekdayLabel} ${slot.startTime}~${slot.endTime})";
+            final courseName =
+                MockData.courseById(slot.courseId)?.name ?? '알 수 없는 과목';
+            return "'$courseName' (${slot.weekdayLabel} ${slot.startTime}~${slot.endTime})";
           })
           .toSet()
           .join(', ');

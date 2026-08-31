@@ -4,6 +4,7 @@ import '../../widgets/common_widgets.dart';
 import '../../data/mock_data.dart';
 import '../../data/notes_store.dart';
 import '../../models/lecture.dart';
+import '../../constants/routes.dart';
 
 class NoteListScreen extends StatefulWidget {
   const NoteListScreen({super.key});
@@ -52,7 +53,7 @@ class _NoteListScreenState extends State<NoteListScreen> {
                   OutlinedButton.icon(
                     onPressed: () => Navigator.of(
                       context,
-                    ).pushNamed('/exams', arguments: _course),
+                    ).pushNamed(AppRoutes.exams, arguments: _course),
                     icon: const Icon(Icons.event_note, size: 16),
                     label: const Text('시험', style: TextStyle(fontSize: 12)),
                     style: OutlinedButton.styleFrom(
@@ -87,12 +88,15 @@ class _NoteListScreenState extends State<NoteListScreen> {
                 child: ListenableBuilder(
                   listenable: NotesStore.instance,
                   builder: (context, _) {
-                    final lectures = _filteredLectures();
+                    final courseLectures = _courseLectures();
+                    final lectures = _filteredLectures(courseLectures);
                     if (lectures.isEmpty) {
-                      return const Center(
+                      return Center(
                         child: Text(
-                          '해당하는 강의가 없어요',
-                          style: TextStyle(color: AppColors.textMuted),
+                          courseLectures.isEmpty
+                              ? '$_course 과목에는 아직 필기가 없어요'
+                              : '조건에 맞는 필기가 없어요',
+                          style: const TextStyle(color: AppColors.textMuted),
                         ),
                       );
                     }
@@ -104,9 +108,10 @@ class _NoteListScreenState extends State<NoteListScreen> {
                         return _LectureCard(
                           lecture: lecture,
                           onTap: lecture.done
-                              ? () => Navigator.of(
-                                  context,
-                                ).pushNamed('/note/detail', arguments: lecture)
+                              ? () => Navigator.of(context).pushNamed(
+                                  AppRoutes.noteDetail,
+                                  arguments: lecture,
+                                )
                               : null,
                         );
                       },
@@ -126,15 +131,24 @@ class _NoteListScreenState extends State<NoteListScreen> {
     );
   }
 
-  List<Lecture> _filteredLectures() {
-    final lectures = NotesStore.instance.lectures;
+  // Notes belonging to the selected course, before the 전체/필기있음/퀴즈완료 tab
+  // filter — kept separate so the empty state can tell "이 과목엔 필기가 아예
+  // 없음" apart from "필터 조건에 맞는 게 없음".
+  List<Lecture> _courseLectures() {
+    final courseId = MockData.courseByName(_course)?.id;
+    return NotesStore.instance.lectures
+        .where((l) => l.courseId == courseId)
+        .toList();
+  }
+
+  List<Lecture> _filteredLectures(List<Lecture> courseLectures) {
     switch (_filter) {
       case 1:
-        return lectures.where((l) => l.done).toList();
+        return courseLectures.where((l) => l.done).toList();
       case 2:
-        return lectures.where((l) => l.quiz != null).toList();
+        return courseLectures.where((l) => l.quiz != null).toList();
       default:
-        return lectures;
+        return courseLectures;
     }
   }
 
@@ -154,7 +168,7 @@ class _NoteListScreenState extends State<NoteListScreen> {
               subtitle: const Text('강의자료·기출 PDF를 올려요 (최대 50MB, 150페이지)'),
               onTap: () {
                 Navigator.pop(sheetCtx);
-                Navigator.of(context).pushNamed('/note/pdf-upload');
+                Navigator.of(context).pushNamed(AppRoutes.notePdfUpload);
               },
             ),
             ListTile(
@@ -204,9 +218,19 @@ class _NoteListScreenState extends State<NoteListScreen> {
 
   void _createAndOpenNote(BuildContext dialogCtx, String rawTitle) {
     final title = rawTitle.trim().isEmpty ? '제목 없는 노트' : rawTitle.trim();
-    final lecture = NotesStore.instance.createNote(title: title);
+    final courseId = MockData.courseByName(_course)?.id;
     Navigator.pop(dialogCtx);
-    Navigator.of(context).pushNamed('/note/detail', arguments: lecture);
+    if (courseId == null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('과목을 다시 선택해주세요')));
+      return;
+    }
+    final lecture = NotesStore.instance.createNote(
+      title: title,
+      courseId: courseId,
+    );
+    Navigator.of(context).pushNamed(AppRoutes.noteDetail, arguments: lecture);
   }
 }
 
