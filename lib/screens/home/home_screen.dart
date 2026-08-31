@@ -21,6 +21,12 @@ class HomeScreen extends StatelessWidget {
 
   const HomeScreen({super.key, this.onOpenSettings});
 
+  // Vertical rhythm for the screen's top-level sections — was a mix of
+  // 12/14/16 picked ad hoc per gap, which read as slightly cramped and
+  // inconsistent. One value here, one tighter value for within-section lists.
+  static const _sectionGap = 24.0;
+  static const _listGap = 10.0;
+
   @override
   Widget build(BuildContext context) {
     final today = DateTime.now();
@@ -29,76 +35,98 @@ class HomeScreen extends StatelessWidget {
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          _formatDate(today),
-                          style: const TextStyle(
-                            fontSize: 13,
-                            color: AppColors.ink60,
+          child: MaxContentWidth(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _formatDate(today),
+                            style: const TextStyle(
+                              fontSize: 13,
+                              color: AppColors.ink60,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          '안녕하세요, ${MockData.currentUser.name}님',
-                          style: AppTextStyles.h1,
-                        ),
-                      ],
-                    ),
-                  ),
-                  GestureDetector(
-                    onTap:
-                        onOpenSettings ??
-                        () =>
-                            Navigator.of(context).pushNamed(AppRoutes.settings),
-                    child: const Padding(
-                      padding: EdgeInsets.only(right: 14, top: 2),
-                      child: Icon(
-                        Icons.settings_outlined,
-                        color: AppColors.textPrimary,
-                        size: 24,
+                          const SizedBox(height: 2),
+                          Text(
+                            '안녕하세요, ${MockData.currentUser.name}님',
+                            style: AppTextStyles.h1,
+                          ),
+                        ],
                       ),
                     ),
-                  ),
-                  _NotificationBell(),
+                    _HeaderIconButton(
+                      icon: Icons.settings_outlined,
+                      onTap:
+                          onOpenSettings ??
+                          () => Navigator.of(
+                            context,
+                          ).pushNamed(AppRoutes.settings),
+                    ),
+                    const SizedBox(width: 8),
+                    const _NotificationBell(),
+                  ],
+                ),
+                const SizedBox(height: _sectionGap),
+                if (todaysSlot != null) ...[
+                  _TodayClassCard(slot: todaysSlot),
+                  const SizedBox(height: _listGap),
                 ],
-              ),
-              const SizedBox(height: 14),
-              if (todaysSlot != null) ...[
-                _TodayClassCard(slot: todaysSlot),
-                const SizedBox(height: 12),
-              ],
-              _UpcomingExamsCard(),
-              const SizedBox(height: 16),
-              const WeeklyReportSection(),
-              const SizedBox(height: 16),
-              const SectionHeader(title: '최근 노트'),
-              ..._recentNotes(MockData.lectures).map(
-                (l) => Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
-                  child: _NoteCard(
-                    subject:
-                        MockData.courseById(l.courseId)?.name ?? '알 수 없는 과목',
-                    title: '${l.week} - ${l.title}',
-                    time: l.date ?? '',
-                    progress: 1.0,
-                    onTap: () => Navigator.of(
-                      context,
-                    ).pushNamed(AppRoutes.noteDetail, arguments: l),
+                _UpcomingExamsCard(),
+                const SizedBox(height: _sectionGap),
+                const WeeklyReportSection(),
+                const SizedBox(height: _sectionGap),
+                const SectionHeader(title: '최근 노트'),
+                ..._recentNotes(MockData.lectures).map(
+                  (l) => Padding(
+                    padding: const EdgeInsets.only(bottom: _listGap),
+                    child: _NoteCard(
+                      subject:
+                          MockData.courseById(l.courseId)?.name ?? '알 수 없는 과목',
+                      title: '${l.week} - ${l.title}',
+                      time: l.date ?? '',
+                      progress: 1.0,
+                      onTap: () => Navigator.of(
+                        context,
+                      ).pushNamed(AppRoutes.noteDetail, arguments: l),
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 14),
-            ],
+                const SizedBox(height: _sectionGap - 10),
+              ],
+            ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+// Bordered circular tap target for header actions — matches MulgilCard's flat
+// bordered language instead of a bare floating Icon with hand-tuned padding.
+class _HeaderIconButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+  const _HeaderIconButton({required this.icon, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: AppColors.surfaceAlt,
+      shape: const CircleBorder(side: BorderSide(color: AppColors.border)),
+      child: InkWell(
+        onTap: onTap,
+        customBorder: const CircleBorder(),
+        child: SizedBox(
+          width: 36,
+          height: 36,
+          child: Icon(icon, color: AppColors.textPrimary, size: 20),
         ),
       ),
     );
@@ -111,34 +139,30 @@ class _NotificationBell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final hasUnread = MockData.notifications.any((n) => !n.isRead);
-    return GestureDetector(
-      onTap: () => Navigator.of(context).pushNamed(AppRoutes.notifications),
-      child: Padding(
-        padding: const EdgeInsets.only(top: 2),
-        child: Stack(
-          clipBehavior: Clip.none,
-          children: [
-            const Icon(
-              Icons.notifications_outlined,
-              color: AppColors.textPrimary,
-              size: 24,
-            ),
-            if (hasUnread)
-              Positioned(
-                right: -1,
-                top: -1,
-                child: Container(
-                  width: 8,
-                  height: 8,
-                  decoration: const BoxDecoration(
-                    color: AppColors.coral,
-                    shape: BoxShape.circle,
-                  ),
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        _HeaderIconButton(
+          icon: Icons.notifications_outlined,
+          onTap: () => Navigator.of(context).pushNamed(AppRoutes.notifications),
+        ),
+        if (hasUnread)
+          Positioned(
+            right: 1,
+            top: 1,
+            child: IgnorePointer(
+              child: Container(
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  color: AppColors.coral,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: AppColors.surfaceAlt, width: 1.5),
                 ),
               ),
-          ],
-        ),
-      ),
+            ),
+          ),
+      ],
     );
   }
 }
@@ -303,7 +327,6 @@ class _NoteCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return MulgilCard(
       onTap: onTap,
-      padding: const EdgeInsets.all(12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -324,13 +347,9 @@ class _NoteCard extends StatelessWidget {
               ),
             ],
           ),
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 4),
-            child: Text(
-              title,
-              style: const TextStyle(fontSize: 14, color: AppColors.ink),
-            ),
-          ),
+          const SizedBox(height: 6),
+          Text(title, style: AppTextStyles.body),
+          const SizedBox(height: 8),
           MulgilProgressBar(value: progress),
         ],
       ),

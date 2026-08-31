@@ -280,7 +280,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         Expanded(
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(28),
-            child: _buildTabletPanel(),
+            child: MaxContentWidth(child: _buildTabletPanel()),
           ),
         ),
       ],

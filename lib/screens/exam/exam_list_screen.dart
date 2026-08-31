@@ -119,58 +119,61 @@ class _ExamListScreenState extends State<ExamListScreen> {
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  GestureDetector(
-                    onTap: () => Navigator.pop(context),
-                    child: const Icon(
-                      Icons.arrow_back_ios,
-                      size: 18,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      _courseFilter == null
-                          ? '시험 관리'
-                          : '시험 관리 · $_courseFilter',
-                      style: AppTextStyles.h2,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 14),
-              Expanded(
-                child: _exams.isEmpty
-                    ? const Center(
-                        child: Text(
-                          '등록된 시험이 없어요',
-                          style: TextStyle(color: AppColors.textMuted),
-                        ),
-                      )
-                    : ListView.separated(
-                        itemCount: _exams.length,
-                        separatorBuilder: (_, _) => const SizedBox(height: 12),
-                        itemBuilder: (_, i) => _ExamCard(
-                          exam: _exams[i],
-                          onAttachPastExam: () => _attachPastExam(_exams[i]),
-                          onGenerateSummary: () =>
-                              _generate(_exams[i], isSummary: true),
-                          onGenerateQuiz: () =>
-                              _generate(_exams[i], isSummary: false),
-                          onEdit: () => _openEditSheet(_exams[i]),
-                          onDelete: () => _deleteExam(_exams[i]),
-                        ),
+          child: MaxContentWidth(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    GestureDetector(
+                      onTap: () => Navigator.pop(context),
+                      child: const Icon(
+                        Icons.arrow_back_ios,
+                        size: 18,
+                        color: AppColors.textPrimary,
                       ),
-              ),
-              const SizedBox(height: 12),
-              MulgilButton(label: '+ 시험 등록', onTap: _openCreateSheet),
-              const SizedBox(height: 12),
-            ],
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        _courseFilter == null
+                            ? '시험 관리'
+                            : '시험 관리 · $_courseFilter',
+                        style: AppTextStyles.h2,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                Expanded(
+                  child: _exams.isEmpty
+                      ? const Center(
+                          child: Text(
+                            '등록된 시험이 없어요',
+                            style: TextStyle(color: AppColors.textMuted),
+                          ),
+                        )
+                      : ListView.separated(
+                          itemCount: _exams.length,
+                          separatorBuilder: (_, _) =>
+                              const SizedBox(height: 12),
+                          itemBuilder: (_, i) => _ExamCard(
+                            exam: _exams[i],
+                            onAttachPastExam: () => _attachPastExam(_exams[i]),
+                            onGenerateSummary: () =>
+                                _generate(_exams[i], isSummary: true),
+                            onGenerateQuiz: () =>
+                                _generate(_exams[i], isSummary: false),
+                            onEdit: () => _openEditSheet(_exams[i]),
+                            onDelete: () => _deleteExam(_exams[i]),
+                          ),
+                        ),
+                ),
+                const SizedBox(height: 12),
+                MulgilButton(label: '+ 시험 등록', onTap: _openCreateSheet),
+                const SizedBox(height: 12),
+              ],
+            ),
           ),
         ),
       ),

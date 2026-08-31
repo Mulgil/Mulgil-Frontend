@@ -303,77 +303,79 @@ class _ScheduleStepState extends State<_ScheduleStep> {
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                '온보딩 2/2',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: AppColors.tealDark,
-                  fontWeight: FontWeight.w700,
+          child: MaxContentWidth(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  '온보딩 2/2',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AppColors.tealDark,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 4),
-              Text('시간표를 등록해주세요', style: AppTextStyles.h2),
-              const SizedBox(height: 4),
-              const Text(
-                '과목·교수님·시험 일정을 알면 리마인더를 딱 맞게 보내드려요',
-                style: TextStyle(fontSize: 12.5, color: AppColors.textMuted),
-              ),
-              const SizedBox(height: 16),
-              Expanded(
-                child: SingleChildScrollView(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          const Expanded(
-                            child: Padding(
-                              padding: EdgeInsets.only(bottom: 8),
-                              child: Text(
-                                '시간표',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: AppColors.textMuted,
-                                  fontWeight: FontWeight.w600,
-                                  letterSpacing: 0.5,
+                const SizedBox(height: 4),
+                Text('시간표를 등록해주세요', style: AppTextStyles.h2),
+                const SizedBox(height: 4),
+                const Text(
+                  '과목·교수님·시험 일정을 알면 리마인더를 딱 맞게 보내드려요',
+                  style: TextStyle(fontSize: 12.5, color: AppColors.textMuted),
+                ),
+                const SizedBox(height: 16),
+                Expanded(
+                  child: SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            const Expanded(
+                              child: Padding(
+                                padding: EdgeInsets.only(bottom: 8),
+                                child: Text(
+                                  '시간표',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: AppColors.textMuted,
+                                    fontWeight: FontWeight.w600,
+                                    letterSpacing: 0.5,
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
-                          MulgilRaisedAddButton(onTap: _openAddSubjectSheet),
-                        ],
-                      ),
-                      const SizedBox(height: 10),
-                      WeeklyTimetable(onChanged: () => setState(() {})),
-                      const SizedBox(height: 20),
-                      const SectionHeader(
-                        title: '시험 일정',
-                        subtitle: '과목을 탭해서 시험 날짜를 등록해주세요',
-                      ),
-                      ...MockData.courses.map(
-                        (course) => Padding(
-                          padding: const EdgeInsets.only(bottom: 10),
-                          child: _ExamScheduleCard(
-                            course: course,
-                            exams: _examsFor(course.name),
-                            onAddExam: () => _openExamSheet(course),
-                            onEditExam: (exam) =>
-                                _openExamSheet(course, existing: exam),
-                            onDeleteExam: _deleteExam,
+                            MulgilRaisedAddButton(onTap: _openAddSubjectSheet),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        WeeklyTimetable(onChanged: () => setState(() {})),
+                        const SizedBox(height: 20),
+                        const SectionHeader(
+                          title: '시험 일정',
+                          subtitle: '과목을 탭해서 시험 날짜를 등록해주세요',
+                        ),
+                        ...MockData.courses.map(
+                          (course) => Padding(
+                            padding: const EdgeInsets.only(bottom: 10),
+                            child: _ExamScheduleCard(
+                              course: course,
+                              exams: _examsFor(course.name),
+                              onAddExam: () => _openExamSheet(course),
+                              onEditExam: (exam) =>
+                                  _openExamSheet(course, existing: exam),
+                              onDeleteExam: _deleteExam,
+                            ),
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 16),
-              MulgilButton(label: '완료', onTap: widget.onNext),
-              const SizedBox(height: 8),
-            ],
+                const SizedBox(height: 16),
+                MulgilButton(label: '완료', onTap: widget.onNext),
+                const SizedBox(height: 8),
+              ],
+            ),
           ),
         ),
       ),

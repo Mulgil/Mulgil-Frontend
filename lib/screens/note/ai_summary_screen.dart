@@ -157,7 +157,9 @@ class _SummaryTab extends StatelessWidget {
   Widget build(BuildContext context) {
     return SingleChildScrollView(
       padding: EdgeInsets.all(isTablet ? 28 : 20),
-      child: isTablet ? _buildTabletLayout(context) : _buildMobileLayout(),
+      child: isTablet
+          ? MaxContentWidth(child: _buildTabletLayout(context))
+          : _buildMobileLayout(),
     );
   }
 

@@ -95,88 +95,91 @@ class _WrongAnswerScreenState extends State<WrongAnswerScreen> {
     final answers = _filteredAnswers;
     return Padding(
       padding: const EdgeInsets.fromLTRB(28, 28, 28, 28),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('오답 노트', style: AppTextStyles.h2),
-                const SizedBox(height: 6),
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: _filters
-                        .map(
-                          (s) => Padding(
-                            padding: const EdgeInsets.only(right: 8),
-                            child: MulgilChip(
-                              label: s,
-                              selected: _courseFilter == s,
-                              onTap: () => setState(() => _courseFilter = s),
+      child: MaxContentWidth(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('오답 노트', style: AppTextStyles.h2),
+                  const SizedBox(height: 6),
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: _filters
+                          .map(
+                            (s) => Padding(
+                              padding: const EdgeInsets.only(right: 8),
+                              child: MulgilChip(
+                                label: s,
+                                selected: _courseFilter == s,
+                                onTap: () => setState(() => _courseFilter = s),
+                              ),
                             ),
+                          )
+                          .toList(),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Expanded(
+                    child: answers.isEmpty
+                        ? const _EmptyBox()
+                        : ListView.separated(
+                            itemCount: answers.length,
+                            separatorBuilder: (_, _) =>
+                                const SizedBox(height: 12),
+                            itemBuilder: (_, i) => _WrongCard(item: answers[i]),
                           ),
-                        )
-                        .toList(),
                   ),
-                ),
-                const SizedBox(height: 16),
-                Expanded(
-                  child: answers.isEmpty
-                      ? const _EmptyBox()
-                      : ListView.separated(
-                          itemCount: answers.length,
-                          separatorBuilder: (_, _) =>
-                              const SizedBox(height: 12),
-                          itemBuilder: (_, i) => _WrongCard(item: answers[i]),
-                        ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          const SizedBox(width: 28),
-          SizedBox(
-            width: 280,
-            child: Column(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(22),
-                  decoration: BoxDecoration(
-                    color: AppColors.navy,
-                    borderRadius: BorderRadius.circular(AppRadius.lg),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        '이번 학기 오답',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Color(0xFF9fb6c4),
+            const SizedBox(width: 28),
+            SizedBox(
+              width: 280,
+              child: Column(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(22),
+                    decoration: BoxDecoration(
+                      color: AppColors.navy,
+                      borderRadius: BorderRadius.circular(AppRadius.lg),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          '이번 학기 오답',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Color(0xFF9fb6c4),
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        '${MockData.wrongAnswers.length}개',
-                        style: const TextStyle(
-                          fontSize: 30,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.white,
+                        const SizedBox(height: 4),
+                        Text(
+                          '${MockData.wrongAnswers.length}개',
+                          style: const TextStyle(
+                            fontSize: 30,
+                            fontWeight: FontWeight.w800,
+                            color: Colors.white,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-                const SizedBox(height: 16),
-                MulgilButton(
-                  label: '오답만 다시 퀴즈',
-                  onTap: () => Navigator.of(context).pushNamed(AppRoutes.quiz),
-                ),
-              ],
+                  const SizedBox(height: 16),
+                  MulgilButton(
+                    label: '오답만 다시 퀴즈',
+                    onTap: () =>
+                        Navigator.of(context).pushNamed(AppRoutes.quiz),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

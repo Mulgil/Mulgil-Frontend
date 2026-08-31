@@ -38,26 +38,28 @@ class _RecordingUploadScreenState extends State<RecordingUploadScreen> {
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  GestureDetector(
-                    onTap: () => Navigator.pop(context),
-                    child: const Icon(
-                      Icons.arrow_back_ios,
-                      size: 18,
-                      color: AppColors.textPrimary,
+          child: MaxContentWidth(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    GestureDetector(
+                      onTap: () => Navigator.pop(context),
+                      child: const Icon(
+                        Icons.arrow_back_ios,
+                        size: 18,
+                        color: AppColors.textPrimary,
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  Text('강의 녹음 업로드', style: AppTextStyles.h2),
-                ],
-              ),
-              const SizedBox(height: 28),
-              Expanded(child: _buildStage()),
-            ],
+                    const SizedBox(width: 8),
+                    Text('강의 녹음 업로드', style: AppTextStyles.h2),
+                  ],
+                ),
+                const SizedBox(height: 28),
+                Expanded(child: _buildStage()),
+              ],
+            ),
           ),
         ),
       ),

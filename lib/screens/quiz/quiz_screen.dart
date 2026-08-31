@@ -28,34 +28,36 @@ class _QuizScreenState extends State<QuizScreen> {
       body: SafeArea(
         child: Padding(
           padding: EdgeInsets.all(context.isTablet ? 28 : 20),
-          child: Column(
-            children: [
-              Row(
-                children: [
-                  const BackIfPushed(),
-                  CourseDropdown(
-                    selected: _course,
-                    options: MockData.courseNames,
-                    onChanged: (v) => setState(() => _course = v),
-                  ),
-                  const Spacer(),
-                  Text(
-                    '${_current + 1} / $_total',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: AppColors.ink60,
+          child: MaxContentWidth(
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    const BackIfPushed(),
+                    CourseDropdown(
+                      selected: _course,
+                      options: MockData.courseNames,
+                      onChanged: (v) => setState(() => _course = v),
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 10),
-              MulgilProgressBar(value: (_current + 1) / _total),
-              const SizedBox(height: 24),
-              if (context.isTablet)
-                _buildTabletQuiz(q)
-              else
-                _buildMobileQuiz(q),
-            ],
+                    const Spacer(),
+                    Text(
+                      '${_current + 1} / $_total',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.ink60,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                MulgilProgressBar(value: (_current + 1) / _total),
+                const SizedBox(height: 24),
+                if (context.isTablet)
+                  _buildTabletQuiz(q)
+                else
+                  _buildMobileQuiz(q),
+              ],
+            ),
           ),
         ),
       ),
