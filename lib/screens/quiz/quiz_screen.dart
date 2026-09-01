@@ -3,6 +3,9 @@ import '../../theme/app_theme.dart';
 import '../../widgets/common_widgets.dart';
 import '../../data/mock_data.dart';
 import '../../models/quiz_question.dart';
+import 'widgets/quiz_answer_buttons.dart';
+import 'widgets/quiz_result_card.dart';
+import 'widgets/quiz_tablet_hint.dart';
 
 class QuizScreen extends StatefulWidget {
   const QuizScreen({super.key});
@@ -92,39 +95,7 @@ class _QuizScreenState extends State<QuizScreen> {
           ),
           const Spacer(),
           if (_showResult)
-            Align(
-              alignment: Alignment.bottomRight,
-              child: SizedBox(
-                width: 170,
-                child: MulgilCard(
-                  padding: const EdgeInsets.all(12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        _correct ? '정답!' : '오답',
-                        style: TextStyle(
-                          color: _correct
-                              ? AppColors.tealDark
-                              : AppColors.coral,
-                          fontWeight: FontWeight.w800,
-                          fontSize: 12,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        q.explanation,
-                        style: const TextStyle(
-                          fontSize: 11,
-                          color: AppColors.ink80,
-                          height: 1.5,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
+            QuizResultCard(correct: _correct, explanation: q.explanation),
         ],
       ),
     );
@@ -168,7 +139,7 @@ class _QuizScreenState extends State<QuizScreen> {
                     ),
                   ),
                   SizedBox(height: 10),
-                  _TabletHint(),
+                  TabletHint(),
                 ],
               ),
             ),
@@ -235,7 +206,7 @@ class _QuizScreenState extends State<QuizScreen> {
           options.length,
           (i) => Padding(
             padding: EdgeInsets.only(bottom: i < options.length - 1 ? 10 : 0),
-            child: _ChoiceButton(
+            child: ChoiceButton(
               index: i,
               label: options[i],
               selected: _showResult && i == q.answer,
@@ -249,7 +220,7 @@ class _QuizScreenState extends State<QuizScreen> {
     return Row(
       children: [
         Expanded(
-          child: _OxButton(
+          child: OxButton(
             label: 'O',
             color: AppColors.tealDark,
             onTap: () => _answer(0, q),
@@ -257,7 +228,7 @@ class _QuizScreenState extends State<QuizScreen> {
         ),
         const SizedBox(width: 14),
         Expanded(
-          child: _OxButton(
+          child: OxButton(
             label: 'X',
             color: AppColors.coral,
             onTap: () => _answer(1, q),
@@ -279,133 +250,5 @@ class _QuizScreenState extends State<QuizScreen> {
         _showResult = false;
       });
     });
-  }
-}
-
-class _TabletHint extends StatelessWidget {
-  const _TabletHint();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: AppColors.yellowSoft,
-        borderRadius: BorderRadius.circular(AppRadius.sm),
-      ),
-      child: const Text(
-        '⭐ 긴 작업이 계속 밀려 실행되지 못하는 기아 현상(starvation)이 발생할 수 있다.',
-        style: TextStyle(fontSize: 12.5, color: AppColors.ink80, height: 1.7),
-      ),
-    );
-  }
-}
-
-class _ChoiceButton extends StatelessWidget {
-  final int index;
-  final String label;
-  final bool selected;
-  final bool wrong;
-  final VoidCallback? onTap;
-  const _ChoiceButton({
-    required this.index,
-    required this.label,
-    required this.selected,
-    required this.wrong,
-    required this.onTap,
-  });
-
-  static const _letters = ['A', 'B', 'C', 'D'];
-
-  @override
-  Widget build(BuildContext context) {
-    final bg = selected
-        ? AppColors.tealDark
-        : (wrong ? AppColors.coralSoft : AppColors.surface);
-    final border = selected
-        ? AppColors.tealDark
-        : (wrong ? AppColors.coral : AppColors.border);
-    final fg = selected ? Colors.white : AppColors.ink;
-
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        decoration: BoxDecoration(
-          color: bg,
-          border: Border.all(color: border, width: 1.5),
-          borderRadius: BorderRadius.circular(AppRadius.md),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 24,
-              height: 24,
-              decoration: BoxDecoration(
-                color: selected
-                    ? Colors.white.withValues(alpha: 0.25)
-                    : AppColors.chip,
-                shape: BoxShape.circle,
-              ),
-              alignment: Alignment.center,
-              child: Text(
-                _letters[index],
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w800,
-                  color: fg,
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                label,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: fg,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _OxButton extends StatelessWidget {
-  final String label;
-  final Color color;
-  final VoidCallback onTap;
-  const _OxButton({
-    required this.label,
-    required this.color,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 32),
-        decoration: BoxDecoration(
-          color: color,
-          borderRadius: BorderRadius.circular(AppRadius.xl),
-        ),
-        alignment: Alignment.center,
-        child: Text(
-          label,
-          style: const TextStyle(
-            fontSize: 32,
-            fontWeight: FontWeight.w800,
-            color: Colors.white,
-          ),
-        ),
-      ),
-    );
   }
 }

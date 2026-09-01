@@ -135,10 +135,10 @@ class _ShellScreenState extends State<ShellScreen> {
                 }),
                 const Spacer(),
                 // Streak badge at bottom
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 20),
+                const Padding(
+                  padding: EdgeInsets.only(bottom: 20),
                   child: Column(
-                    children: const [
+                    children: [
                       Text('🔥', style: TextStyle(fontSize: 20)),
                       SizedBox(height: 2),
                       Text(
@@ -221,7 +221,7 @@ class _FloatingNavBar extends StatelessWidget {
       onTap: () => onTap(index),
       behavior: HitTestBehavior.opaque,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
+        duration: const Duration(milliseconds: 120),
         curve: Curves.easeOut,
         padding: const EdgeInsets.symmetric(vertical: 9),
         decoration: BoxDecoration(

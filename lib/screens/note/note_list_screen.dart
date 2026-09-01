@@ -5,6 +5,7 @@ import '../../data/mock_data.dart';
 import '../../data/notes_store.dart';
 import '../../models/lecture.dart';
 import '../../constants/routes.dart';
+import 'widgets/lecture_card.dart';
 
 class NoteListScreen extends StatefulWidget {
   const NoteListScreen({super.key});
@@ -106,7 +107,7 @@ class _NoteListScreenState extends State<NoteListScreen> {
                         separatorBuilder: (_, _) => const SizedBox(height: 10),
                         itemBuilder: (ctx, i) {
                           final lecture = lectures[i];
-                          return _LectureCard(
+                          return LectureCard(
                             lecture: lecture,
                             onTap: lecture.done
                                 ? () => Navigator.of(context).pushNamed(
@@ -233,72 +234,5 @@ class _NoteListScreenState extends State<NoteListScreen> {
       courseId: courseId,
     );
     Navigator.of(context).pushNamed(AppRoutes.noteDetail, arguments: lecture);
-  }
-}
-
-class _LectureCard extends StatelessWidget {
-  final Lecture lecture;
-  final VoidCallback? onTap;
-  const _LectureCard({required this.lecture, this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return MulgilCard(
-      onTap: onTap,
-      padding: const EdgeInsets.all(12),
-      child: Opacity(
-        opacity: lecture.done ? 1.0 : 0.5,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              '${lecture.week} - ${lecture.title}',
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w700,
-                color: AppColors.ink,
-              ),
-            ),
-            Padding(
-              padding: EdgeInsets.only(top: 2, bottom: lecture.done ? 8 : 0),
-              child: Text(
-                lecture.done ? "${lecture.date} · 필기 완료" : '필기 없음',
-                style: const TextStyle(fontSize: 11, color: AppColors.ink40),
-              ),
-            ),
-            if (lecture.done)
-              Row(
-                children: [
-                  if (lecture.quiz != null) ...[
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 3,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.tealSoft,
-                        borderRadius: BorderRadius.circular(AppRadius.sm),
-                      ),
-                      child: Text(
-                        '퀴즈 ${lecture.quiz}',
-                        style: const TextStyle(
-                          fontSize: 11,
-                          color: AppColors.tealDark,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                  ],
-                  if (lecture.stars > 0)
-                    Text(
-                      '⭐' * lecture.stars,
-                      style: const TextStyle(fontSize: 12),
-                    ),
-                ],
-              ),
-          ],
-        ),
-      ),
-    );
   }
 }

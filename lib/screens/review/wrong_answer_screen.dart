@@ -4,6 +4,9 @@ import '../../widgets/common_widgets.dart';
 import '../../data/mock_data.dart';
 import '../../models/wrong_answer.dart';
 import '../../constants/routes.dart';
+import 'widgets/wrong_answer_card.dart';
+import 'widgets/wrong_answer_empty_box.dart';
+import 'widgets/wrong_answer_stats_card.dart';
 
 const _kAll = '전체';
 
@@ -39,10 +42,10 @@ class _WrongAnswerScreenState extends State<WrongAnswerScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
+          const Row(
             children: [
-              const BackIfPushed(),
-              const Text(
+              BackIfPushed(),
+              Text(
                 '오답 노트',
                 style: TextStyle(
                   fontSize: 20,
@@ -53,31 +56,19 @@ class _WrongAnswerScreenState extends State<WrongAnswerScreen> {
             ],
           ),
           const SizedBox(height: 12),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: _filters
-                  .map(
-                    (s) => Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: MulgilChip(
-                        label: s,
-                        selected: _courseFilter == s,
-                        onTap: () => setState(() => _courseFilter = s),
-                      ),
-                    ),
-                  )
-                  .toList(),
-            ),
+          _FilterBar(
+            filters: _filters,
+            selected: _courseFilter,
+            onSelect: (s) => setState(() => _courseFilter = s),
           ),
           const SizedBox(height: 14),
           Expanded(
             child: answers.isEmpty
-                ? const _EmptyBox()
+                ? const WrongAnswerEmptyBox()
                 : ListView.separated(
                     itemCount: answers.length,
                     separatorBuilder: (_, _) => const SizedBox(height: 12),
-                    itemBuilder: (_, i) => _WrongCard(item: answers[i]),
+                    itemBuilder: (_, i) => WrongAnswerCard(item: answers[i]),
                   ),
           ),
           const SizedBox(height: 16),
@@ -105,32 +96,21 @@ class _WrongAnswerScreenState extends State<WrongAnswerScreen> {
                 children: [
                   Text('오답 노트', style: AppTextStyles.h2),
                   const SizedBox(height: 6),
-                  SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Row(
-                      children: _filters
-                          .map(
-                            (s) => Padding(
-                              padding: const EdgeInsets.only(right: 8),
-                              child: MulgilChip(
-                                label: s,
-                                selected: _courseFilter == s,
-                                onTap: () => setState(() => _courseFilter = s),
-                              ),
-                            ),
-                          )
-                          .toList(),
-                    ),
+                  _FilterBar(
+                    filters: _filters,
+                    selected: _courseFilter,
+                    onSelect: (s) => setState(() => _courseFilter = s),
                   ),
                   const SizedBox(height: 16),
                   Expanded(
                     child: answers.isEmpty
-                        ? const _EmptyBox()
+                        ? const WrongAnswerEmptyBox()
                         : ListView.separated(
                             itemCount: answers.length,
                             separatorBuilder: (_, _) =>
                                 const SizedBox(height: 12),
-                            itemBuilder: (_, i) => _WrongCard(item: answers[i]),
+                            itemBuilder: (_, i) =>
+                                WrongAnswerCard(item: answers[i]),
                           ),
                   ),
                 ],
@@ -141,34 +121,7 @@ class _WrongAnswerScreenState extends State<WrongAnswerScreen> {
               width: 280,
               child: Column(
                 children: [
-                  Container(
-                    padding: const EdgeInsets.all(22),
-                    decoration: BoxDecoration(
-                      color: AppColors.navy,
-                      borderRadius: BorderRadius.circular(AppRadius.lg),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          '이번 학기 오답',
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: Color(0xFF9fb6c4),
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          '${MockData.wrongAnswers.length}개',
-                          style: const TextStyle(
-                            fontSize: 30,
-                            fontWeight: FontWeight.w800,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                  const WrongAnswerStatsCard(),
                   const SizedBox(height: 16),
                   MulgilButton(
                     label: '오답만 다시 퀴즈',
@@ -185,102 +138,34 @@ class _WrongAnswerScreenState extends State<WrongAnswerScreen> {
   }
 }
 
-class _EmptyBox extends StatelessWidget {
-  const _EmptyBox();
+class _FilterBar extends StatelessWidget {
+  final List<String> filters;
+  final String selected;
+  final ValueChanged<String> onSelect;
+
+  const _FilterBar({
+    required this.filters,
+    required this.selected,
+    required this.onSelect,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      child: MulgilCard(
-        padding: const EdgeInsets.symmetric(vertical: 32),
-        child: const Center(
-          child: Text(
-            '해당하는 오답이 없어요',
-            style: TextStyle(color: AppColors.textMuted),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _WrongCard extends StatelessWidget {
-  final WrongAnswer item;
-  const _WrongCard({required this.item});
-
-  void _retry(BuildContext context) =>
-      Navigator.of(context).pushNamed(AppRoutes.quiz);
-
-  @override
-  Widget build(BuildContext context) {
-    return MulgilCard(
-      padding: const EdgeInsets.all(14),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            item.courseName,
-            style: const TextStyle(
-              fontSize: 11,
-              color: AppColors.teal,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            item.question,
-            style: const TextStyle(fontSize: 13, color: AppColors.textPrimary),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Text(
-                '내 답: ${item.myAnswer}',
-                style: const TextStyle(fontSize: 12, color: AppColors.coral),
-              ),
-              const SizedBox(width: 10),
-              Text(
-                '정답: ${item.correct}',
-                style: const TextStyle(fontSize: 12, color: AppColors.tealDark),
-              ),
-            ],
-          ),
-          if (item.isProfEmphasis) ...[
-            const SizedBox(height: 6),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-              decoration: BoxDecoration(
-                color: AppColors.coralSoft,
-                borderRadius: BorderRadius.circular(AppRadius.sm),
-              ),
-              child: const Text(
-                '교수님 강조 개념',
-                style: TextStyle(
-                  fontSize: 10.5,
-                  color: AppColors.coral,
-                  fontWeight: FontWeight.w700,
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: filters
+            .map(
+              (s) => Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: MulgilChip(
+                  label: s,
+                  selected: selected == s,
+                  onTap: () => onSelect(s),
                 ),
               ),
-            ),
-          ],
-          const SizedBox(height: 10),
-          GestureDetector(
-            onTap: () => _retry(context),
-            child: Container(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              decoration: BoxDecoration(
-                border: Border.all(color: AppColors.navy),
-                borderRadius: BorderRadius.circular(AppRadius.sm),
-              ),
-              alignment: Alignment.center,
-              child: const Text(
-                '다시 풀기',
-                style: TextStyle(fontSize: 12, color: AppColors.navy),
-              ),
-            ),
-          ),
-        ],
+            )
+            .toList(),
       ),
     );
   }
