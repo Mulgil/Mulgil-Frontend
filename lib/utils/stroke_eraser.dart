@@ -124,8 +124,10 @@ class StrokeEraser {
     final ab = b - a;
     final lengthSquared = ab.dx * ab.dx + ab.dy * ab.dy;
     if (lengthSquared == 0) return (p - a).distance;
-    final t = (((p - a).dx * ab.dx + (p - a).dy * ab.dy) / lengthSquared)
-        .clamp(0.0, 1.0);
+    final t = (((p - a).dx * ab.dx + (p - a).dy * ab.dy) / lengthSquared).clamp(
+      0.0,
+      1.0,
+    );
     final projection = a + ab * t;
     return (p - projection).distance;
   }

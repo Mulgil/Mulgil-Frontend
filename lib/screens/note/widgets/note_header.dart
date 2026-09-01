@@ -31,7 +31,11 @@ class NoteDetailHeader extends StatelessWidget {
               behavior: HitTestBehavior.opaque,
               child: const Padding(
                 padding: EdgeInsets.all(8),
-                child: Icon(Icons.arrow_back_ios, size: 18, color: AppColors.ink),
+                child: Icon(
+                  Icons.arrow_back_ios,
+                  size: 18,
+                  color: AppColors.ink,
+                ),
               ),
             ),
             const Spacer(),

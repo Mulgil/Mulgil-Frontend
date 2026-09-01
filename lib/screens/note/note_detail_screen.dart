@@ -261,9 +261,7 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
           ],
           Expanded(
             child: isDrawing
-                ? (context.isTablet
-                      ? _buildTabletLayout()
-                      : _buildCanvas())
+                ? (context.isTablet ? _buildTabletLayout() : _buildCanvas())
                 : NoteTypedEditor(controller: _typedCtrl),
           ),
           if (isDrawing)
