@@ -116,7 +116,7 @@ class HomeScreen extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          _formatDate(today),
+                          '${_formatDate(today)} · ${MockData.currentWeekLabel}',
                           style: const TextStyle(
                             fontSize: 13,
                             color: AppColors.ink60,

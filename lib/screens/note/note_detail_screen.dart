@@ -211,6 +211,7 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
   void _openMenuSheet() {
     showNoteDetailMenuSheet(
       context,
+      lecture: _lecture,
       hasPendingReview: _pendingReview.isNotEmpty,
       onOpenReview: _openReviewSheet,
     );

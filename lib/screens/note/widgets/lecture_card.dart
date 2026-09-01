@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../data/mock_data.dart';
 import '../../../models/lecture.dart';
 import '../../../theme/app_theme.dart';
 import '../../../widgets/common_widgets.dart';
@@ -18,13 +19,21 @@ class LectureCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              '${lecture.week} - ${lecture.title}',
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w700,
-                color: AppColors.ink,
-              ),
+            Row(
+              children: [
+                Text(
+                  '${lecture.week} - ${lecture.title}',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.ink,
+                  ),
+                ),
+                if (lecture.week == MockData.currentWeekLabel) ...[
+                  const SizedBox(width: 6),
+                  const CurrentWeekBadge(),
+                ],
+              ],
             ),
             Padding(
               padding: EdgeInsets.only(top: 2, bottom: lecture.done ? 8 : 0),

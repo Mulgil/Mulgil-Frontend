@@ -3,11 +3,15 @@ import '../../../theme/app_theme.dart';
 import '../../../widgets/common_widgets.dart';
 import '../../../data/mock_data.dart';
 import '../../../models/summary_item.dart';
-import '../../../constants/routes.dart';
 
 class SummaryTab extends StatelessWidget {
   final bool isTablet;
-  const SummaryTab({super.key, required this.isTablet});
+  final VoidCallback onTakeQuiz;
+  const SummaryTab({
+    super.key,
+    required this.isTablet,
+    required this.onTakeQuiz,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -51,10 +55,7 @@ class SummaryTab extends StatelessWidget {
             children: [
               const ProfEmphasisBlock(),
               const SizedBox(height: 16),
-              MulgilButton(
-                label: '퀴즈 풀기',
-                onTap: () => Navigator.of(context).pushNamed(AppRoutes.quiz),
-              ),
+              MulgilButton(label: '퀴즈 풀기', onTap: onTakeQuiz),
             ],
           ),
         ),

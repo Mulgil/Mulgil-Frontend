@@ -16,7 +16,7 @@ class WrongAnswerCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            item.courseName,
+            '${item.courseName} · ${item.week}',
             style: const TextStyle(
               fontSize: 11,
               color: AppColors.teal,
