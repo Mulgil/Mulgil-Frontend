@@ -121,7 +121,7 @@ class _WeeklyTimetableState extends State<WeeklyTimetable> {
         children: [
           Row(
             children: [
-              SizedBox(width: _timeColWidth),
+              const SizedBox(width: _timeColWidth),
               ...days.map(
                 (wd) => Expanded(
                   child: Container(
