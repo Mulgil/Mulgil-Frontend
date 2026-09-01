@@ -29,7 +29,12 @@ Color _courseColor(Course course) =>
 // own setState mutates the shared lists out from under it.
 class WeeklyTimetable extends StatefulWidget {
   final VoidCallback? onChanged;
-  const WeeklyTimetable({super.key, this.onChanged});
+  // When set, tapping a course block calls this instead of the default
+  // delete-confirm flow — lets a read-only context (e.g. Home) turn a tap
+  // into "open this subject" navigation while course management screens
+  // keep tap-to-delete.
+  final void Function(Course course)? onCourseTap;
+  const WeeklyTimetable({super.key, this.onChanged, this.onCourseTap});
 
   @override
   State<WeeklyTimetable> createState() => _WeeklyTimetableState();
@@ -227,7 +232,9 @@ class _WeeklyTimetableState extends State<WeeklyTimetable> {
                                 right: 2,
                                 height: max(height - 2, 0),
                                 child: GestureDetector(
-                                  onTap: () => _confirmDeleteCourse(course),
+                                  onTap: widget.onCourseTap != null
+                                      ? () => widget.onCourseTap!(course)
+                                      : () => _confirmDeleteCourse(course),
                                   child: Container(
                                     padding: const EdgeInsets.symmetric(
                                       horizontal: 4,

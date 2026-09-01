@@ -7,6 +7,7 @@ import '../../widgets/exam_form_sheet.dart';
 import '../../data/mock_data.dart';
 import '../../data/auth_store.dart';
 import '../../models/exam.dart';
+import '../report/weekly_report_section.dart';
 import 'legal_document_screen.dart';
 import '../../constants/routes.dart';
 import 'widgets/app_info_panel.dart';
@@ -19,7 +20,7 @@ import 'widgets/section_label.dart';
 import 'widgets/subjects_panel.dart';
 import 'widgets/tablet_side_item.dart';
 
-enum _SettingsTab { profile, subjects, appInfo }
+enum _SettingsTab { profile, subjects, report, appInfo }
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -153,6 +154,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const SizedBox(height: 20),
           const ProfileCard(),
           const SizedBox(height: 20),
+          const WeeklyReportSection(),
+          const SizedBox(height: 20),
           Row(
             children: [
               const Expanded(child: SectionLabel(label: '과목 관리')),
@@ -264,6 +267,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 onTap: () => setState(() => _tab = _SettingsTab.subjects),
               ),
               TabletSideItem(
+                label: '리포트',
+                icon: '📊',
+                selected: _tab == _SettingsTab.report,
+                onTap: () => setState(() => _tab = _SettingsTab.report),
+              ),
+              TabletSideItem(
                 label: '앱 정보',
                 icon: 'ℹ️',
                 selected: _tab == _SettingsTab.appInfo,
@@ -306,6 +315,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
           onDeleteExam: _deleteExamSchedule,
           onChanged: () => setState(() {}),
         );
+      case _SettingsTab.report:
+        return const WeeklyReportSection();
       case _SettingsTab.appInfo:
         return SettingsAppInfoPanel(
           onContactSupport: _openContactSupport,

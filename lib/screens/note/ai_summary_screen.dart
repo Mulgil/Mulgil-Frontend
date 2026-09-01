@@ -8,7 +8,8 @@ import 'widgets/ai_mindmap_tab.dart';
 import 'widgets/ai_original_tab.dart';
 
 class AiSummaryScreen extends StatefulWidget {
-  const AiSummaryScreen({super.key});
+  final String? initialCourse;
+  const AiSummaryScreen({super.key, this.initialCourse});
 
   @override
   State<AiSummaryScreen> createState() => _AiSummaryScreenState();
@@ -17,7 +18,7 @@ class AiSummaryScreen extends StatefulWidget {
 class _AiSummaryScreenState extends State<AiSummaryScreen>
     with SingleTickerProviderStateMixin {
   late final TabController _tab;
-  String _course = MockData.courseNames.first;
+  late String _course = widget.initialCourse ?? MockData.courseNames.first;
 
   @override
   void initState() {
@@ -39,7 +40,7 @@ class _AiSummaryScreenState extends State<AiSummaryScreen>
         child: Column(
           children: [
             _buildHeader(context),
-            _buildTabBar(),
+            _buildTabBar(context),
             Expanded(
               child: TabBarView(
                 controller: _tab,
@@ -65,19 +66,12 @@ class _AiSummaryScreenState extends State<AiSummaryScreen>
   }
 
   Widget _buildHeader(BuildContext context) {
+    final pad = context.isTablet ? 28.0 : 20.0;
     return Container(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+      padding: EdgeInsets.fromLTRB(pad, pad, pad, 0),
       child: Row(
         children: [
-          GestureDetector(
-            onTap: () => Navigator.pop(context),
-            child: const Icon(
-              Icons.arrow_back_ios,
-              size: 18,
-              color: AppColors.ink,
-            ),
-          ),
-          const SizedBox(width: 8),
+          const BackIfPushed(),
           const Text(
             'AI 요약 · ',
             style: TextStyle(
@@ -122,9 +116,10 @@ class _AiSummaryScreenState extends State<AiSummaryScreen>
     );
   }
 
-  Widget _buildTabBar() {
+  Widget _buildTabBar(BuildContext context) {
+    final hPad = context.isTablet ? 28.0 : 20.0;
     return Container(
-      margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+      margin: EdgeInsets.fromLTRB(hPad, 12, hPad, 0),
       decoration: BoxDecoration(
         color: AppColors.chip,
         borderRadius: BorderRadius.circular(AppRadius.md),
