@@ -58,7 +58,10 @@ class _QuizSessionScreenState extends State<QuizSessionScreen> {
                   ),
                   Text(
                     '${_current + 1} / $_total',
-                    style: const TextStyle(fontSize: 12, color: AppColors.ink60),
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppColors.ink60,
+                    ),
                   ),
                   const SizedBox(width: 10),
                   GestureDetector(
@@ -77,7 +80,10 @@ class _QuizSessionScreenState extends State<QuizSessionScreen> {
               const SizedBox(height: 10),
               MulgilProgressBar(value: (_current + 1) / _total),
               const SizedBox(height: 24),
-              if (context.isTablet) _buildTabletQuiz(q) else _buildMobileQuiz(q),
+              if (context.isTablet)
+                _buildTabletQuiz(q)
+              else
+                _buildMobileQuiz(q),
             ],
           ),
         ),

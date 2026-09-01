@@ -218,32 +218,31 @@ class _QuizWeekCard extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text(
                     lecture.done ? '필기 완료' : '필기 없음 · 퀴즈 불가',
-                    style: const TextStyle(fontSize: 11, color: AppColors.ink40),
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: AppColors.ink40,
+                    ),
                   ),
                 ],
               ),
             ),
             if (lecture.quiz != null)
               Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 8,
-                  vertical: 3,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
                   color: AppColors.tealSoft,
                   borderRadius: BorderRadius.circular(AppRadius.sm),
                 ),
                 child: Text(
                   '퀴즈 ${lecture.quiz}',
-                  style: const TextStyle(fontSize: 11, color: AppColors.tealDark),
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: AppColors.tealDark,
+                  ),
                 ),
               )
             else if (lecture.done)
-              const Icon(
-                Icons.chevron_right,
-                size: 20,
-                color: AppColors.ink40,
-              ),
+              const Icon(Icons.chevron_right, size: 20, color: AppColors.ink40),
           ],
         ),
       ),

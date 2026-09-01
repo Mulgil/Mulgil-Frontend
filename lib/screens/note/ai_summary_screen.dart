@@ -120,7 +120,10 @@ class _SummaryWeekCard extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text(
                     lecture.done ? '필기 완료 · AI 요약 보기' : '필기 없음 · 요약 불가',
-                    style: const TextStyle(fontSize: 11, color: AppColors.ink40),
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: AppColors.ink40,
+                    ),
                   ),
                 ],
               ),
