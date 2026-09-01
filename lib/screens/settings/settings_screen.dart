@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/common_widgets.dart';
 import '../../widgets/course_form_sheet.dart';
-import '../../widgets/weekly_timetable.dart';
 import '../../widgets/exam_form_sheet.dart';
 import '../../data/mock_data.dart';
 import '../../data/auth_store.dart';
@@ -11,12 +10,10 @@ import '../report/weekly_report_section.dart';
 import 'legal_document_screen.dart';
 import '../../constants/routes.dart';
 import 'widgets/app_info_panel.dart';
-import 'widgets/exam_schedule_tile.dart';
 import 'widgets/legal_texts.dart';
 import 'widgets/nav_tile.dart';
 import 'widgets/profile_card.dart';
 import 'widgets/profile_panel.dart';
-import 'widgets/section_label.dart';
 import 'widgets/subjects_panel.dart';
 import 'widgets/tablet_side_item.dart';
 
@@ -125,6 +122,49 @@ class _SettingsScreenState extends State<SettingsScreen> {
     ).pushNamedAndRemoveUntil(AppRoutes.login, (route) => false);
   }
 
+  void _openSubjectsPage() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => _SettingsSubPage(
+          title: '과목 관리',
+          child: SettingsSubjectsPanel(
+            onAddSubject: _openAddSubjectSheet,
+            onAddExam: _openAddExamSheet,
+            onEditExam: _openEditExamSheet,
+            onDeleteExam: _deleteExamSchedule,
+            onChanged: () => setState(() {}),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _openReportPage() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) =>
+            const _SettingsSubPage(title: '리포트', child: WeeklyReportSection()),
+      ),
+    );
+  }
+
+  void _openAppInfoPage() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => _SettingsSubPage(
+          title: '앱 정보',
+          child: SettingsAppInfoPanel(
+            onContactSupport: _openContactSupport,
+            onBugReport: _openBugReport,
+            onPrivacyPolicy: _openPrivacyPolicy,
+            onTermsOfService: _openTermsOfService,
+            onOpenSourceLicenses: _openOpenSourceLicenses,
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -132,6 +172,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  // Mobile used to stack profile + report + subjects + app-info in one long
+  // scroll, which made just checking your profile a lot of scrolling.
+  // Profile stays the default view; the other three sections are one tap
+  // away instead, mirroring the tablet's sidebar tabs as pushed sub-pages.
   Widget _buildMobile() {
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
@@ -154,63 +198,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const SizedBox(height: 20),
           const ProfileCard(),
           const SizedBox(height: 20),
-          const WeeklyReportSection(),
-          const SizedBox(height: 20),
-          Row(
-            children: [
-              const Expanded(child: SectionLabel(label: '과목 관리')),
-              MulgilRaisedAddButton(onTap: _openAddSubjectSheet),
-            ],
+          NavTile(
+            label: '과목 관리',
+            icon: Icons.menu_book_outlined,
+            onTap: _openSubjectsPage,
           ),
-          WeeklyTimetable(onChanged: () => setState(() {})),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              const Expanded(child: SectionLabel(label: '시험 일정')),
-              MulgilRaisedAddButton(onTap: _openAddExamSheet),
-            ],
+          NavTile(
+            label: '리포트',
+            icon: Icons.bar_chart_outlined,
+            onTap: _openReportPage,
           ),
-          const SizedBox(height: 12),
-          if (MockData.exams.isEmpty)
-            const EmptyExamBox()
-          else
-            ...MockData.exams.map(
-              (e) => Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: ExamScheduleTile(
-                  exam: e,
-                  onEdit: () => _openEditExamSheet(e),
-                  onDelete: () => _deleteExamSchedule(e),
-                ),
-              ),
-            ),
-          const SizedBox(height: 20),
-          const SectionLabel(label: '앱 정보'),
-          const NavTile(
-            label: '버전 1.0.0',
+          NavTile(
+            label: '앱 정보',
             icon: Icons.info_outlined,
-            showArrow: false,
-          ),
-          NavTile(
-            label: '문의 · 피드백',
-            icon: Icons.mail_outlined,
-            sublabel: 'mulgil@gmail.com',
-            onTap: _openContactSupport,
-          ),
-          NavTile(
-            label: '개인정보처리방침',
-            icon: Icons.shield_outlined,
-            onTap: _openPrivacyPolicy,
-          ),
-          NavTile(
-            label: '이용약관',
-            icon: Icons.article_outlined,
-            onTap: _openTermsOfService,
-          ),
-          NavTile(
-            label: '오픈소스 라이선스',
-            icon: Icons.code_outlined,
-            onTap: _openOpenSourceLicenses,
+            onTap: _openAppInfoPage,
           ),
           const SizedBox(height: 24),
           TextButton(
@@ -326,5 +327,45 @@ class _SettingsScreenState extends State<SettingsScreen> {
           onOpenSourceLicenses: _openOpenSourceLicenses,
         );
     }
+  }
+}
+
+// Thin pushed-page shell for a mobile settings section (과목 관리/리포트/앱 정보) —
+// same panel widgets the tablet sidebar shows, just reached by a tap instead
+// of always being on screen.
+class _SettingsSubPage extends StatelessWidget {
+  final String title;
+  final Widget child;
+  const _SettingsSubPage({required this.title, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const BackIfPushed(),
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              child,
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
