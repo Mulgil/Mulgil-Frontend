@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
 import '../../constants/routes.dart';
 import 'widgets/splash_step.dart';
+import 'widgets/notification_step.dart';
 import 'widgets/schedule_step.dart';
 
 class OnboardingScreen extends StatefulWidget {
@@ -26,6 +27,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           context.isTablet
               ? SplashTablet(onStart: _next)
               : SplashMobile(onStart: _next),
+          NotificationStep(onNext: _next),
           ScheduleStep(onNext: _done),
         ],
       ),

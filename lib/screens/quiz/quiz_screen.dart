@@ -3,67 +3,172 @@ import '../../theme/app_theme.dart';
 import '../../widgets/common_widgets.dart';
 import '../../data/mock_data.dart';
 import '../../models/quiz_question.dart';
+import '../../models/wrong_answer.dart';
+import '../review/widgets/wrong_answer_card.dart';
+import '../review/widgets/wrong_answer_empty_box.dart';
+import '../review/widgets/wrong_answer_stats_card.dart';
 import 'widgets/quiz_answer_buttons.dart';
 import 'widgets/quiz_result_card.dart';
 import 'widgets/quiz_tablet_hint.dart';
 
 class QuizScreen extends StatefulWidget {
-  const QuizScreen({super.key});
+  final String? initialCourse;
+  const QuizScreen({super.key, this.initialCourse});
 
   @override
   State<QuizScreen> createState() => _QuizScreenState();
 }
 
-class _QuizScreenState extends State<QuizScreen> {
+class _QuizScreenState extends State<QuizScreen>
+    with SingleTickerProviderStateMixin {
+  late final TabController _tab;
+  late String _course = widget.initialCourse ?? MockData.courseNames.first;
+
   int _current = 3;
   static const int _total = 10;
   bool _showResult = false;
   bool _correct = false;
-  String _course = MockData.courseNames.first;
 
   int get _qIdx => _current % MockData.quizQuestions.length;
 
+  List<WrongAnswer> get _courseWrongAnswers =>
+      MockData.wrongAnswers.where((w) => w.courseName == _course).toList();
+
+  @override
+  void initState() {
+    super.initState();
+    _tab = TabController(length: 2, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _tab.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
-    final q = MockData.quizQuestions[_qIdx];
-
+    final pad = context.isTablet ? 28.0 : 20.0;
     return Scaffold(
       body: SafeArea(
         child: Padding(
-          padding: EdgeInsets.all(context.isTablet ? 28 : 20),
-          child: MaxContentWidth(
-            child: Column(
-              children: [
-                Row(
+          padding: EdgeInsets.fromLTRB(pad, pad, pad, 0),
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  const BackIfPushed(),
+                  CourseDropdown(
+                    selected: _course,
+                    options: MockData.courseNames,
+                    onChanged: (v) => setState(() => _course = v),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              _buildTabBar(),
+              const SizedBox(height: 16),
+              Expanded(
+                child: TabBarView(
+                  controller: _tab,
                   children: [
-                    const BackIfPushed(),
-                    CourseDropdown(
-                      selected: _course,
-                      options: MockData.courseNames,
-                      onChanged: (v) => setState(() => _course = v),
-                    ),
-                    const Spacer(),
-                    Text(
-                      '${_current + 1} / $_total',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: AppColors.ink60,
-                      ),
-                    ),
+                    _buildQuizTab(context),
+                    _buildWrongAnswerTab(context),
                   ],
                 ),
-                const SizedBox(height: 10),
-                MulgilProgressBar(value: (_current + 1) / _total),
-                const SizedBox(height: 24),
-                if (context.isTablet)
-                  _buildTabletQuiz(q)
-                else
-                  _buildMobileQuiz(q),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildTabBar() {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.chip,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+      ),
+      child: TabBar(
+        controller: _tab,
+        indicator: BoxDecoration(
+          color: AppColors.navy,
+          borderRadius: BorderRadius.circular(AppRadius.sm),
+        ),
+        indicatorSize: TabBarIndicatorSize.tab,
+        labelColor: Colors.white,
+        unselectedLabelColor: AppColors.ink60,
+        labelStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+        dividerColor: Colors.transparent,
+        tabs: const [
+          Tab(text: '퀴즈'),
+          Tab(text: '오답노트'),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildQuizTab(BuildContext context) {
+    final q = MockData.quizQuestions[_qIdx];
+    return Column(
+      children: [
+        Row(
+          children: [
+            const Spacer(),
+            Text(
+              '${_current + 1} / $_total',
+              style: const TextStyle(fontSize: 12, color: AppColors.ink60),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        MulgilProgressBar(value: (_current + 1) / _total),
+        const SizedBox(height: 24),
+        if (context.isTablet) _buildTabletQuiz(q) else _buildMobileQuiz(q),
+      ],
+    );
+  }
+
+  Widget _buildWrongAnswerTab(BuildContext context) {
+    final answers = _courseWrongAnswers;
+    final list = answers.isEmpty
+        ? const WrongAnswerEmptyBox()
+        : ListView.separated(
+            itemCount: answers.length,
+            separatorBuilder: (_, _) => const SizedBox(height: 12),
+            itemBuilder: (_, i) => WrongAnswerCard(item: answers[i]),
+          );
+
+    if (context.isTablet) {
+      return Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(child: list),
+          const SizedBox(width: 28),
+          SizedBox(
+            width: 280,
+            child: Column(
+              children: [
+                const WrongAnswerStatsCard(),
+                const SizedBox(height: 16),
+                MulgilButton(
+                  label: '오답만 다시 퀴즈',
+                  onTap: () => _tab.animateTo(0),
+                ),
+              ],
+            ),
+          ),
+        ],
+      );
+    }
+    return Column(
+      children: [
+        Expanded(child: list),
+        const SizedBox(height: 16),
+        MulgilButton(label: '오답만 다시 퀴즈', onTap: () => _tab.animateTo(0)),
+        const SizedBox(height: 8),
+      ],
     );
   }
 

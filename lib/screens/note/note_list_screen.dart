@@ -8,7 +8,8 @@ import '../../constants/routes.dart';
 import 'widgets/lecture_card.dart';
 
 class NoteListScreen extends StatefulWidget {
-  const NoteListScreen({super.key});
+  final String? initialCourse;
+  const NoteListScreen({super.key, this.initialCourse});
 
   @override
   State<NoteListScreen> createState() => _NoteListScreenState();
@@ -16,113 +17,112 @@ class NoteListScreen extends StatefulWidget {
 
 class _NoteListScreenState extends State<NoteListScreen> {
   int _filter = 0;
-  String _course = MockData.courseNames.first;
+  late String _course = widget.initialCourse ?? MockData.courseNames.first;
 
   static const _filters = ['전체', '필기있음', '퀴즈완료'];
 
   @override
   Widget build(BuildContext context) {
+    final pad = context.isTablet ? 28.0 : 20.0;
     return Scaffold(
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
-          child: MaxContentWidth(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    const BackIfPushed(),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          CourseDropdown(
-                            selected: _course,
-                            options: MockData.courseNames,
-                            onChanged: (v) => setState(() => _course = v),
+          padding: EdgeInsets.fromLTRB(pad, pad, pad, 0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const BackIfPushed(),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        CourseDropdown(
+                          selected: _course,
+                          options: MockData.courseNames,
+                          onChanged: (v) => setState(() => _course = v),
+                        ),
+                        Text(
+                          MockData.courseProfessors[_course] ?? '',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: AppColors.textMuted,
                           ),
-                          Text(
-                            MockData.courseProfessors[_course] ?? '',
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: AppColors.textMuted,
-                            ),
-                          ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
-                    OutlinedButton.icon(
-                      onPressed: () => Navigator.of(
-                        context,
-                      ).pushNamed(AppRoutes.exams, arguments: _course),
-                      icon: const Icon(Icons.event_note, size: 16),
-                      label: const Text('시험', style: TextStyle(fontSize: 12)),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.navy,
-                        side: const BorderSide(color: AppColors.navy),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 14),
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: _filters
-                        .asMap()
-                        .entries
-                        .map(
-                          (e) => Padding(
-                            padding: const EdgeInsets.only(right: 8),
-                            child: MulgilChip(
-                              label: e.value,
-                              selected: _filter == e.key,
-                              onTap: () => setState(() => _filter = e.key),
-                            ),
-                          ),
-                        )
-                        .toList(),
                   ),
-                ),
-                const SizedBox(height: 14),
-                Expanded(
-                  child: ListenableBuilder(
-                    listenable: NotesStore.instance,
-                    builder: (context, _) {
-                      final courseLectures = _courseLectures();
-                      final lectures = _filteredLectures(courseLectures);
-                      if (lectures.isEmpty) {
-                        return Center(
-                          child: Text(
-                            courseLectures.isEmpty
-                                ? '$_course 과목에는 아직 필기가 없어요'
-                                : '조건에 맞는 필기가 없어요',
-                            style: const TextStyle(color: AppColors.textMuted),
+                  OutlinedButton.icon(
+                    onPressed: () => Navigator.of(
+                      context,
+                    ).pushNamed(AppRoutes.exams, arguments: _course),
+                    icon: const Icon(Icons.event_note, size: 16),
+                    label: const Text('시험', style: TextStyle(fontSize: 12)),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.navy,
+                      side: const BorderSide(color: AppColors.navy),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: _filters
+                      .asMap()
+                      .entries
+                      .map(
+                        (e) => Padding(
+                          padding: const EdgeInsets.only(right: 8),
+                          child: MulgilChip(
+                            label: e.value,
+                            selected: _filter == e.key,
+                            onTap: () => setState(() => _filter = e.key),
                           ),
-                        );
-                      }
-                      return ListView.separated(
-                        itemCount: lectures.length,
-                        separatorBuilder: (_, _) => const SizedBox(height: 10),
-                        itemBuilder: (ctx, i) {
-                          final lecture = lectures[i];
-                          return LectureCard(
-                            lecture: lecture,
-                            onTap: lecture.done
-                                ? () => Navigator.of(context).pushNamed(
-                                    AppRoutes.noteDetail,
-                                    arguments: lecture,
-                                  )
-                                : null,
-                          );
-                        },
+                        ),
+                      )
+                      .toList(),
+                ),
+              ),
+              const SizedBox(height: 14),
+              Expanded(
+                child: ListenableBuilder(
+                  listenable: NotesStore.instance,
+                  builder: (context, _) {
+                    final courseLectures = _courseLectures();
+                    final lectures = _filteredLectures(courseLectures);
+                    if (lectures.isEmpty) {
+                      return Center(
+                        child: Text(
+                          courseLectures.isEmpty
+                              ? '$_course 과목에는 아직 필기가 없어요'
+                              : '조건에 맞는 필기가 없어요',
+                          style: const TextStyle(color: AppColors.textMuted),
+                        ),
                       );
-                    },
-                  ),
+                    }
+                    return ListView.separated(
+                      itemCount: lectures.length,
+                      separatorBuilder: (_, _) => const SizedBox(height: 10),
+                      itemBuilder: (ctx, i) {
+                        final lecture = lectures[i];
+                        return LectureCard(
+                          lecture: lecture,
+                          onTap: lecture.done
+                              ? () => Navigator.of(context).pushNamed(
+                                  AppRoutes.noteDetail,
+                                  arguments: lecture,
+                                )
+                              : null,
+                        );
+                      },
+                    );
+                  },
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),

@@ -1,11 +1,12 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
+import '../app_routes_map.dart';
 import '../widgets/mulgil_logo.dart';
 import 'home/home_screen.dart';
 import 'note/note_list_screen.dart';
+import 'note/ai_summary_screen.dart';
 import 'quiz/quiz_screen.dart';
-import 'review/wrong_answer_screen.dart';
 import 'settings/settings_screen.dart';
 
 class ShellScreen extends StatefulWidget {
@@ -20,19 +21,38 @@ class _ShellScreenState extends State<ShellScreen> {
 
   void _goToTab(int index) => setState(() => _index = index);
 
+  // Home owns a nested Navigator so tapping a subject to open 필기/퀴즈/요약
+  // pushes within Home's own slot instead of the app's root Navigator —
+  // otherwise that push would cover the tablet sidebar / mobile bottom bar.
+  Widget _homeTab() => Navigator(
+    onGenerateRoute: (settings) {
+      // The nested navigator's own root page is Home; anything else
+      // (noteDetail, exams, quiz, ...) falls through to the shared route
+      // table so pushNamed still resolves to the right screen with its
+      // arguments intact, instead of re-rendering Home for every route.
+      if (settings.name == Navigator.defaultRouteName) {
+        return MaterialPageRoute(
+          settings: settings,
+          builder: (_) => HomeScreen(onOpenSettings: () => _goToTab(4)),
+        );
+      }
+      return generateAppRoute(settings);
+    },
+  );
+
   List<Widget> get _mobileScreens => [
-    HomeScreen(onOpenSettings: () => _goToTab(4)),
+    _homeTab(),
     const NoteListScreen(),
+    const AiSummaryScreen(),
     const QuizScreen(),
-    const WrongAnswerScreen(),
     const SettingsScreen(),
   ];
 
   List<Widget> get _tabletScreens => [
-    HomeScreen(onOpenSettings: () => _goToTab(4)),
+    _homeTab(),
     const NoteListScreen(),
+    const AiSummaryScreen(),
     const QuizScreen(),
-    const WrongAnswerScreen(),
     const SettingsScreen(),
   ];
 
@@ -44,8 +64,12 @@ class _ShellScreenState extends State<ShellScreen> {
   static const _mobileNavItems = [
     (icon: Icons.home_outlined, activeIcon: Icons.home, label: '홈'),
     (icon: Icons.edit_note_outlined, activeIcon: Icons.edit_note, label: '필기'),
+    (
+      icon: Icons.auto_awesome_outlined,
+      activeIcon: Icons.auto_awesome,
+      label: '요약',
+    ),
     (icon: Icons.quiz_outlined, activeIcon: Icons.quiz, label: '퀴즈'),
-    (icon: Icons.report_outlined, activeIcon: Icons.report, label: '오답노트'),
     (icon: Icons.person_outline, activeIcon: Icons.person, label: '마이'),
   ];
 
@@ -72,14 +96,14 @@ class _ShellScreenState extends State<ShellScreen> {
       {
         'icon': Icons.edit_note_outlined,
         'activeIcon': Icons.edit_note,
-        'label': '과목',
+        'label': '필기',
+      },
+      {
+        'icon': Icons.auto_awesome_outlined,
+        'activeIcon': Icons.auto_awesome,
+        'label': '요약',
       },
       {'icon': Icons.quiz_outlined, 'activeIcon': Icons.quiz, 'label': '퀴즈'},
-      {
-        'icon': Icons.report_outlined,
-        'activeIcon': Icons.report,
-        'label': '오답노트',
-      },
       {
         'icon': Icons.settings_outlined,
         'activeIcon': Icons.settings,
