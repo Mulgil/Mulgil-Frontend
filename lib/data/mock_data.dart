@@ -7,14 +7,40 @@ import '../models/app_notification.dart';
 import '../models/exam.dart';
 import '../models/course.dart';
 import '../models/timetable_slot.dart';
+import '../models/user_profile.dart';
+import '../models/recording_candidate.dart';
 import '../theme/app_theme.dart';
+
+// Shared by every screen that mutates a MockData list item in place (exams,
+// notifications, ...) so the "item may have been deleted elsewhere" guard
+// only has to be written once instead of copy-pasted per call site.
+extension ReplaceById<T> on List<T> {
+  /// Replaces the first element for which [test] returns true with
+  /// [replacement]. Returns false (no-op) instead of throwing if nothing
+  /// matches — e.g. the item was deleted in the meantime.
+  bool replaceWhere(bool Function(T) test, T replacement) {
+    final i = indexWhere(test);
+    if (i == -1) return false;
+    this[i] = replacement;
+    return true;
+  }
+}
 
 // Replace each field with an API call when the backend is ready.
 // e.g. MockData.lectures → await ApiService.getLectures(subjectId)
 abstract final class MockData {
+  static const currentUser = UserProfile(
+    name: '지민',
+    school: '숭실대학교',
+    department: '소프트웨어학부',
+    year: 3,
+    avatarInitial: '유',
+  );
+
   static const lectures = [
     Lecture(
       id: 'l1',
+      courseId: 'c1',
       week: '1주차',
       title: '컴퓨터 구조 개요',
       date: '3/1',
@@ -24,6 +50,7 @@ abstract final class MockData {
     ),
     Lecture(
       id: 'l2',
+      courseId: 'c1',
       week: '2주차',
       title: '프로세스',
       date: '3/8',
@@ -31,8 +58,22 @@ abstract final class MockData {
       quiz: '4/10',
       stars: 3,
     ),
-    Lecture(id: 'l3', week: '3주차', title: '스레드와 동기화', done: false, stars: 0),
-    Lecture(id: 'l4', week: '4주차', title: '데드락', done: false, stars: 0),
+    Lecture(
+      id: 'l3',
+      courseId: 'c1',
+      week: '3주차',
+      title: '스레드와 동기화',
+      done: false,
+      stars: 0,
+    ),
+    Lecture(
+      id: 'l4',
+      courseId: 'c1',
+      week: '4주차',
+      title: '데드락',
+      done: false,
+      stars: 0,
+    ),
   ];
 
   static const quizQuestions = [
@@ -131,6 +172,36 @@ abstract final class MockData {
     ),
   ];
 
+  static const profEmphasisPoint = SummaryItem(
+    title: '세마포어의 P(wait) / V(signal) 연산',
+    body: '세마포어는 공유 자원 접근을 제어하는 정수형 변수로, 이진/계수 세마포어로 나뉜다.',
+    isEmphasis: true,
+  );
+
+  static const mindmapCenterLabel = '운영체제';
+  static const mindmapNodeLabels = ['프로세스', '스레드', '스케줄링', '동기화'];
+
+  static const originalNoteParagraphs = [
+    '세마포어는 공유 자원에 대한 접근을 제어하는 동기화 도구로, 초기값과 P/V 연산으로 동작한다.',
+    '뮤텍스는 세마포어의 특수한 형태로, 값이 0 또는 1만 가지는 이진 세마포어에 해당한다.',
+    '모니터는 상호 배제와 조건 변수를 결합한 고수준 동기화 기법이다.',
+  ];
+
+  static const quizReferenceTitle = '프로세스 스케줄링';
+
+  static const pendingHandwritingGuess = '세마포어는 P/V 연산으로 제어된다';
+  static const mentionFrequencyLabel = '언급 빈도 +1 · ⭐⭐';
+
+  static const weeklyTotalStudy = '18h 42m';
+  static const weeklyQuizAccuracy = '74%';
+  static const currentStreak = '12일';
+  static const weeklyNotesCompleted = '23개';
+
+  static const recordingCandidates = [
+    RecordingCandidate(id: 's1', title: '운영체제 · 3주차', overlapScore: 0.92),
+    RecordingCandidate(id: 's2', title: '운영체제 · 4주차', overlapScore: 0.41),
+  ];
+
   // Course and TimetableSlot are separate resources per the API (POST /courses vs POST /timetable/slots).
   static final List<Course> courses = [
     const Course(id: 'c1', name: '운영체제', instructor: '김민수 교수님', term: '2026-2'),
@@ -190,6 +261,17 @@ abstract final class MockData {
 
   static List<String> get courseNames => courses.map((c) => c.name).toList();
 
+  // Removes the given courses along with everything keyed off them — their
+  // timetable slots and their exams — so callers can't cascade only partway
+  // (e.g. dropping a course's slots but leaving its exams orphaned).
+  static void deleteCourses(Iterable<Course> coursesToDelete) {
+    final ids = coursesToDelete.map((c) => c.id).toSet();
+    final names = coursesToDelete.map((c) => c.name).toSet();
+    timetableSlots.removeWhere((s) => ids.contains(s.courseId));
+    courses.removeWhere((c) => ids.contains(c.id));
+    exams.removeWhere((e) => names.contains(e.courseName));
+  }
+
   static Map<String, String> get courseProfessors => {
     for (final c in courses) c.name: c.instructor ?? '',
   };
@@ -213,7 +295,22 @@ abstract final class MockData {
     return todays.isEmpty ? null : todays.first;
   }
 
-  static Course courseById(String id) => courses.firstWhere((c) => c.id == id);
+  // Nullable rather than throwing — once this is backed by a real API, a
+  // courseId that doesn't resolve (deleted course, stale reference) is an
+  // expected case callers need to handle, not a crash.
+  static Course? courseById(String id) {
+    for (final c in courses) {
+      if (c.id == id) return c;
+    }
+    return null;
+  }
+
+  static Course? courseByName(String name) {
+    for (final c in courses) {
+      if (c.name == name) return c;
+    }
+    return null;
+  }
 
   static int? nextExamDDay(String courseName) {
     final dDays = exams

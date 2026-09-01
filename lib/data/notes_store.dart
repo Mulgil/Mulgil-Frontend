@@ -29,10 +29,11 @@ class NotesStore extends ChangeNotifier {
   NoteContent contentFor(Lecture lecture) =>
       _contents.putIfAbsent(lecture.id, () => NoteContent());
 
-  Lecture createNote({required String title}) {
+  Lecture createNote({required String title, required String courseId}) {
     _newNoteCount++;
     final lecture = Lecture(
       id: 'note-${DateTime.now().microsecondsSinceEpoch}',
+      courseId: courseId,
       week: '메모 $_newNoteCount',
       title: title,
       date: _todayLabel(),

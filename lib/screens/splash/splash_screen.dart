@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/mulgil_logo.dart';
 import '../../data/auth_store.dart';
+import '../../constants/routes.dart';
 
 // Shown on cold start while we decide where a returning session should land —
 // skips login/onboarding for an already-authenticated member.
@@ -51,9 +52,9 @@ class _SplashScreenState extends State<SplashScreen>
   Future<void> _navigateNext() async {
     await Future.delayed(const Duration(milliseconds: 1000));
     if (!mounted) return;
-    Navigator.of(
-      context,
-    ).pushReplacementNamed(AuthStore.isLoggedIn ? '/' : '/login');
+    Navigator.of(context).pushReplacementNamed(
+      AuthStore.isLoggedIn ? AppRoutes.home : AppRoutes.login,
+    );
   }
 
   @override

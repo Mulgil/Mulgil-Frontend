@@ -1,7 +1,9 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/mulgil_logo.dart';
 import '../../data/auth_store.dart';
+import '../../constants/routes.dart';
 
 // Replace with POST /auth/oauth/google once the Google Sign-In SDK is wired up.
 class LoginScreen extends StatefulWidget {
@@ -20,7 +22,7 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!mounted) return;
     setState(() => _loading = false);
     AuthStore.isLoggedIn = true;
-    Navigator.of(context).pushReplacementNamed('/onboarding');
+    Navigator.of(context).pushReplacementNamed(AppRoutes.onboarding);
   }
 
   @override
@@ -77,6 +79,10 @@ class _GoogleSignInButton extends StatelessWidget {
           width: double.infinity,
           padding: const EdgeInsets.symmetric(vertical: 15),
           alignment: Alignment.center,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(AppRadius.lg),
+            border: Border.all(color: const Color(0xFF747775)),
+          ),
           child: loading
               ? const SizedBox(
                   width: 20,
@@ -89,21 +95,14 @@ class _GoogleSignInButton extends StatelessWidget {
               : const Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text(
-                      'G',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w900,
-                        color: Color(0xFF4285F4),
-                      ),
-                    ),
-                    SizedBox(width: 10),
+                    SizedBox(width: 20, height: 20, child: _GoogleGLogo()),
+                    SizedBox(width: 12),
                     Text(
                       'Google로 계속하기',
                       style: TextStyle(
-                        color: AppColors.navy,
+                        color: Color(0xFF1F1F1F),
                         fontSize: 15,
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ],
@@ -112,4 +111,66 @@ class _GoogleSignInButton extends StatelessWidget {
       ),
     );
   }
+}
+
+// Stylized rendition of the official multicolor Google "G" mark, since this
+// app has no SVG asset pipeline to drop in Google's brand SVG directly.
+class _GoogleGLogo extends StatelessWidget {
+  const _GoogleGLogo();
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomPaint(painter: _GoogleGPainter());
+  }
+}
+
+class _GoogleGPainter extends CustomPainter {
+  static double _clockToRad(double clockDeg) => (clockDeg - 90) * math.pi / 180;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = size.width / 2;
+    final strokeWidth = radius * 0.62;
+    final rect = Rect.fromCircle(
+      center: center,
+      radius: radius - strokeWidth / 2,
+    );
+
+    void arc(double fromClockDeg, double toClockDeg, Color color) {
+      final paint = Paint()
+        ..color = color
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = strokeWidth
+        ..strokeCap = StrokeCap.butt;
+      canvas.drawArc(
+        rect,
+        _clockToRad(fromClockDeg),
+        _clockToRad(toClockDeg) - _clockToRad(fromClockDeg),
+        false,
+        paint,
+      );
+    }
+
+    arc(300, 390, const Color(0xFFEA4335)); // red: top
+    arc(30, 75, const Color(0xFF4285F4)); // blue: upper-right
+    arc(105, 145, const Color(0xFF4285F4)); // blue: lower-right
+    arc(145, 215, const Color(0xFF34A853)); // green: bottom
+    arc(215, 300, const Color(0xFFFBBC05)); // yellow: left
+
+    // Crossbar filling the mouth of the G, matching the real mark's shape.
+    final barPaint = Paint()..color = const Color(0xFF4285F4);
+    canvas.drawRect(
+      Rect.fromLTWH(
+        center.dx - strokeWidth * 0.05,
+        center.dy - strokeWidth * 0.32,
+        radius - (center.dx - strokeWidth * 0.05) + 0.5,
+        strokeWidth * 0.64,
+      ),
+      barPaint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _GoogleGPainter oldDelegate) => false;
 }

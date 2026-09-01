@@ -417,3 +417,77 @@ class SectionHeader extends StatelessWidget {
     );
   }
 }
+
+// Filled, elevated circular "+" button used to trigger add sheets (과목 추가,
+// 시험 일정 추가, ...) next to a section label — icon-only so it reads as one
+// clear affordance rather than a labeled outline button.
+class MulgilRaisedAddButton extends StatelessWidget {
+  final VoidCallback onTap;
+  const MulgilRaisedAddButton({super.key, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: AppColors.navy,
+      shape: const CircleBorder(),
+      elevation: 3,
+      shadowColor: AppColors.navy.withValues(alpha: 0.45),
+      child: InkWell(
+        onTap: onTap,
+        customBorder: const CircleBorder(),
+        child: const SizedBox(
+          width: 30,
+          height: 30,
+          child: Icon(Icons.add, size: 18, color: Colors.white),
+        ),
+      ),
+    );
+  }
+}
+
+// Caps a single-column screen's content width and centers it on wide/tablet
+// viewports — without this, a phone-style Column just stretches full-bleed
+// on a tablet, which reads as broken rather than "responsive". Screens that
+// already build a dedicated tablet layout (side-by-side panels, etc.) don't
+// need this; it's for the plain single-column screens.
+//
+// Sized as a fraction of the screen (not a fixed pixel cap) so it scales with
+// however wide the device/window actually is instead of looking arbitrarily
+// narrow on one and cramped on another; phones are left untouched at 100%.
+class MaxContentWidth extends StatelessWidget {
+  final Widget child;
+  final double widthFraction;
+  const MaxContentWidth({
+    super.key,
+    required this.child,
+    this.widthFraction = 0.95,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    // Measured off the constraints actually handed to this widget, not the
+    // window's MediaQuery size — a screen embedded next to a sidebar (see
+    // ShellScreen's tablet layout) only ever gets the remaining space, and
+    // MediaQuery.size would still report the full window width regardless.
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final available = constraints.maxWidth;
+        final isWide = available > 768;
+        return Align(
+          alignment: Alignment.topCenter,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxWidth: isWide ? available * widthFraction : double.infinity,
+            ),
+            child: Padding(
+              padding: isWide
+                  ? const EdgeInsets.symmetric(vertical: 24)
+                  : EdgeInsets.zero,
+              child: child,
+            ),
+          ),
+        );
+      },
+    );
+  }
+}

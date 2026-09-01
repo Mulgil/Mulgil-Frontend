@@ -1,5 +1,6 @@
 class Lecture {
   final String id;
+  final String courseId;
   final String week;
   final String title;
   final String? date;
@@ -9,6 +10,7 @@ class Lecture {
 
   const Lecture({
     required this.id,
+    required this.courseId,
     required this.week,
     required this.title,
     this.date,

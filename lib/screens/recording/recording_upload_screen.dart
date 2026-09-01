@@ -1,18 +1,10 @@
 import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/common_widgets.dart';
+import '../../data/mock_data.dart';
+import '../../models/recording_candidate.dart';
 
 enum _Stage { pick, uploading, mapping, done }
-
-class _CandidateSession {
-  final String id, title;
-  final double overlapScore;
-  const _CandidateSession({
-    required this.id,
-    required this.title,
-    required this.overlapScore,
-  });
-}
 
 // Mirrors POST /recordings/upload-url -> upload-complete -> confirm-mapping.
 class RecordingUploadScreen extends StatefulWidget {
@@ -25,11 +17,6 @@ class RecordingUploadScreen extends StatefulWidget {
 class _RecordingUploadScreenState extends State<RecordingUploadScreen> {
   _Stage _stage = _Stage.pick;
   String? _selectedSessionId;
-
-  static const _candidates = [
-    _CandidateSession(id: 's1', title: '운영체제 · 3주차', overlapScore: 0.92),
-    _CandidateSession(id: 's2', title: '운영체제 · 4주차', overlapScore: 0.41),
-  ];
 
   Future<void> _pickAndUpload() async {
     setState(() => _stage = _Stage.uploading);
@@ -51,26 +38,28 @@ class _RecordingUploadScreenState extends State<RecordingUploadScreen> {
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  GestureDetector(
-                    onTap: () => Navigator.pop(context),
-                    child: const Icon(
-                      Icons.arrow_back_ios,
-                      size: 18,
-                      color: AppColors.textPrimary,
+          child: MaxContentWidth(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    GestureDetector(
+                      onTap: () => Navigator.pop(context),
+                      child: const Icon(
+                        Icons.arrow_back_ios,
+                        size: 18,
+                        color: AppColors.textPrimary,
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  Text('강의 녹음 업로드', style: AppTextStyles.h2),
-                ],
-              ),
-              const SizedBox(height: 28),
-              Expanded(child: _buildStage()),
-            ],
+                    const SizedBox(width: 8),
+                    Text('강의 녹음 업로드', style: AppTextStyles.h2),
+                  ],
+                ),
+                const SizedBox(height: 28),
+                Expanded(child: _buildStage()),
+              ],
+            ),
           ),
         ),
       ),
@@ -85,7 +74,7 @@ class _RecordingUploadScreenState extends State<RecordingUploadScreen> {
         return const _UploadingStage();
       case _Stage.mapping:
         return _MappingStage(
-          candidates: _candidates,
+          candidates: MockData.recordingCandidates,
           selectedId: _selectedSessionId,
           onSelect: (id) => setState(() => _selectedSessionId = id),
           onConfirm: _confirmMapping,
@@ -157,7 +146,7 @@ class _UploadingStage extends StatelessWidget {
 }
 
 class _MappingStage extends StatelessWidget {
-  final List<_CandidateSession> candidates;
+  final List<RecordingCandidate> candidates;
   final String? selectedId;
   final ValueChanged<String> onSelect;
   final VoidCallback onConfirm;

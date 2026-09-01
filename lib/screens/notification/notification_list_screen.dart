@@ -3,6 +3,7 @@ import '../../theme/app_theme.dart';
 import '../../widgets/common_widgets.dart';
 import '../../data/mock_data.dart';
 import '../../models/app_notification.dart';
+import '../../constants/routes.dart';
 
 class NotificationListScreen extends StatefulWidget {
   const NotificationListScreen({super.key});
@@ -26,13 +27,15 @@ class _NotificationListScreenState extends State<NotificationListScreen> {
 
   void _open(AppNotification n) {
     setState(() {
-      final i = MockData.notifications.indexWhere((item) => item.id == n.id);
-      MockData.notifications[i] = n.copyWith(isRead: true);
+      MockData.notifications.replaceWhere(
+        (item) => item.id == n.id,
+        n.copyWith(isRead: true),
+      );
     });
     final route = switch (n.type) {
-      NotificationType.processingComplete => '/summary',
-      NotificationType.examReminder => '/exams',
-      NotificationType.postClassReminder => '/note',
+      NotificationType.processingComplete => AppRoutes.summary,
+      NotificationType.examReminder => AppRoutes.exams,
+      NotificationType.postClassReminder => AppRoutes.note,
     };
     Navigator.of(context).pushNamed(route);
   }
@@ -43,53 +46,56 @@ class _NotificationListScreenState extends State<NotificationListScreen> {
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  GestureDetector(
-                    onTap: () => Navigator.pop(context),
-                    child: const Icon(
-                      Icons.arrow_back_ios,
-                      size: 18,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(child: Text('알림', style: AppTextStyles.h2)),
-                  TextButton(
-                    onPressed: _markAllRead,
-                    child: const Text(
-                      '모두 읽음',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: AppColors.tealDark,
-                        fontWeight: FontWeight.w600,
+          child: MaxContentWidth(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    GestureDetector(
+                      onTap: () => Navigator.pop(context),
+                      child: const Icon(
+                        Icons.arrow_back_ios,
+                        size: 18,
+                        color: AppColors.textPrimary,
                       ),
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Expanded(
-                child: _items.isEmpty
-                    ? const Center(
-                        child: Text(
-                          '알림이 없어요',
-                          style: TextStyle(color: AppColors.textMuted),
-                        ),
-                      )
-                    : ListView.separated(
-                        itemCount: _items.length,
-                        separatorBuilder: (_, _) => const SizedBox(height: 10),
-                        itemBuilder: (_, i) => _NotificationCard(
-                          item: _items[i],
-                          onTap: () => _open(_items[i]),
+                    const SizedBox(width: 8),
+                    Expanded(child: Text('알림', style: AppTextStyles.h2)),
+                    TextButton(
+                      onPressed: _markAllRead,
+                      child: const Text(
+                        '모두 읽음',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppColors.tealDark,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
-              ),
-            ],
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Expanded(
+                  child: _items.isEmpty
+                      ? const Center(
+                          child: Text(
+                            '알림이 없어요',
+                            style: TextStyle(color: AppColors.textMuted),
+                          ),
+                        )
+                      : ListView.separated(
+                          itemCount: _items.length,
+                          separatorBuilder: (_, _) =>
+                              const SizedBox(height: 10),
+                          itemBuilder: (_, i) => _NotificationCard(
+                            item: _items[i],
+                            onTap: () => _open(_items[i]),
+                          ),
+                        ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

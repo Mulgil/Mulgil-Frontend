@@ -4,6 +4,8 @@ import '../../widgets/common_widgets.dart';
 import '../../data/mock_data.dart';
 import '../../data/notes_store.dart';
 import '../../models/lecture.dart';
+import '../../constants/routes.dart';
+import 'widgets/lecture_card.dart';
 
 class NoteListScreen extends StatefulWidget {
   const NoteListScreen({super.key});
@@ -24,97 +26,103 @@ class _NoteListScreenState extends State<NoteListScreen> {
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  const BackIfPushed(),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        CourseDropdown(
-                          selected: _course,
-                          options: MockData.courseNames,
-                          onChanged: (v) => setState(() => _course = v),
-                        ),
-                        Text(
-                          MockData.courseProfessors[_course] ?? '',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: AppColors.textMuted,
+          child: MaxContentWidth(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const BackIfPushed(),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          CourseDropdown(
+                            selected: _course,
+                            options: MockData.courseNames,
+                            onChanged: (v) => setState(() => _course = v),
                           ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  OutlinedButton.icon(
-                    onPressed: () => Navigator.of(
-                      context,
-                    ).pushNamed('/exams', arguments: _course),
-                    icon: const Icon(Icons.event_note, size: 16),
-                    label: const Text('시험', style: TextStyle(fontSize: 12)),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.navy,
-                      side: const BorderSide(color: AppColors.navy),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 14),
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: _filters
-                      .asMap()
-                      .entries
-                      .map(
-                        (e) => Padding(
-                          padding: const EdgeInsets.only(right: 8),
-                          child: MulgilChip(
-                            label: e.value,
-                            selected: _filter == e.key,
-                            onTap: () => setState(() => _filter = e.key),
+                          Text(
+                            MockData.courseProfessors[_course] ?? '',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: AppColors.textMuted,
+                            ),
                           ),
-                        ),
-                      )
-                      .toList(),
+                        ],
+                      ),
+                    ),
+                    OutlinedButton.icon(
+                      onPressed: () => Navigator.of(
+                        context,
+                      ).pushNamed(AppRoutes.exams, arguments: _course),
+                      icon: const Icon(Icons.event_note, size: 16),
+                      label: const Text('시험', style: TextStyle(fontSize: 12)),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.navy,
+                        side: const BorderSide(color: AppColors.navy),
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-              const SizedBox(height: 14),
-              Expanded(
-                child: ListenableBuilder(
-                  listenable: NotesStore.instance,
-                  builder: (context, _) {
-                    final lectures = _filteredLectures();
-                    if (lectures.isEmpty) {
-                      return const Center(
-                        child: Text(
-                          '해당하는 강의가 없어요',
-                          style: TextStyle(color: AppColors.textMuted),
-                        ),
-                      );
-                    }
-                    return ListView.separated(
-                      itemCount: lectures.length,
-                      separatorBuilder: (_, _) => const SizedBox(height: 10),
-                      itemBuilder: (ctx, i) {
-                        final lecture = lectures[i];
-                        return _LectureCard(
-                          lecture: lecture,
-                          onTap: lecture.done
-                              ? () => Navigator.of(
-                                  context,
-                                ).pushNamed('/note/detail', arguments: lecture)
-                              : null,
+                const SizedBox(height: 14),
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: _filters
+                        .asMap()
+                        .entries
+                        .map(
+                          (e) => Padding(
+                            padding: const EdgeInsets.only(right: 8),
+                            child: MulgilChip(
+                              label: e.value,
+                              selected: _filter == e.key,
+                              onTap: () => setState(() => _filter = e.key),
+                            ),
+                          ),
+                        )
+                        .toList(),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Expanded(
+                  child: ListenableBuilder(
+                    listenable: NotesStore.instance,
+                    builder: (context, _) {
+                      final courseLectures = _courseLectures();
+                      final lectures = _filteredLectures(courseLectures);
+                      if (lectures.isEmpty) {
+                        return Center(
+                          child: Text(
+                            courseLectures.isEmpty
+                                ? '$_course 과목에는 아직 필기가 없어요'
+                                : '조건에 맞는 필기가 없어요',
+                            style: const TextStyle(color: AppColors.textMuted),
+                          ),
                         );
-                      },
-                    );
-                  },
+                      }
+                      return ListView.separated(
+                        itemCount: lectures.length,
+                        separatorBuilder: (_, _) => const SizedBox(height: 10),
+                        itemBuilder: (ctx, i) {
+                          final lecture = lectures[i];
+                          return LectureCard(
+                            lecture: lecture,
+                            onTap: lecture.done
+                                ? () => Navigator.of(context).pushNamed(
+                                    AppRoutes.noteDetail,
+                                    arguments: lecture,
+                                  )
+                                : null,
+                          );
+                        },
+                      );
+                    },
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -126,15 +134,24 @@ class _NoteListScreenState extends State<NoteListScreen> {
     );
   }
 
-  List<Lecture> _filteredLectures() {
-    final lectures = NotesStore.instance.lectures;
+  // Notes belonging to the selected course, before the 전체/필기있음/퀴즈완료 tab
+  // filter — kept separate so the empty state can tell "이 과목엔 필기가 아예
+  // 없음" apart from "필터 조건에 맞는 게 없음".
+  List<Lecture> _courseLectures() {
+    final courseId = MockData.courseByName(_course)?.id;
+    return NotesStore.instance.lectures
+        .where((l) => l.courseId == courseId)
+        .toList();
+  }
+
+  List<Lecture> _filteredLectures(List<Lecture> courseLectures) {
     switch (_filter) {
       case 1:
-        return lectures.where((l) => l.done).toList();
+        return courseLectures.where((l) => l.done).toList();
       case 2:
-        return lectures.where((l) => l.quiz != null).toList();
+        return courseLectures.where((l) => l.quiz != null).toList();
       default:
-        return lectures;
+        return courseLectures;
     }
   }
 
@@ -154,7 +171,7 @@ class _NoteListScreenState extends State<NoteListScreen> {
               subtitle: const Text('강의자료·기출 PDF를 올려요 (최대 50MB, 150페이지)'),
               onTap: () {
                 Navigator.pop(sheetCtx);
-                Navigator.of(context).pushNamed('/note/pdf-upload');
+                Navigator.of(context).pushNamed(AppRoutes.notePdfUpload);
               },
             ),
             ListTile(
@@ -204,75 +221,18 @@ class _NoteListScreenState extends State<NoteListScreen> {
 
   void _createAndOpenNote(BuildContext dialogCtx, String rawTitle) {
     final title = rawTitle.trim().isEmpty ? '제목 없는 노트' : rawTitle.trim();
-    final lecture = NotesStore.instance.createNote(title: title);
+    final courseId = MockData.courseByName(_course)?.id;
     Navigator.pop(dialogCtx);
-    Navigator.of(context).pushNamed('/note/detail', arguments: lecture);
-  }
-}
-
-class _LectureCard extends StatelessWidget {
-  final Lecture lecture;
-  final VoidCallback? onTap;
-  const _LectureCard({required this.lecture, this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return MulgilCard(
-      onTap: onTap,
-      padding: const EdgeInsets.all(12),
-      child: Opacity(
-        opacity: lecture.done ? 1.0 : 0.5,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              '${lecture.week} - ${lecture.title}',
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w700,
-                color: AppColors.ink,
-              ),
-            ),
-            Padding(
-              padding: EdgeInsets.only(top: 2, bottom: lecture.done ? 8 : 0),
-              child: Text(
-                lecture.done ? "${lecture.date} · 필기 완료" : '필기 없음',
-                style: const TextStyle(fontSize: 11, color: AppColors.ink40),
-              ),
-            ),
-            if (lecture.done)
-              Row(
-                children: [
-                  if (lecture.quiz != null) ...[
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 3,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.tealSoft,
-                        borderRadius: BorderRadius.circular(AppRadius.sm),
-                      ),
-                      child: Text(
-                        '퀴즈 ${lecture.quiz}',
-                        style: const TextStyle(
-                          fontSize: 11,
-                          color: AppColors.tealDark,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                  ],
-                  if (lecture.stars > 0)
-                    Text(
-                      '⭐' * lecture.stars,
-                      style: const TextStyle(fontSize: 12),
-                    ),
-                ],
-              ),
-          ],
-        ),
-      ),
+    if (courseId == null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('과목을 다시 선택해주세요')));
+      return;
+    }
+    final lecture = NotesStore.instance.createNote(
+      title: title,
+      courseId: courseId,
     );
+    Navigator.of(context).pushNamed(AppRoutes.noteDetail, arguments: lecture);
   }
 }

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-enum DrawTool { pen, highlighter, eraser }
+enum DrawTool { pen, highlighter, eraser, strokeEraser }
 
 class DrawStroke {
   final DrawTool tool;
