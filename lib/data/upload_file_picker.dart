@@ -2,6 +2,7 @@ import 'package:file_picker/file_picker.dart';
 
 import 'api_client.dart';
 import 'resource_upload_api.dart';
+import 'upload_file_picker_options.dart';
 
 abstract final class UploadFileLimits {
   static const maxPdfBytes = 50 * 1024 * 1024;
@@ -36,6 +37,7 @@ abstract final class UploadFilePicker {
     final file = await FilePicker.pickFile(
       type: FileType.custom,
       allowedExtensions: allowedExtensions,
+      webOptions: uploadPickerWebOptions(),
     );
     if (file == null) return null;
     final extension = (file.extension ?? '').toLowerCase();

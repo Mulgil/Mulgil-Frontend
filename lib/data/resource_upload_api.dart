@@ -102,7 +102,8 @@ class ResourceUploadApi {
       file: file,
       sourcePhase: sourcePhase,
     );
-    final checksumSha256 = await _putSignedUpload(upload, file);
+    final checksumSha256 = await _checksumSha256(file);
+    await _putSignedUpload(upload, file);
     final job = await completeMaterialUpload(
       materialId: upload.id,
       checksumSha256: checksumSha256,
@@ -118,7 +119,8 @@ class ResourceUploadApi {
       file: file,
       startedAt: startedAt,
     );
-    final checksumSha256 = await _putSignedUpload(upload, file);
+    final checksumSha256 = await _checksumSha256(file);
+    await _putSignedUpload(upload, file);
     return completeRecordingUpload(
       recordingId: upload.id,
       checksumSha256: checksumSha256,
@@ -212,23 +214,19 @@ class ResourceUploadApi {
     );
   }
 
-  Future<String> _putSignedUpload(UploadUrl upload, UploadFile file) async {
+  Future<void> _putSignedUpload(UploadUrl upload, UploadFile file) async {
     final headers = _signedUploadHeaders(upload.requiredHeaders, file.mimeType);
-    final digestSink = _DigestSink();
-    final checksumSink = sha256.startChunkedConversion(digestSink);
-    final stream = file.openRead().map((chunk) {
-      checksumSink.add(chunk);
-      return chunk;
-    });
     await _client.putByteStream(
       upload.uploadUrl,
-      stream: stream,
+      stream: file.openRead(),
       contentLength: file.byteSize,
       headers: headers,
       sourceUri: file.sourceUri,
     );
-    checksumSink.close();
-    return digestSink.value;
+  }
+
+  Future<String> _checksumSha256(UploadFile file) async {
+    return (await sha256.bind(file.openRead()).first).toString();
   }
 
   Map<String, String> _signedUploadHeaders(
@@ -319,25 +317,5 @@ class ResourceUploadApi {
       message: '$message ($source)',
       responseBody: body,
     );
-  }
-}
-
-class _DigestSink implements Sink<Digest> {
-  Digest? _digest;
-
-  @override
-  void add(Digest data) {
-    _digest = data;
-  }
-
-  @override
-  void close() {}
-
-  String get value {
-    final digest = _digest;
-    if (digest == null) {
-      throw StateError('Upload checksum was not calculated.');
-    }
-    return digest.toString();
   }
 }

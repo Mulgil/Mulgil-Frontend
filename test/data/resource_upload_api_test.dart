@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -17,6 +18,7 @@ void main() {
         refreshToken: 'refresh',
       );
       final requests = <String>[];
+      var openReadCount = 0;
       final api = _api((request) async {
         requests.add('${request.method} ${request.url}');
         switch ('${request.method} ${request.url}') {
@@ -55,16 +57,21 @@ void main() {
 
       final result = await api.uploadSessionMaterial(
         sessionId: 'session-1',
-        file: _file(
+        file: UploadFile.stream(
           filename: 'week-1.pdf',
           mimeType: 'application/pdf',
-          bytes: [1, 2, 3],
+          byteSize: 3,
+          openRead: () {
+            openReadCount++;
+            return Stream<List<int>>.value([1, 2, 3]);
+          },
         ),
         sourcePhase: MaterialSourcePhase.previewPdf,
       );
 
       expect(result.materialId, 'material-1');
       expect(result.job.jobId, 'job-1');
+      expect(openReadCount, 2);
       expect(requests, [
         'POST https://api.example.com/api/v1/sessions/session-1/materials/upload-url',
         'PUT https://storage.example.com/material-1',
