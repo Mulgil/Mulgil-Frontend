@@ -340,14 +340,6 @@ abstract final class MockData {
   // Removes the given courses along with everything keyed off them — their
   // timetable slots and their exams — so callers can't cascade only partway
   // (e.g. dropping a course's slots but leaving its exams orphaned).
-  static void deleteCourses(Iterable<Course> coursesToDelete) {
-    final ids = coursesToDelete.map((c) => c.id).toSet();
-    final names = coursesToDelete.map((c) => c.name).toSet();
-    timetableSlots.removeWhere((s) => ids.contains(s.courseId));
-    courses.removeWhere((c) => ids.contains(c.id));
-    exams.removeWhere((e) => names.contains(e.courseName));
-  }
-
   static Map<String, String> get courseProfessors => {
     for (final c in courses) c.name: c.instructor ?? '',
   };
@@ -435,7 +427,6 @@ abstract final class MockData {
       deepLink: 'mulgil://sessions/1/summary/review',
       status: NotificationStatus.sent,
       scheduledAt: DateTime.now().subtract(const Duration(hours: 2)),
-      isRead: false,
     ),
     AppNotification(
       id: 'n2',
@@ -445,7 +436,6 @@ abstract final class MockData {
       deepLink: 'mulgil://exams/1',
       status: NotificationStatus.sent,
       scheduledAt: DateTime.now().subtract(const Duration(days: 1)),
-      isRead: false,
     ),
     AppNotification(
       id: 'n3',
@@ -455,7 +445,6 @@ abstract final class MockData {
       deepLink: 'mulgil://sessions/5/notes',
       status: NotificationStatus.sent,
       scheduledAt: DateTime.now().subtract(const Duration(days: 2)),
-      isRead: true,
     ),
   ];
 

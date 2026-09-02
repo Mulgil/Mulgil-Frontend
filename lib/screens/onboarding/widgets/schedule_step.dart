@@ -40,6 +40,12 @@ class _ScheduleStepState extends State<ScheduleStep> {
   // a course can have zero, one, or several exams (중간/기말/퀴즈 등), so this
   // is called once per exam row rather than once per course.
   Future<void> _openExamSheet(Course course, {Exam? existing}) async {
+    if (existing != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Exam editing is not supported by the server.')),
+      );
+      return;
+    }
     final result = await showMulgilSheet<Exam>(
       context,
       isScrollControlled: true,
@@ -47,11 +53,7 @@ class _ScheduleStepState extends State<ScheduleStep> {
     );
     if (result == null) return;
     setState(() {
-      if (existing != null) {
-        MockData.exams.replaceWhere((e) => e.id == existing.id, result);
-      } else {
-        MockData.exams.add(result);
-      }
+      MockData.exams.add(result);
     });
   }
 
