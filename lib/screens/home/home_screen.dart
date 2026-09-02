@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/common_widgets.dart';
 import '../../widgets/weekly_timetable.dart';
+import '../../data/learning_domain_store.dart';
 import '../../data/mock_data.dart';
 import '../../models/course.dart';
 import '../note/note_list_screen.dart';
@@ -20,12 +23,24 @@ String _formatDate(DateTime d) {
 // Home is the timetable — like Everytime, tapping a subject block opens a
 // sheet to jump straight into that subject's 필기/퀴즈/요약, instead of the
 // old separate cards + bottom-nav tabs for each.
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   final VoidCallback? onOpenSettings;
 
   const HomeScreen({super.key, this.onOpenSettings});
 
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
   static const _sectionGap = 24.0;
+  final _learningStore = LearningDomainStore.instance;
+
+  @override
+  void initState() {
+    super.initState();
+    unawaited(_learningStore.load());
+  }
 
   void _openCourseActionsSheet(BuildContext context, Course course) {
     showMulgilSheet(
@@ -133,7 +148,7 @@ class HomeScreen extends StatelessWidget {
                   HeaderIconButton(
                     icon: Icons.settings_outlined,
                     onTap:
-                        onOpenSettings ??
+                        widget.onOpenSettings ??
                         () =>
                             Navigator.of(context).pushNamed(AppRoutes.settings),
                   ),
@@ -142,17 +157,65 @@ class HomeScreen extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: _sectionGap),
-              const UpcomingExamsCard(),
-              const SizedBox(height: _sectionGap),
-              const SectionHeader(title: '이번 주 시간표'),
-              const SizedBox(height: 10),
-              WeeklyTimetable(
-                onCourseTap: (course) =>
-                    _openCourseActionsSheet(context, course),
+              ListenableBuilder(
+                listenable: _learningStore,
+                builder: (context, _) => Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    UpcomingExamsCard(exams: _learningStore.exams),
+                    const SizedBox(height: _sectionGap),
+                    const SectionHeader(title: '이번 주 시간표'),
+                    const SizedBox(height: 10),
+                    if (_learningStore.isLoading &&
+                        !_learningStore.hasLoaded) ...[
+                      const LinearProgressIndicator(minHeight: 3),
+                      const SizedBox(height: 10),
+                    ],
+                    if (_learningStore.needsAuthentication ||
+                        _learningStore.errorMessage != null) ...[
+                      _LearningDomainNotice(
+                        message:
+                            _learningStore.errorMessage ??
+                            'Google 로그인 토큰이 연결되면 서버 시간표를 불러와요.',
+                      ),
+                      const SizedBox(height: 10),
+                    ],
+                    WeeklyTimetable(
+                      courses: _learningStore.courses,
+                      slots: _learningStore.timetableSlots,
+                      canEdit: false,
+                      onCourseTap: (course) =>
+                          _openCourseActionsSheet(context, course),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _LearningDomainNotice extends StatelessWidget {
+  final String message;
+
+  const _LearningDomainNotice({required this.message});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceAlt,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Text(
+        message,
+        style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
       ),
     );
   }

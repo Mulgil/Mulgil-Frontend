@@ -21,7 +21,9 @@ class _LoginScreenState extends State<LoginScreen> {
     await Future.delayed(const Duration(milliseconds: 900));
     if (!mounted) return;
     setState(() => _loading = false);
-    AuthStore.isLoggedIn = true;
+    if (!AuthStore.saveDevTokensFromEnvironment()) {
+      AuthStore.isLoggedIn = true;
+    }
     Navigator.of(context).pushReplacementNamed(AppRoutes.onboarding);
   }
 

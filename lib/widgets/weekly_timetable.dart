@@ -1,6 +1,9 @@
+import 'dart:async';
 import 'dart:math';
+
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
+import '../data/api_client.dart';
 import '../data/mock_data.dart';
 import '../models/course.dart';
 import '../models/timetable_slot.dart';
@@ -16,25 +19,36 @@ const _palette = [
   AppColors.tealDark,
 ];
 
-Color _courseColor(Course course) =>
-    _palette[MockData.courses.indexOf(course) % _palette.length];
+Color _courseColor(Course course, List<Course> courses) {
+  final index = courses.indexWhere((item) => item.id == course.id);
+  return _palette[(index < 0 ? 0 : index) % _palette.length];
+}
 
-// Everytime 스타일 요일×시간 그리드. MockData.courses/timetableSlots를 그대로 그린다.
-// Owns its own add/delete flow (tap a block -> confirm -> remove; tap an
-// empty cell or the "+" -> add) so every screen that embeds this gets it for
-// free without threading a callback through. MockData is plain mutable state
-// (not a ChangeNotifier), so any screen that also renders something derived
-// from it (e.g. an exam list keyed by course) must pass `onChanged` and
-// rebuild itself there — otherwise it'll show stale data after this widget's
-// own setState mutates the shared lists out from under it.
+// Everytime 스타일 요일×시간 그리드. 실제 API 데이터가 들어오면 그 값을 그리고,
+// 아직 연결하지 않은 화면에서는 기존 MockData fallback을 유지한다.
 class WeeklyTimetable extends StatefulWidget {
+  final List<Course>? courses;
+  final List<TimetableSlot>? slots;
+  final FutureOr<void> Function(Course course, List<TimetableSlot> slots)?
+  onAdd;
+  final FutureOr<void> Function(Course course)? onDeleteCourse;
   final VoidCallback? onChanged;
+  final bool canEdit;
   // When set, tapping a course block calls this instead of the default
   // delete-confirm flow — lets a read-only context (e.g. Home) turn a tap
   // into "open this subject" navigation while course management screens
   // keep tap-to-delete.
   final void Function(Course course)? onCourseTap;
-  const WeeklyTimetable({super.key, this.onChanged, this.onCourseTap});
+  const WeeklyTimetable({
+    super.key,
+    this.courses,
+    this.slots,
+    this.onAdd,
+    this.onDeleteCourse,
+    this.onChanged,
+    this.canEdit = true,
+    this.onCourseTap,
+  });
 
   @override
   State<WeeklyTimetable> createState() => _WeeklyTimetableState();
@@ -47,7 +61,18 @@ class _WeeklyTimetableState extends State<WeeklyTimetable> {
   static const _hourHeight = 52.0;
   static const _timeColWidth = 32.0;
 
+  List<Course> get _courses => widget.courses ?? MockData.courses;
+  List<TimetableSlot> get _slots => widget.slots ?? MockData.timetableSlots;
+
+  Course? _courseById(List<Course> courses, String id) {
+    for (final course in courses) {
+      if (course.id == id) return course;
+    }
+    return null;
+  }
+
   Future<void> _confirmDeleteCourse(Course course) async {
+    if (!widget.canEdit) return;
     final confirmed = await showMulgilConfirmDialog(
       context,
       title: '과목을 삭제할까요?',
@@ -56,35 +81,60 @@ class _WeeklyTimetableState extends State<WeeklyTimetable> {
       danger: true,
     );
     if (!confirmed) return;
-    setState(() => MockData.deleteCourses([course]));
-    widget.onChanged?.call();
+    try {
+      if (widget.onDeleteCourse == null) {
+        setState(() => MockData.deleteCourses([course]));
+      } else {
+        await widget.onDeleteCourse!(course);
+        if (mounted) setState(() {});
+      }
+      widget.onChanged?.call();
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(_messageFor(error))));
+    }
   }
 
   // weekday/startHour prefill the CourseFormSheet when opened from a tap on
   // an empty grid cell; both are null for the header's plain "+" button.
   void _openAddSheet({int? weekday, int? startHour}) {
+    if (!widget.canEdit) return;
     showMulgilSheet(
       context,
       isScrollControlled: true,
       builder: (_) => CourseFormSheet(
+        existingSlots: _slots,
         initialWeekday: weekday,
         initialStart: startHour == null
             ? null
             : TimeOfDay(hour: startHour, minute: 0),
-        onAdd: (course, slots) {
-          setState(() {
-            MockData.courses.add(course);
-            MockData.timetableSlots.addAll(slots);
-          });
+        onAdd: (course, slots) async {
+          if (widget.onAdd == null) {
+            setState(() {
+              MockData.courses.add(course);
+              MockData.timetableSlots.addAll(slots);
+            });
+          } else {
+            await widget.onAdd!(course, slots);
+            if (mounted) setState(() {});
+          }
           widget.onChanged?.call();
         },
       ),
     );
   }
 
+  String _messageFor(Object error) {
+    if (error is ApiException) return error.message;
+    return '시간표를 저장하지 못했어요';
+  }
+
   @override
   Widget build(BuildContext context) {
-    final slots = MockData.timetableSlots;
+    final courses = _courses;
+    final slots = _slots;
     final days = (<int>{
       ..._defaultWeekdays,
       ...slots.map((s) => s.weekday),
@@ -182,9 +232,15 @@ class _WeeklyTimetableState extends State<WeeklyTimetable> {
                           children: hours
                               .map(
                                 (h) => GestureDetector(
-                                  onTap: () =>
-                                      _openAddSheet(weekday: wd, startHour: h),
-                                  behavior: HitTestBehavior.opaque,
+                                  onTap: widget.canEdit
+                                      ? () => _openAddSheet(
+                                          weekday: wd,
+                                          startHour: h,
+                                        )
+                                      : null,
+                                  behavior: widget.canEdit
+                                      ? HitTestBehavior.opaque
+                                      : HitTestBehavior.deferToChild,
                                   child: Container(
                                     height: _hourHeight,
                                     decoration: const BoxDecoration(
@@ -205,7 +261,7 @@ class _WeeklyTimetableState extends State<WeeklyTimetable> {
                         ...daySlots
                             .map(
                               (slot) =>
-                                  (slot, MockData.courseById(slot.courseId)),
+                                  (slot, _courseById(courses, slot.courseId)),
                             )
                             .where((pair) => pair.$2 != null)
                             .map((pair) {
@@ -227,14 +283,16 @@ class _WeeklyTimetableState extends State<WeeklyTimetable> {
                                 child: GestureDetector(
                                   onTap: widget.onCourseTap != null
                                       ? () => widget.onCourseTap!(course)
-                                      : () => _confirmDeleteCourse(course),
+                                      : widget.canEdit
+                                      ? () => _confirmDeleteCourse(course)
+                                      : null,
                                   child: Container(
                                     padding: const EdgeInsets.symmetric(
                                       horizontal: 4,
                                       vertical: 3,
                                     ),
                                     decoration: BoxDecoration(
-                                      color: _courseColor(course),
+                                      color: _courseColor(course, courses),
                                       borderRadius: BorderRadius.circular(
                                         AppRadius.sm,
                                       ),

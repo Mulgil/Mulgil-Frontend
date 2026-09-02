@@ -9,6 +9,7 @@ void main() {
       AuthStore.isLoggedIn = true;
 
       expect(AuthStore.isLoggedIn, isTrue);
+      expect(AuthStore.hasAccessToken, isFalse);
       expect(AuthStore.accessToken, isNull);
     });
 
@@ -19,8 +20,14 @@ void main() {
       );
 
       expect(AuthStore.isLoggedIn, isTrue);
+      expect(AuthStore.hasAccessToken, isTrue);
       expect(AuthStore.refreshToken, 'refresh-token');
       expect(await AuthStore.accessTokenProvider(), 'access-token');
+    });
+
+    test('does not save dev tokens when dart-define values are absent', () {
+      expect(AuthStore.saveDevTokensFromEnvironment(), isFalse);
+      expect(AuthStore.hasAccessToken, isFalse);
     });
 
     test('clears tokens on logout', () {
@@ -32,6 +39,7 @@ void main() {
       AuthStore.isLoggedIn = false;
 
       expect(AuthStore.isLoggedIn, isFalse);
+      expect(AuthStore.hasAccessToken, isFalse);
       expect(AuthStore.accessToken, isNull);
       expect(AuthStore.refreshToken, isNull);
     });
@@ -40,6 +48,7 @@ void main() {
       AuthStore.saveTokens(accessToken: ' ', refreshToken: ' ');
 
       expect(AuthStore.isLoggedIn, isFalse);
+      expect(AuthStore.hasAccessToken, isFalse);
       expect(AuthStore.accessToken, isNull);
       expect(AuthStore.refreshToken, isNull);
     });
