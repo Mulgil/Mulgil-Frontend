@@ -45,7 +45,9 @@ class _WeeklyTimetableState extends State<WeeklyTimetable> {
 
   Future<void> _confirmDeleteCourse(Course course) async {
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Course deletion is not supported by the server.')),
+      const SnackBar(
+        content: Text('Course deletion is not supported by the server.'),
+      ),
     );
   }
 

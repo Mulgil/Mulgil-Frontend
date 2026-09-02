@@ -42,7 +42,9 @@ class _ScheduleStepState extends State<ScheduleStep> {
   Future<void> _openExamSheet(Course course, {Exam? existing}) async {
     if (existing != null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Exam editing is not supported by the server.')),
+        const SnackBar(
+          content: Text('Exam editing is not supported by the server.'),
+        ),
       );
       return;
     }

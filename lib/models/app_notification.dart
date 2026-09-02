@@ -20,5 +20,4 @@ class AppNotification {
     required this.status,
     required this.scheduledAt,
   });
-
 }

@@ -135,16 +135,27 @@ abstract final class MockData {
   // from GET /sessions/{sessionId}/quiz and only revealing them via
   // POST /quiz/questions/{questionId}/attempts. Not exposed as MockData.xxx;
   // only `quizQuestions` (public shape) and `submitQuizAttempt` may read it.
-  static const _quizAnswerKey = <String, ({Object correct, String explanation})>{
-    'q1': (correct: false, explanation: '프로세스는 실행 중인 프로그램, 스레드는 실행 단위입니다.'),
-    'q2': (correct: true, explanation: '세마포어는 0 이상의 정수값을 가질 수 있습니다.'),
-    'q3': (correct: false, explanation: '컨텍스트 스위칭은 오버헤드가 발생합니다.'),
-    'q4': (correct: 1, explanation: 'SJF(Shortest Job First)는 실행 시간이 짧은 작업을 우선 처리합니다.'),
-    'q5': (correct: 2, explanation: '교착상태 발생 조건은 상호 배제, 점유와 대기, 비선점, 순환 대기입니다.'),
-  };
+  static const _quizAnswerKey =
+      <String, ({Object correct, String explanation})>{
+        'q1': (correct: false, explanation: '프로세스는 실행 중인 프로그램, 스레드는 실행 단위입니다.'),
+        'q2': (correct: true, explanation: '세마포어는 0 이상의 정수값을 가질 수 있습니다.'),
+        'q3': (correct: false, explanation: '컨텍스트 스위칭은 오버헤드가 발생합니다.'),
+        'q4': (
+          correct: 1,
+          explanation: 'SJF(Shortest Job First)는 실행 시간이 짧은 작업을 우선 처리합니다.',
+        ),
+        'q5': (
+          correct: 2,
+          explanation: '교착상태 발생 조건은 상호 배제, 점유와 대기, 비선점, 순환 대기입니다.',
+        ),
+      };
 
   static const _quizSourceRefs = [
-    SourceRef(sourceType: SourceRefType.pdfText, materialId: 'm1', pageNumber: 3),
+    SourceRef(
+      sourceType: SourceRefType.pdfText,
+      materialId: 'm1',
+      pageNumber: 3,
+    ),
   ];
 
   static const quizQuestions = [

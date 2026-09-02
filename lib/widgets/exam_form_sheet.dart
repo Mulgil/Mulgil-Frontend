@@ -12,7 +12,9 @@ Future<void> confirmDeleteExam(
   VoidCallback __,
 ) async {
   ScaffoldMessenger.of(context).showSnackBar(
-    const SnackBar(content: Text('Exam deletion is not supported by the server.')),
+    const SnackBar(
+      content: Text('Exam deletion is not supported by the server.'),
+    ),
   );
 }
 
@@ -72,7 +74,9 @@ class _ExamFormSheetState extends State<ExamFormSheet> {
   void _submit() {
     if (_isEditing) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Exam editing is not supported by the server.')),
+        const SnackBar(
+          content: Text('Exam editing is not supported by the server.'),
+        ),
       );
       return;
     }

@@ -112,9 +112,9 @@ class _CourseFormSheetState extends State<CourseFormSheet> {
 
     final conflicts = _findConflictingSlots();
     if (conflicts.isNotEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('기존 시간표와 겹쳐서 추가할 수 없어요')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('기존 시간표와 겹쳐서 추가할 수 없어요')));
       return;
     }
     if (!mounted) return;

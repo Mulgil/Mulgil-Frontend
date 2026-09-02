@@ -8,7 +8,7 @@ class NotificationBell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => HeaderIconButton(
-        icon: Icons.notifications_outlined,
-        onTap: () => Navigator.of(context).pushNamed(AppRoutes.notifications),
-      );
+    icon: Icons.notifications_outlined,
+    onTap: () => Navigator.of(context).pushNamed(AppRoutes.notifications),
+  );
 }
