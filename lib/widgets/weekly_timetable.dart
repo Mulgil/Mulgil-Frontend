@@ -41,6 +41,9 @@ class WeeklyTimetable extends StatefulWidget {
 }
 
 class _WeeklyTimetableState extends State<WeeklyTimetable> {
+  static const _defaultWeekdays = [1, 2, 3, 4, 5];
+  static const _defaultStartHour = 9;
+  static const _defaultEndHour = 16;
   static const _hourHeight = 52.0;
   static const _timeColWidth = 32.0;
 
@@ -82,33 +85,23 @@ class _WeeklyTimetableState extends State<WeeklyTimetable> {
   @override
   Widget build(BuildContext context) {
     final slots = MockData.timetableSlots;
-    if (slots.isEmpty) {
-      return GestureDetector(
-        onTap: () => _openAddSheet(),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 32),
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: AppColors.surfaceAlt,
-            borderRadius: BorderRadius.circular(AppRadius.md),
-          ),
-          child: const Text(
-            '+ 눌러서 시간표를 등록해주세요',
-            style: TextStyle(color: AppColors.ink60, fontSize: 13),
-          ),
-        ),
-      );
-    }
-
-    final days = (slots.map((s) => s.weekday).toSet().toList()..sort());
-    // 9~16시를 항상 보여주는 기준 범위로 고정 — 과목을 지우거나 늦은 시간대 수업이 없어도 그리드가
-    // 갑자기 줄어들어 보이지 않도록. 실제 수업이 이 범위를 벗어나면 그만큼, 그리고 가장 늦게 끝나는
-    // 수업 아래로 1시간 15분의 여백을 추가로 보여준다.
+    final days = (<int>{
+      ..._defaultWeekdays,
+      ...slots.map((s) => s.weekday),
+    }.toList()..sort());
+    // 월~금과 9~16시는 항상 보여주는 기준 범위로 고정한다. 과목을 지워도
+    // 공강 요일/시간대가 사라지지 않고, 실제 수업이 기준 범위를 벗어날 때만 확장한다.
     const marginMinutes = 75;
-    final actualStartHour = slots.map((s) => s.startMinutes ~/ 60).reduce(min);
-    final actualEndMinutes = slots.map((s) => s.endMinutes).reduce(max);
-    final startHour = min(9, actualStartHour);
-    final endHour = max(16, (actualEndMinutes + marginMinutes + 59) ~/ 60);
+    final actualStartHour = slots.isEmpty
+        ? _defaultStartHour
+        : slots.map((s) => s.startMinutes ~/ 60).reduce(min);
+    final actualEndMinutes = slots.isEmpty
+        ? _defaultEndHour * 60
+        : slots.map((s) => s.endMinutes).reduce(max);
+    final startHour = min(_defaultStartHour, actualStartHour);
+    final endHour = slots.isEmpty
+        ? _defaultEndHour
+        : max(_defaultEndHour, (actualEndMinutes + marginMinutes + 59) ~/ 60);
     final hours = List.generate(
       max(endHour - startHour, 1),
       (i) => startHour + i,
