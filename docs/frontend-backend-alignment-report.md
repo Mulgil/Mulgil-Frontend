@@ -4,8 +4,8 @@
 
 - API 기본 주소는 `https://ssuway.lapis0875.com` 기준으로 사용한다.
 - 새 API 계층에서는 `ApiClient`를 통해 JSON 요청, Bearer token, 에러 응답을 공통 처리한다.
-- 과목은 백엔드의 `GET/POST/PATCH/DELETE /api/v1/courses` 계약과 프론트 `Course` 모델을 맞췄다.
-- 시간표는 과목과 별도 리소스인 `GET/POST/PATCH/DELETE /api/v1/timetable/slots` 계약을 따른다.
+- 과목은 백엔드의 `GET/POST /api/v1/courses`, `PATCH/DELETE /api/v1/courses/{courseId}` 계약과 프론트 `Course` 모델을 맞췄다.
+- 시간표는 과목과 별도 리소스인 `GET/POST /api/v1/timetable/slots`, `PATCH/DELETE /api/v1/timetable/slots/{slotId}` 계약을 따른다.
 - 시험 일정은 `courseName`이 아니라 `courseId`를 기준으로 연결하는 것이 맞다.
 - 시험 생성은 `/api/v1/courses/{courseId}/exams`에 `title`, `examAt`, `sessionIds`를 보내는 방식으로 맞췄다.
 - 시험 날짜는 프론트 날짜 선택 UI에 맞춰 `Asia/Seoul` 기준 자정을 서버 `Instant`로 보낸다.
