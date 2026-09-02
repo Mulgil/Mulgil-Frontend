@@ -1,13 +1,14 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import '../../../data/auth_store.dart';
+import '../../../data/learning_domain_store.dart';
 import '../../../theme/app_theme.dart';
 import '../../../widgets/common_widgets.dart';
 import '../../../widgets/course_form_sheet.dart';
-import '../../../widgets/exam_form_sheet.dart';
 import '../../../widgets/weekly_timetable.dart';
-import '../../../data/mock_data.dart';
 import '../../../models/course.dart';
 import '../../../models/exam.dart';
-import 'exam_quick_sheet.dart';
 
 // ── Schedule Setup ───────────────────────────────────
 
@@ -20,50 +21,49 @@ class ScheduleStep extends StatefulWidget {
 }
 
 class _ScheduleStepState extends State<ScheduleStep> {
+  final _learningStore = LearningDomainStore.instance;
+
+  @override
+  void initState() {
+    super.initState();
+    unawaited(_learningStore.load());
+  }
+
   void _openAddSubjectSheet() {
+    if (!AuthStore.hasAccessToken) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Google 로그인 연결 후 서버에 저장할 수 있어요.')),
+      );
+      return;
+    }
     showMulgilSheet(
       context,
       isScrollControlled: true,
       builder: (_) => CourseFormSheet(
-        onAdd: (course, slots) => setState(() {
-          MockData.courses.add(course);
-          MockData.timetableSlots.addAll(slots);
-        }),
+        existingSlots: _learningStore.timetableSlots,
+        onAdd: _learningStore.createCourseWithSlots,
       ),
     );
   }
 
-  List<Exam> _examsFor(String courseName) =>
-      MockData.exams.where((e) => e.courseName == courseName).toList();
+  List<Exam> _examsFor(Course course) =>
+      _learningStore.exams.where((e) => e.courseId == course.id).toList();
 
   // Pass `existing` to edit that exam in place; omit it to add a new one —
   // a course can have zero, one, or several exams (중간/기말/퀴즈 등), so this
   // is called once per exam row rather than once per course.
-  Future<void> _openExamSheet(Course course, {Exam? existing}) async {
-    if (existing != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Exam editing is not supported by the server.'),
-        ),
-      );
-      return;
-    }
-    final result = await showMulgilSheet<Exam>(
+  Future<void> _openExamSheet(Course _, {Exam? existing}) async {
+    final message = existing == null
+        ? '시험 등록은 차시 선택 연결 후 서버에 저장할 수 있어요.'
+        : '시험 수정 API가 아직 없어 화면 저장을 비워뒀어요.';
+    ScaffoldMessenger.of(
       context,
-      isScrollControlled: true,
-      builder: (_) => ExamQuickSheet(course: course, existing: existing),
-    );
-    if (result == null) return;
-    setState(() {
-      MockData.exams.add(result);
-    });
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
-  Future<void> _deleteExam(Exam exam) async {
-    await confirmDeleteExam(
-      context,
-      exam,
-      () => setState(() => MockData.exams.removeWhere((e) => e.id == exam.id)),
+  void _deleteExam(Exam _) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('시험 삭제 API가 아직 없어 화면 저장을 비워뒀어요.')),
     );
   }
 
@@ -118,23 +118,50 @@ class _ScheduleStepState extends State<ScheduleStep> {
                           ],
                         ),
                         const SizedBox(height: 10),
-                        WeeklyTimetable(onChanged: () => setState(() {})),
-                        const SizedBox(height: 20),
-                        const SectionHeader(
-                          title: '시험 일정',
-                          subtitle: '과목을 탭해서 시험 날짜를 등록해주세요',
-                        ),
-                        ...MockData.courses.map(
-                          (course) => Padding(
-                            padding: const EdgeInsets.only(bottom: 10),
-                            child: _ExamScheduleCard(
-                              course: course,
-                              exams: _examsFor(course.name),
-                              onAddExam: () => _openExamSheet(course),
-                              onEditExam: (exam) =>
-                                  _openExamSheet(course, existing: exam),
-                              onDeleteExam: _deleteExam,
-                            ),
+                        ListenableBuilder(
+                          listenable: _learningStore,
+                          builder: (context, _) => Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              if (_learningStore.isLoading) ...[
+                                const LinearProgressIndicator(minHeight: 3),
+                                const SizedBox(height: 10),
+                              ],
+                              if (_learningStore.needsAuthentication ||
+                                  _learningStore.errorMessage != null) ...[
+                                _ScheduleStatusNotice(
+                                  message:
+                                      _learningStore.errorMessage ??
+                                      'Google 로그인 토큰이 연결되면 서버 시간표를 불러와요.',
+                                ),
+                                const SizedBox(height: 10),
+                              ],
+                              WeeklyTimetable(
+                                courses: _learningStore.courses,
+                                slots: _learningStore.timetableSlots,
+                                onAdd: _learningStore.createCourseWithSlots,
+                                onDeleteCourse: _learningStore.deleteCourse,
+                                onChanged: () => setState(() {}),
+                              ),
+                              const SizedBox(height: 20),
+                              const SectionHeader(
+                                title: '시험 일정',
+                                subtitle: '과목을 탭해서 시험 날짜를 등록해주세요',
+                              ),
+                              ..._learningStore.courses.map(
+                                (course) => Padding(
+                                  padding: const EdgeInsets.only(bottom: 10),
+                                  child: _ExamScheduleCard(
+                                    course: course,
+                                    exams: _examsFor(course),
+                                    onAddExam: () => _openExamSheet(course),
+                                    onEditExam: (exam) =>
+                                        _openExamSheet(course, existing: exam),
+                                    onDeleteExam: _deleteExam,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ],
@@ -148,6 +175,29 @@ class _ScheduleStepState extends State<ScheduleStep> {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _ScheduleStatusNotice extends StatelessWidget {
+  final String message;
+
+  const _ScheduleStatusNotice({required this.message});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceAlt,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Text(
+        message,
+        style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
       ),
     );
   }

@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
+import '../data/api_client.dart';
 import '../data/mock_data.dart';
 import '../models/course.dart';
 import '../models/timetable_slot.dart';
@@ -8,12 +11,14 @@ import 'common_widgets.dart';
 // Bottom sheet for creating a Course plus one TimetableSlot per selected weekday.
 // Shared by onboarding's schedule step and the settings subject manager.
 class CourseFormSheet extends StatefulWidget {
-  final void Function(Course course, List<TimetableSlot> slots) onAdd;
+  final FutureOr<void> Function(Course course, List<TimetableSlot> slots) onAdd;
+  final List<TimetableSlot>? existingSlots;
   final int? initialWeekday;
   final TimeOfDay? initialStart;
   const CourseFormSheet({
     super.key,
     required this.onAdd,
+    this.existingSlots,
     this.initialWeekday,
     this.initialStart,
   });
@@ -28,6 +33,8 @@ class _CourseFormSheetState extends State<CourseFormSheet> {
   final Set<int> _weekdays = {}; // ISO: Monday=1 ... Sunday=7
   late TimeOfDay _start;
   late TimeOfDay _end;
+  bool _submitting = false;
+  String? _errorText;
 
   @override
   void initState() {
@@ -70,9 +77,7 @@ class _CourseFormSheetState extends State<CourseFormSheet> {
     );
     if (picked == null || !mounted) return;
     if (!isStart && _toMinutes(picked) <= _toMinutes(_start)) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('종료 시간은 시작 시간보다 늦어야 해요')));
+      setState(() => _errorText = '종료 시간은 시작 시간보다 늦어야 해요');
       return;
     }
     setState(() {
@@ -96,25 +101,24 @@ class _CourseFormSheetState extends State<CourseFormSheet> {
   List<TimetableSlot> _findConflictingSlots() {
     final newStart = _start.hour * 60 + _start.minute;
     final newEnd = _end.hour * 60 + _end.minute;
-    return MockData.timetableSlots.where((slot) {
+    return (widget.existingSlots ?? MockData.timetableSlots).where((slot) {
       if (!_weekdays.contains(slot.weekday)) return false;
       return newStart < slot.endMinutes && newEnd > slot.startMinutes;
     }).toList();
   }
 
   Future<void> _submit() async {
+    if (_submitting) return;
+    setState(() => _errorText = null);
+
     if (_nameCtrl.text.trim().isEmpty || _weekdays.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('과목명과 요일을 입력해주세요')));
+      setState(() => _errorText = '과목명과 요일을 입력해주세요');
       return;
     }
 
     final conflicts = _findConflictingSlots();
     if (conflicts.isNotEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('기존 시간표와 겹쳐서 추가할 수 없어요')));
+      setState(() => _errorText = '기존 시간표와 겹쳐서 추가할 수 없어요');
       return;
     }
     if (!mounted) return;
@@ -140,8 +144,22 @@ class _CourseFormSheetState extends State<CourseFormSheet> {
           ),
         )
         .toList();
-    widget.onAdd(course, slots);
-    Navigator.pop(context);
+    setState(() => _submitting = true);
+    try {
+      await widget.onAdd(course, slots);
+      if (!mounted) return;
+      Navigator.pop(context);
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _errorText = _messageFor(error));
+    } finally {
+      if (mounted) setState(() => _submitting = false);
+    }
+  }
+
+  String _messageFor(Object error) {
+    if (error is ApiException) return error.message;
+    return '과목을 저장하지 못했어요';
   }
 
   @override
@@ -215,8 +233,22 @@ class _CourseFormSheetState extends State<CourseFormSheet> {
               ),
             ],
           ),
+          if (_errorText != null) ...[
+            const SizedBox(height: 12),
+            Text(
+              _errorText!,
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: AppColors.coral,
+              ),
+            ),
+          ],
           const SizedBox(height: 20),
-          MulgilButton(label: '추가', onTap: _submit),
+          MulgilButton(
+            label: _submitting ? '추가 중...' : '추가',
+            onTap: _submitting ? null : _submit,
+          ),
         ],
       ),
     );

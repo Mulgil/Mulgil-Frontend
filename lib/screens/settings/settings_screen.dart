@@ -1,10 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/common_widgets.dart';
 import '../../widgets/course_form_sheet.dart';
-import '../../widgets/exam_form_sheet.dart';
-import '../../data/mock_data.dart';
 import '../../data/auth_store.dart';
+import '../../data/learning_domain_store.dart';
 import '../../models/exam.dart';
 import '../report/weekly_report_section.dart';
 import 'legal_document_screen.dart';
@@ -28,47 +29,47 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   _SettingsTab _tab = _SettingsTab.profile;
+  final _learningStore = LearningDomainStore.instance;
+
+  @override
+  void initState() {
+    super.initState();
+    unawaited(_learningStore.load());
+  }
 
   void _openAddSubjectSheet() {
+    if (!AuthStore.hasAccessToken) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Google 로그인 연결 후 서버에 저장할 수 있어요.')),
+      );
+      return;
+    }
     showMulgilSheet(
       context,
       isScrollControlled: true,
       builder: (_) => CourseFormSheet(
-        onAdd: (course, slots) => setState(() {
-          MockData.courses.add(course);
-          MockData.timetableSlots.addAll(slots);
-        }),
+        existingSlots: _learningStore.timetableSlots,
+        onAdd: _learningStore.createCourseWithSlots,
       ),
     );
   }
 
   void _openAddExamSheet() {
-    showMulgilSheet(
-      context,
-      isScrollControlled: true,
-      builder: (_) => ExamFormSheet(
-        onSubmit: (exam) => setState(() => MockData.exams.insert(0, exam)),
-      ),
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('시험 등록은 차시 선택 연결 후 서버에 저장할 수 있어요.')),
     );
   }
 
-  void _openEditExamSheet(Exam exam) {
-    showMulgilSheet(
-      context,
-      isScrollControlled: true,
-      builder: (_) => ExamFormSheet(
-        existingExam: exam,
-        onSubmit: (updated) => setState(() {
-          MockData.exams.replaceWhere((e) => e.id == exam.id, updated);
-        }),
-      ),
+  void _openEditExamSheet(Exam _) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('시험 수정 API가 아직 없어 화면 저장을 비워뒀어요.')),
     );
   }
 
-  void _deleteExamSchedule(Exam exam) {
-    confirmDeleteExam(context, exam, () {
-      setState(() => MockData.exams.removeWhere((e) => e.id == exam.id));
-    });
+  void _deleteExamSchedule(Exam _) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('시험 삭제 API가 아직 없어 화면 저장을 비워뒀어요.')),
+    );
   }
 
   void _openPrivacyPolicy() {
@@ -117,6 +118,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   void _logout() {
     AuthStore.isLoggedIn = false;
+    _learningStore.clear();
     Navigator.of(
       context,
     ).pushNamedAndRemoveUntil(AppRoutes.login, (route) => false);
@@ -125,16 +127,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void _openSubjectsPage() {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => _SettingsSubPage(
-          title: '과목 관리',
-          child: SettingsSubjectsPanel(
-            onAddSubject: _openAddSubjectSheet,
-            onAddExam: _openAddExamSheet,
-            onEditExam: _openEditExamSheet,
-            onDeleteExam: _deleteExamSchedule,
-            onChanged: () => setState(() {}),
-          ),
-        ),
+        builder: (_) =>
+            _SettingsSubPage(title: '과목 관리', child: _buildSubjectsPanel()),
       ),
     );
   }
@@ -309,13 +303,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       case _SettingsTab.profile:
         return const SettingsProfilePanel();
       case _SettingsTab.subjects:
-        return SettingsSubjectsPanel(
-          onAddSubject: _openAddSubjectSheet,
-          onAddExam: _openAddExamSheet,
-          onEditExam: _openEditExamSheet,
-          onDeleteExam: _deleteExamSchedule,
-          onChanged: () => setState(() {}),
-        );
+        return _buildSubjectsPanel();
       case _SettingsTab.report:
         return const WeeklyReportSection();
       case _SettingsTab.appInfo:
@@ -327,6 +315,28 @@ class _SettingsScreenState extends State<SettingsScreen> {
           onOpenSourceLicenses: _openOpenSourceLicenses,
         );
     }
+  }
+
+  Widget _buildSubjectsPanel() {
+    return ListenableBuilder(
+      listenable: _learningStore,
+      builder: (context, _) => SettingsSubjectsPanel(
+        onAddSubject: _openAddSubjectSheet,
+        onAddExam: _openAddExamSheet,
+        onEditExam: _openEditExamSheet,
+        onDeleteExam: _deleteExamSchedule,
+        onChanged: () => setState(() {}),
+        courses: _learningStore.courses,
+        timetableSlots: _learningStore.timetableSlots,
+        exams: _learningStore.exams,
+        onAddCourse: _learningStore.createCourseWithSlots,
+        onDeleteCourse: _learningStore.deleteCourse,
+        isLoading: _learningStore.isLoading,
+        needsAuthentication: _learningStore.needsAuthentication,
+        errorMessage: _learningStore.errorMessage,
+        onRetry: _learningStore.refresh,
+      ),
+    );
   }
 }
 
