@@ -74,6 +74,60 @@ abstract final class MockData {
       done: false,
       stars: 0,
     ),
+    Lecture(
+      id: 'l5',
+      courseId: 'c2',
+      week: '1주차',
+      title: '배열과 연결 리스트',
+      date: '9/1',
+      done: true,
+      quiz: '7/10',
+      stars: 2,
+    ),
+    Lecture(
+      id: 'l6',
+      courseId: 'c2',
+      week: '2주차',
+      title: '스택과 큐',
+      date: '9/8',
+      done: true,
+      stars: 1,
+    ),
+    Lecture(
+      id: 'l7',
+      courseId: 'c2',
+      week: '3주차',
+      title: '트리와 이진 탐색 트리',
+      done: false,
+      stars: 0,
+    ),
+    Lecture(
+      id: 'l8',
+      courseId: 'c3',
+      week: '1주차',
+      title: '관계형 모델과 정규화',
+      date: '9/1',
+      done: true,
+      quiz: '6/10',
+      stars: 2,
+    ),
+    Lecture(
+      id: 'l9',
+      courseId: 'c3',
+      week: '2주차',
+      title: 'SQL 기초',
+      date: '9/8',
+      done: true,
+      stars: 0,
+    ),
+    Lecture(
+      id: 'l10',
+      courseId: 'c3',
+      week: '3주차',
+      title: '트랜잭션과 동시성 제어',
+      done: false,
+      stars: 0,
+    ),
   ];
 
   static const quizQuestions = [
@@ -111,6 +165,7 @@ abstract final class MockData {
   static const wrongAnswers = [
     WrongAnswer(
       courseName: '운영체제',
+      week: '2주차',
       question: '"세마포어는 이진값만 가질 수 있다."',
       myAnswer: 'X',
       correct: 'O',
@@ -118,6 +173,7 @@ abstract final class MockData {
     ),
     WrongAnswer(
       courseName: '운영체제',
+      week: '2주차',
       question: '"컨텍스트 스위칭 비용은 무시할 수 있다."',
       myAnswer: 'O',
       correct: 'X',
@@ -125,6 +181,7 @@ abstract final class MockData {
     ),
     WrongAnswer(
       courseName: '운영체제',
+      week: '2주차',
       question: '"라운드로빈은 우선순위 기반 스케줄링이다."',
       myAnswer: 'O',
       correct: 'X',
@@ -132,6 +189,7 @@ abstract final class MockData {
     ),
     WrongAnswer(
       courseName: '운영체제',
+      week: '2주차',
       question: '실행 시간이 가장 짧은 작업을 우선 처리하는 스케줄링 기법은?',
       myAnswer: 'FCFS',
       correct: 'SJF',
@@ -139,17 +197,35 @@ abstract final class MockData {
     ),
     WrongAnswer(
       courseName: '자료구조',
+      week: '1주차',
       question: '"이진 탐색 트리는 항상 균형을 이룬다."',
       myAnswer: 'O',
       correct: 'X',
       isProfEmphasis: true,
     ),
     WrongAnswer(
+      courseName: '자료구조',
+      week: '1주차',
+      question: '"연결 리스트의 임의 위치 접근은 O(1)이다."',
+      myAnswer: 'O',
+      correct: 'X',
+      isProfEmphasis: false,
+    ),
+    WrongAnswer(
       courseName: '데이터베이스',
+      week: '1주차',
       question: '"제3정규형을 만족하면 자동으로 BCNF도 만족한다."',
       myAnswer: 'O',
       correct: 'X',
       isProfEmphasis: false,
+    ),
+    WrongAnswer(
+      courseName: '데이터베이스',
+      week: '1주차',
+      question: '"인덱스를 추가해도 조회 성능에는 영향이 없다."',
+      myAnswer: 'O',
+      correct: 'X',
+      isProfEmphasis: true,
     ),
   ];
 
@@ -294,6 +370,25 @@ abstract final class MockData {
       ..sort((a, b) => a.startMinutes.compareTo(b.startMinutes));
     return todays.isEmpty ? null : todays.first;
   }
+
+  // 1학기는 3/2, 2학기는 9/1 개강 기준으로 오늘이 몇 주차인지 계산 — 필기/퀴즈/요약 리스트에서
+  // "이번 주" 배지를 붙이는 데 쓴다. 개강 전이면 직전 학기(작년 2학기)가 아직 진행 중인 것으로 본다.
+  static int currentWeekNumber([DateTime? now]) {
+    final n = now ?? DateTime.now();
+    final springStart = DateTime(n.year, 3, 2);
+    final fallStart = DateTime(n.year, 9, 1);
+    final DateTime start;
+    if (n.isBefore(springStart)) {
+      start = DateTime(n.year - 1, 9, 1);
+    } else if (n.isBefore(fallStart)) {
+      start = springStart;
+    } else {
+      start = fallStart;
+    }
+    return (n.difference(start).inDays ~/ 7) + 1;
+  }
+
+  static String get currentWeekLabel => '${currentWeekNumber()}주차';
 
   // Nullable rather than throwing — once this is backed by a real API, a
   // courseId that doesn't resolve (deleted course, stale reference) is an

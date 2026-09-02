@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
-import '../../../constants/routes.dart';
+import '../../../data/mock_data.dart';
+import '../../../models/lecture.dart';
 import '../../../theme/app_theme.dart';
 import '../../../widgets/common_widgets.dart';
+import '../summary_detail_screen.dart';
 
 class NoteDetailHeader extends StatelessWidget {
   final String title;
@@ -69,6 +71,7 @@ class NoteDetailHeader extends StatelessWidget {
 
 void showNoteDetailMenuSheet(
   BuildContext context, {
+  required Lecture lecture,
   required bool hasPendingReview,
   required VoidCallback onOpenReview,
 }) {
@@ -99,7 +102,14 @@ void showNoteDetailMenuSheet(
             title: const Text('AI 요약으로 이동'),
             onTap: () {
               Navigator.pop(sheetCtx);
-              Navigator.of(context).pushNamed(AppRoutes.summary);
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => SummaryDetailScreen(
+                    course: MockData.courseById(lecture.courseId)?.name ?? '',
+                    lecture: lecture,
+                  ),
+                ),
+              );
             },
           ),
           ListTile(

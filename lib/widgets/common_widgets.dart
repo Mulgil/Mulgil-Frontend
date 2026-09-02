@@ -108,6 +108,31 @@ class MulgilButton extends StatelessWidget {
   }
 }
 
+// Marks the week matching MockData.currentWeekLabel across the 필기/퀴즈/요약
+// week lists, so students land near the right week without hunting for it.
+class CurrentWeekBadge extends StatelessWidget {
+  const CurrentWeekBadge({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: AppColors.tealSoft,
+        borderRadius: BorderRadius.circular(AppRadius.sm),
+      ),
+      child: const Text(
+        '이번 주',
+        style: TextStyle(
+          fontSize: 10,
+          fontWeight: FontWeight.w700,
+          color: AppColors.tealDark,
+        ),
+      ),
+    );
+  }
+}
+
 class MulgilChip extends StatelessWidget {
   final String label;
   final bool selected;

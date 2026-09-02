@@ -2,14 +2,13 @@ import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/common_widgets.dart';
 import '../../data/mock_data.dart';
-import '../../models/quiz_question.dart';
+import '../../data/notes_store.dart';
+import '../../models/lecture.dart';
 import '../../models/wrong_answer.dart';
 import '../review/widgets/wrong_answer_card.dart';
 import '../review/widgets/wrong_answer_empty_box.dart';
 import '../review/widgets/wrong_answer_stats_card.dart';
-import 'widgets/quiz_answer_buttons.dart';
-import 'widgets/quiz_result_card.dart';
-import 'widgets/quiz_tablet_hint.dart';
+import 'quiz_session_screen.dart';
 
 class QuizScreen extends StatefulWidget {
   final String? initialCourse;
@@ -24,15 +23,15 @@ class _QuizScreenState extends State<QuizScreen>
   late final TabController _tab;
   late String _course = widget.initialCourse ?? MockData.courseNames.first;
 
-  int _current = 3;
-  static const int _total = 10;
-  bool _showResult = false;
-  bool _correct = false;
-
-  int get _qIdx => _current % MockData.quizQuestions.length;
-
   List<WrongAnswer> get _courseWrongAnswers =>
       MockData.wrongAnswers.where((w) => w.courseName == _course).toList();
+
+  List<Lecture> get _courseLectures {
+    final courseId = MockData.courseByName(_course)?.id;
+    return NotesStore.instance.lectures
+        .where((l) => l.courseId == courseId)
+        .toList();
+  }
 
   @override
   void initState() {
@@ -72,7 +71,7 @@ class _QuizScreenState extends State<QuizScreen>
                 child: TabBarView(
                   controller: _tab,
                   children: [
-                    _buildQuizTab(context),
+                    _buildQuizWeekList(context),
                     _buildWrongAnswerTab(context),
                   ],
                 ),
@@ -109,24 +108,33 @@ class _QuizScreenState extends State<QuizScreen>
     );
   }
 
-  Widget _buildQuizTab(BuildContext context) {
-    final q = MockData.quizQuestions[_qIdx];
-    return Column(
-      children: [
-        Row(
-          children: [
-            const Spacer(),
-            Text(
-              '${_current + 1} / $_total',
-              style: const TextStyle(fontSize: 12, color: AppColors.ink60),
-            ),
-          ],
+  Widget _buildQuizWeekList(BuildContext context) {
+    final lectures = _courseLectures;
+    if (lectures.isEmpty) {
+      return Center(
+        child: Text(
+          '$_course 과목에는 아직 필기가 없어요',
+          style: const TextStyle(color: AppColors.textMuted),
         ),
-        const SizedBox(height: 10),
-        MulgilProgressBar(value: (_current + 1) / _total),
-        const SizedBox(height: 24),
-        if (context.isTablet) _buildTabletQuiz(q) else _buildMobileQuiz(q),
-      ],
+      );
+    }
+    return ListView.separated(
+      itemCount: lectures.length,
+      separatorBuilder: (_, _) => const SizedBox(height: 10),
+      itemBuilder: (_, i) {
+        final lecture = lectures[i];
+        return _QuizWeekCard(
+          lecture: lecture,
+          onTap: lecture.done
+              ? () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) =>
+                        QuizSessionScreen(course: _course, lecture: lecture),
+                  ),
+                )
+              : null,
+        );
+      },
     );
   }
 
@@ -171,189 +179,73 @@ class _QuizScreenState extends State<QuizScreen>
       ],
     );
   }
+}
 
-  Widget _buildMobileQuiz(QuizQuestion q) {
-    return Expanded(
-      child: Column(
-        children: [
-          SizedBox(
-            width: double.infinity,
-            child: MulgilCard(
-              padding: const EdgeInsets.all(30),
-              child: Text(
-                q.question,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.ink,
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 28),
-          _buildAnswerControls(q),
-          const SizedBox(height: 16),
-          Text(
-            '남은 문제 ${_total - _current - 1}개 · 예상 시간 ${(_total - _current - 1) * 30}초',
-            style: const TextStyle(fontSize: 12, color: AppColors.ink60),
-          ),
-          const Spacer(),
-          if (_showResult)
-            QuizResultCard(correct: _correct, explanation: q.explanation),
-        ],
-      ),
-    );
-  }
+class _QuizWeekCard extends StatelessWidget {
+  final Lecture lecture;
+  final VoidCallback? onTap;
+  const _QuizWeekCard({required this.lecture, this.onTap});
 
-  Widget _buildTabletQuiz(QuizQuestion q) {
-    return Expanded(
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: Container(
-              padding: const EdgeInsets.all(22),
-              decoration: BoxDecoration(
-                color: AppColors.surfaceAlt,
-                borderRadius: BorderRadius.circular(AppRadius.lg),
-              ),
-              child: const Column(
+  @override
+  Widget build(BuildContext context) {
+    return MulgilCard(
+      onTap: onTap,
+      padding: const EdgeInsets.all(12),
+      child: Opacity(
+        opacity: lecture.done ? 1.0 : 0.5,
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    '참고 자료',
-                    style: TextStyle(fontSize: 11.5, color: AppColors.ink40),
-                  ),
-                  SizedBox(height: 10),
-                  Text(
-                    MockData.quizReferenceTitle,
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.ink,
-                    ),
-                  ),
-                  SizedBox(height: 6),
-                  Text(
-                    'SJF(Shortest Job First)는 실행 시간이 짧은 작업을 우선 처리하는 스케줄링 기법이다.',
-                    style: TextStyle(
-                      fontSize: 12.5,
-                      color: AppColors.ink80,
-                      height: 1.7,
-                    ),
-                  ),
-                  SizedBox(height: 10),
-                  TabletHint(),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(width: 1),
-          Expanded(
-            child: Container(
-              padding: const EdgeInsets.all(22),
-              decoration: BoxDecoration(
-                color: AppColors.bg,
-                borderRadius: BorderRadius.circular(AppRadius.lg),
-              ),
-              child: Column(
-                children: [
-                  SizedBox(
-                    width: double.infinity,
-                    child: MulgilCard(
-                      padding: const EdgeInsets.all(26),
-                      child: Text(
-                        q.question,
-                        textAlign: TextAlign.center,
+                  Row(
+                    children: [
+                      Text(
+                        '${lecture.week} - ${lecture.title}',
                         style: const TextStyle(
-                          fontSize: 15,
+                          fontSize: 14,
                           fontWeight: FontWeight.w700,
                           color: AppColors.ink,
                         ),
                       ),
+                      if (lecture.week == MockData.currentWeekLabel) ...[
+                        const SizedBox(width: 6),
+                        const CurrentWeekBadge(),
+                      ],
+                    ],
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    lecture.done ? '필기 완료' : '필기 없음 · 퀴즈 불가',
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: AppColors.ink40,
                     ),
                   ),
-                  const SizedBox(height: 22),
-                  _buildAnswerControls(q),
-                  if (_showResult) ...[
-                    const SizedBox(height: 14),
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: AppColors.surface,
-                        border: Border.all(color: AppColors.yellow),
-                        borderRadius: BorderRadius.circular(AppRadius.sm),
-                      ),
-                      child: Text(
-                        q.explanation,
-                        style: const TextStyle(
-                          fontSize: 11.5,
-                          color: AppColors.ink80,
-                        ),
-                      ),
-                    ),
-                  ],
                 ],
               ),
             ),
-          ),
-        ],
+            if (lecture.quiz != null)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: AppColors.tealSoft,
+                  borderRadius: BorderRadius.circular(AppRadius.sm),
+                ),
+                child: Text(
+                  '퀴즈 ${lecture.quiz}',
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: AppColors.tealDark,
+                  ),
+                ),
+              )
+            else if (lecture.done)
+              const Icon(Icons.chevron_right, size: 20, color: AppColors.ink40),
+          ],
+        ),
       ),
     );
-  }
-
-  Widget _buildAnswerControls(QuizQuestion q) {
-    if (q.type == QuizType.multipleChoice) {
-      final options = q.options!;
-      return Column(
-        children: List.generate(
-          options.length,
-          (i) => Padding(
-            padding: EdgeInsets.only(bottom: i < options.length - 1 ? 10 : 0),
-            child: ChoiceButton(
-              index: i,
-              label: options[i],
-              selected: _showResult && i == q.answer,
-              wrong: _showResult && !_correct && i != q.answer,
-              onTap: _showResult ? null : () => _answer(i, q),
-            ),
-          ),
-        ),
-      );
-    }
-    return Row(
-      children: [
-        Expanded(
-          child: OxButton(
-            label: 'O',
-            color: AppColors.tealDark,
-            onTap: () => _answer(0, q),
-          ),
-        ),
-        const SizedBox(width: 14),
-        Expanded(
-          child: OxButton(
-            label: 'X',
-            color: AppColors.coral,
-            onTap: () => _answer(1, q),
-          ),
-        ),
-      ],
-    );
-  }
-
-  void _answer(int choice, QuizQuestion q) {
-    setState(() {
-      _correct = choice == q.answer;
-      _showResult = true;
-    });
-    Future.delayed(const Duration(seconds: 2), () {
-      if (!mounted) return;
-      setState(() {
-        _current = (_current + 1) % _total;
-        _showResult = false;
-      });
-    });
   }
 }
