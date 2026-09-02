@@ -1,5 +1,5 @@
 DateTime examCalendarDate(DateTime value) {
-  return DateTime(value.year, value.month, value.day);
+  return DateTime.utc(value.year, value.month, value.day);
 }
 
 int examDday(DateTime examAt, {DateTime? today}) {

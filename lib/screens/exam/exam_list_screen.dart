@@ -9,14 +9,16 @@ import '../../models/exam.dart';
 import 'widgets/exam_card.dart';
 
 class ExamListScreen extends StatefulWidget {
-  const ExamListScreen({super.key});
+  final LearningDomainStore? store;
+
+  const ExamListScreen({super.key, this.store});
 
   @override
   State<ExamListScreen> createState() => _ExamListScreenState();
 }
 
 class _ExamListScreenState extends State<ExamListScreen> {
-  final _learningStore = LearningDomainStore.instance;
+  late final LearningDomainStore _learningStore;
   String? _courseIdFilter;
   String? _courseNameFilter;
   bool _initialized = false;
@@ -24,6 +26,7 @@ class _ExamListScreenState extends State<ExamListScreen> {
   @override
   void initState() {
     super.initState();
+    _learningStore = widget.store ?? LearningDomainStore.instance;
     unawaited(_learningStore.load());
   }
 
