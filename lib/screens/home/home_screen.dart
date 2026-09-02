@@ -162,7 +162,12 @@ class _HomeScreenState extends State<HomeScreen> {
                 builder: (context, _) => Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    UpcomingExamsCard(exams: _learningStore.exams),
+                    UpcomingExamsCard(
+                      exams: _learningStore.exams,
+                      onExamTap: (exam) => Navigator.of(
+                        context,
+                      ).pushNamed(AppRoutes.exams, arguments: exam.courseName),
+                    ),
                     const SizedBox(height: _sectionGap),
                     const SectionHeader(title: '이번 주 시간표'),
                     const SizedBox(height: 10),

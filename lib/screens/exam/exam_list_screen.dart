@@ -1,8 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import '../../data/learning_domain_store.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/common_widgets.dart';
-import '../../widgets/exam_form_sheet.dart';
-import '../../data/mock_data.dart';
 import '../../models/exam.dart';
 import 'widgets/exam_card.dart';
 
@@ -14,9 +15,15 @@ class ExamListScreen extends StatefulWidget {
 }
 
 class _ExamListScreenState extends State<ExamListScreen> {
+  final _learningStore = LearningDomainStore.instance;
   String? _courseFilter;
   bool _initialized = false;
-  bool _usedDailyLimit = false;
+
+  @override
+  void initState() {
+    super.initState();
+    unawaited(_learningStore.load());
+  }
 
   @override
   void didChangeDependencies() {
@@ -27,107 +34,41 @@ class _ExamListScreenState extends State<ExamListScreen> {
     }
   }
 
-  List<Exam> get _exams => _courseFilter == null
-      ? MockData.exams
-      : MockData.exams.where((e) => e.courseName == _courseFilter).toList();
-
-  // No-ops if the exam was deleted in the meantime (e.g. mid AI-generation delay).
-  void _replaceExam(Exam oldExam, Exam newExam) {
-    setState(
-      () => MockData.exams.replaceWhere((e) => e.id == oldExam.id, newExam),
-    );
+  List<Exam> get _exams {
+    final exams = _learningStore.exams;
+    if (_courseFilter == null) return exams;
+    return exams.where((e) => e.courseName == _courseFilter).toList();
   }
 
-  // Attaching new source material after a summary/quiz already succeeded
-  // means that result's input is stale — mirrors the backend flipping a
-  // generation's status to outdated when its input version changes.
-  void _attachPastExam(Exam exam) {
-    _replaceExam(
-      exam,
-      exam.copyWith(
-        hasPastExamAttached: true,
-        summaryStatus: exam.summaryStatus == AiJobStatus.succeeded
-            ? AiJobStatus.outdated
-            : exam.summaryStatus,
-        quizStatus: exam.quizStatus == AiJobStatus.succeeded
-            ? AiJobStatus.outdated
-            : exam.quizStatus,
-      ),
-    );
+  void _attachPastExam(Exam _) {
     ScaffoldMessenger.of(
       context,
-    ).showSnackBar(const SnackBar(content: Text('기출 PDF가 첨부됐어요 (mock)')));
+    ).showSnackBar(const SnackBar(content: Text('기출 PDF 업로드 연결 후 사용할 수 있어요.')));
   }
 
-  Future<void> _generate(Exam exam, {required bool isSummary}) async {
-    final current = isSummary ? exam.summaryStatus : exam.quizStatus;
-    final isRegeneration =
-        current == AiJobStatus.succeeded || current == AiJobStatus.outdated;
-    if (isRegeneration && !_usedDailyLimit) {
-      setState(() => _usedDailyLimit = true);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('오늘 AI 생성 한도를 모두 사용했어요 (429 AI_DAILY_LIMIT_REACHED)'),
-        ),
-      );
-      return;
-    }
-    if (!exam.hasPastExamAttached && !isSummary) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('예상 문제를 만들려면 기출 PDF를 먼저 첨부해주세요')),
-      );
-      return;
-    }
-    _replaceExam(
-      exam,
-      isSummary
-          ? exam.copyWith(summaryStatus: AiJobStatus.running)
-          : exam.copyWith(quizStatus: AiJobStatus.running),
-    );
-    await Future.delayed(const Duration(seconds: 2));
-    if (!mounted) return;
-    Exam? running;
-    for (final e in MockData.exams) {
-      if (e.id == exam.id) {
-        running = e;
-        break;
-      }
-    }
-    if (running == null) return; // exam was deleted while this was "running"
-    _replaceExam(
-      running,
-      isSummary
-          ? running.copyWith(summaryStatus: AiJobStatus.succeeded)
-          : running.copyWith(quizStatus: AiJobStatus.succeeded),
-    );
+  Future<void> _generate(Exam _, {required bool isSummary}) async {
+    final label = isSummary ? '요약 생성' : '예상 문제 생성';
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('$label API 연결 후 사용할 수 있어요.')));
   }
 
   void _openCreateSheet() {
-    showMulgilSheet(
-      context,
-      isScrollControlled: true,
-      builder: (_) => ExamFormSheet(
-        initialCourseName: _courseFilter,
-        onSubmit: (exam) => setState(() => MockData.exams.insert(0, exam)),
-      ),
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('시험 등록은 차시 선택 연결 후 서버에 저장할 수 있어요.')),
     );
   }
 
-  void _openEditSheet(Exam exam) {
-    showMulgilSheet(
-      context,
-      isScrollControlled: true,
-      builder: (_) => ExamFormSheet(
-        existingExam: exam,
-        onSubmit: (updated) => _replaceExam(exam, updated),
-      ),
+  void _openEditSheet(Exam _) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('시험 수정 API가 아직 없어 화면 저장을 비워뒀어요.')),
     );
   }
 
-  void _deleteExam(Exam exam) {
-    confirmDeleteExam(context, exam, () {
-      setState(() => MockData.exams.removeWhere((e) => e.id == exam.id));
-    });
+  void _deleteExam(Exam _) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('시험 삭제 API가 아직 없어 화면 저장을 비워뒀어요.')),
+    );
   }
 
   @override
@@ -163,28 +104,47 @@ class _ExamListScreenState extends State<ExamListScreen> {
                 ),
                 const SizedBox(height: 14),
                 Expanded(
-                  child: _exams.isEmpty
-                      ? const Center(
+                  child: ListenableBuilder(
+                    listenable: _learningStore,
+                    builder: (context, _) {
+                      final exams = _exams;
+                      if (_learningStore.isLoading &&
+                          !_learningStore.hasLoaded) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
+                      if (_learningStore.needsAuthentication ||
+                          _learningStore.errorMessage != null) {
+                        return _ExamStatusNotice(
+                          message:
+                              _learningStore.errorMessage ??
+                              'Google 로그인 토큰이 연결되면 서버 시험 일정을 불러와요.',
+                          onRetry: _learningStore.refresh,
+                        );
+                      }
+                      if (exams.isEmpty) {
+                        return const Center(
                           child: Text(
                             '등록된 시험이 없어요',
                             style: TextStyle(color: AppColors.textMuted),
                           ),
-                        )
-                      : ListView.separated(
-                          itemCount: _exams.length,
-                          separatorBuilder: (_, _) =>
-                              const SizedBox(height: 12),
-                          itemBuilder: (_, i) => ExamCard(
-                            exam: _exams[i],
-                            onAttachPastExam: () => _attachPastExam(_exams[i]),
-                            onGenerateSummary: () =>
-                                _generate(_exams[i], isSummary: true),
-                            onGenerateQuiz: () =>
-                                _generate(_exams[i], isSummary: false),
-                            onEdit: () => _openEditSheet(_exams[i]),
-                            onDelete: () => _deleteExam(_exams[i]),
-                          ),
+                        );
+                      }
+                      return ListView.separated(
+                        itemCount: exams.length,
+                        separatorBuilder: (_, _) => const SizedBox(height: 12),
+                        itemBuilder: (_, i) => ExamCard(
+                          exam: exams[i],
+                          onAttachPastExam: () => _attachPastExam(exams[i]),
+                          onGenerateSummary: () =>
+                              _generate(exams[i], isSummary: true),
+                          onGenerateQuiz: () =>
+                              _generate(exams[i], isSummary: false),
+                          onEdit: () => _openEditSheet(exams[i]),
+                          onDelete: () => _deleteExam(exams[i]),
                         ),
+                      );
+                    },
+                  ),
                 ),
                 const SizedBox(height: 12),
                 MulgilButton(label: '+ 시험 등록', onTap: _openCreateSheet),
@@ -192,6 +152,42 @@ class _ExamListScreenState extends State<ExamListScreen> {
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ExamStatusNotice extends StatelessWidget {
+  final String message;
+  final VoidCallback onRetry;
+
+  const _ExamStatusNotice({required this.message, required this.onRetry});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: AppColors.surfaceAlt,
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                message,
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: AppColors.textMuted,
+                ),
+              ),
+            ),
+            TextButton(onPressed: onRetry, child: const Text('다시 시도')),
+          ],
         ),
       ),
     );
