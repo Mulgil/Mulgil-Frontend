@@ -22,22 +22,12 @@ abstract final class UploadFilePicker {
     required List<String> allowedExtensions,
     required Map<String, String> mimeTypesByExtension,
   }) async {
-    final result = await FilePicker.platform.pickFiles(
+    final file = await FilePicker.pickFile(
       type: FileType.custom,
       allowedExtensions: allowedExtensions,
-      allowMultiple: false,
-      withData: true,
     );
-    if (result == null || result.files.isEmpty) return null;
-    final file = result.files.single;
-    final bytes = file.bytes;
-    if (bytes == null) {
-      throw const ApiException(
-        statusCode: 0,
-        code: 'FILE_READ_FAILED',
-        message: '파일 내용을 읽지 못했어요.',
-      );
-    }
+    if (file == null) return null;
+    final bytes = await file.readAsBytes();
     final extension = (file.extension ?? '').toLowerCase();
     final mimeType = mimeTypesByExtension[extension];
     if (mimeType == null) {
