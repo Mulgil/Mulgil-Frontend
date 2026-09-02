@@ -19,6 +19,7 @@ class UploadFile {
   final String filename;
   final String mimeType;
   final int byteSize;
+  final Uri? sourceUri;
   final Stream<List<int>> Function() _openRead;
 
   const UploadFile.stream({
@@ -26,6 +27,7 @@ class UploadFile {
     required this.mimeType,
     required this.byteSize,
     required Stream<List<int>> Function() openRead,
+    this.sourceUri,
   }) : _openRead = openRead;
 
   factory UploadFile.memory({
@@ -223,6 +225,7 @@ class ResourceUploadApi {
       stream: stream,
       contentLength: file.byteSize,
       headers: headers,
+      sourceUri: file.sourceUri,
     );
     checksumSink.close();
     return digestSink.value;

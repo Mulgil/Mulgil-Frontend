@@ -60,6 +60,7 @@ abstract final class UploadFilePicker {
       mimeType: mimeType,
       byteSize: byteSize,
       openRead: () => file.readAsByteStream(),
+      sourceUri: file.uri,
     );
   }
 }

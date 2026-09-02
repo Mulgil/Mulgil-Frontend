@@ -3,6 +3,8 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
+import 'signed_upload_transport.dart';
+
 typedef AccessTokenProvider = FutureOr<String?> Function();
 
 abstract final class ApiConfig {
@@ -106,14 +108,16 @@ class ApiClient {
     required Stream<List<int>> stream,
     required int contentLength,
     Map<String, String> headers = const {},
+    Uri? sourceUri,
   }) async {
-    final request = http.StreamedRequest('PUT', uri)
-      ..contentLength = contentLength;
-    request.headers.addAll(headers);
-
-    final responseFuture = _http.send(request);
-    await stream.pipe(request.sink);
-    final response = await http.Response.fromStream(await responseFuture);
+    final response = await putSignedUpload(
+      httpClient: _http,
+      uploadUri: uri,
+      stream: stream,
+      contentLength: contentLength,
+      headers: headers,
+      sourceUri: sourceUri,
+    );
     _handleUploadResponse(response);
   }
 
