@@ -28,7 +28,10 @@ class _QuizSessionScreenState extends State<QuizSessionScreen> {
   int _current = 0;
   static const int _total = 10;
   bool _showResult = false;
+  bool _submitting = false;
   bool _correct = false;
+  int? _correctIndex;
+  String _explanation = '';
 
   int get _qIdx => _current % MockData.quizQuestions.length;
 
@@ -100,7 +103,7 @@ class _QuizSessionScreenState extends State<QuizSessionScreen> {
             child: MulgilCard(
               padding: const EdgeInsets.all(30),
               child: Text(
-                q.question,
+                q.prompt,
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                   fontSize: 18,
@@ -119,7 +122,7 @@ class _QuizSessionScreenState extends State<QuizSessionScreen> {
           ),
           const Spacer(),
           if (_showResult)
-            QuizResultCard(correct: _correct, explanation: q.explanation),
+            QuizResultCard(correct: _correct, explanation: _explanation),
         ],
       ),
     );
@@ -183,7 +186,7 @@ class _QuizSessionScreenState extends State<QuizSessionScreen> {
                     child: MulgilCard(
                       padding: const EdgeInsets.all(26),
                       child: Text(
-                        q.question,
+                        q.prompt,
                         textAlign: TextAlign.center,
                         style: const TextStyle(
                           fontSize: 15,
@@ -205,7 +208,7 @@ class _QuizSessionScreenState extends State<QuizSessionScreen> {
                         borderRadius: BorderRadius.circular(AppRadius.sm),
                       ),
                       child: Text(
-                        q.explanation,
+                        _explanation,
                         style: const TextStyle(
                           fontSize: 11.5,
                           color: AppColors.ink80,
@@ -233,9 +236,9 @@ class _QuizSessionScreenState extends State<QuizSessionScreen> {
             child: ChoiceButton(
               index: i,
               label: options[i],
-              selected: _showResult && i == q.answer,
-              wrong: _showResult && !_correct && i != q.answer,
-              onTap: _showResult ? null : () => _answer(i, q),
+              selected: _showResult && i == _correctIndex,
+              wrong: _showResult && !_correct && i != _correctIndex,
+              onTap: (_showResult || _submitting) ? null : () => _answer(i, q),
             ),
           ),
         ),
@@ -262,21 +265,35 @@ class _QuizSessionScreenState extends State<QuizSessionScreen> {
     );
   }
 
-  void _answer(int choice, QuizQuestion q) {
+  Future<void> _answer(int choice, QuizQuestion q) async {
+    if (_showResult || _submitting) return;
+    setState(() => _submitting = true);
+    final answerValue = q.type == QuizType.trueFalse ? choice == 0 : choice;
+    final result = await MockData.submitQuizAttempt(
+      sessionId: widget.lecture.id,
+      questionId: q.id,
+      answer: answerValue,
+    );
+    if (!mounted) return;
     setState(() {
-      _correct = choice == q.answer;
+      _submitting = false;
+      _correct = result.isCorrect;
+      _correctIndex = q.type == QuizType.trueFalse
+          ? (result.answer.value == true ? 0 : 1)
+          : result.answer.value as int;
+      _explanation = result.explanation.text;
       _showResult = true;
     });
-    Future.delayed(const Duration(seconds: 2), () {
-      if (!mounted) return;
-      if (_current + 1 >= _total) {
-        _finishQuiz();
-        return;
-      }
-      setState(() {
-        _current += 1;
-        _showResult = false;
-      });
+    await Future.delayed(const Duration(seconds: 2));
+    if (!mounted) return;
+    if (_current + 1 >= _total) {
+      _finishQuiz();
+      return;
+    }
+    setState(() {
+      _current += 1;
+      _showResult = false;
+      _correctIndex = null;
     });
   }
 

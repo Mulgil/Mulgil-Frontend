@@ -1,6 +1,7 @@
 import '../models/lecture.dart';
 import '../models/quiz_question.dart';
-import '../models/wrong_answer.dart';
+import '../models/quiz_attempt_result.dart';
+import '../models/source_ref.dart';
 import '../models/summary_item.dart';
 import '../models/report.dart';
 import '../models/app_notification.dart';
@@ -130,104 +131,91 @@ abstract final class MockData {
     ),
   ];
 
+  // Hidden answer key — mirrors the backend withholding answer/explanation
+  // from GET /sessions/{sessionId}/quiz and only revealing them via
+  // POST /quiz/questions/{questionId}/attempts. Not exposed as MockData.xxx;
+  // only `quizQuestions` (public shape) and `submitQuizAttempt` may read it.
+  static const _quizAnswerKey = <String, ({Object correct, String explanation})>{
+    'q1': (correct: false, explanation: '프로세스는 실행 중인 프로그램, 스레드는 실행 단위입니다.'),
+    'q2': (correct: true, explanation: '세마포어는 0 이상의 정수값을 가질 수 있습니다.'),
+    'q3': (correct: false, explanation: '컨텍스트 스위칭은 오버헤드가 발생합니다.'),
+    'q4': (correct: 1, explanation: 'SJF(Shortest Job First)는 실행 시간이 짧은 작업을 우선 처리합니다.'),
+    'q5': (correct: 2, explanation: '교착상태 발생 조건은 상호 배제, 점유와 대기, 비선점, 순환 대기입니다.'),
+  };
+
+  static const _quizSourceRefs = [
+    SourceRef(sourceType: SourceRefType.pdfText, materialId: 'm1', pageNumber: 3),
+  ];
+
   static const quizQuestions = [
     QuizQuestion(
-      question: '프로세스와 스레드는 같은 개념이다.',
-      answer: 1,
-      explanation: '프로세스는 실행 중인 프로그램, 스레드는 실행 단위입니다.',
+      id: 'q1',
+      prompt: '프로세스와 스레드는 같은 개념이다.',
+      sourceRefs: _quizSourceRefs,
     ),
     QuizQuestion(
-      question: '세마포어는 이진값만 가질 수 있다.',
-      answer: 0,
-      explanation: '세마포어는 0 이상의 정수값을 가질 수 있습니다.',
+      id: 'q2',
+      prompt: '세마포어는 이진값만 가질 수 있다.',
+      sourceRefs: _quizSourceRefs,
     ),
     QuizQuestion(
-      question: '컨텍스트 스위칭 비용은 무시할 수 있다.',
-      answer: 1,
-      explanation: '컨텍스트 스위칭은 오버헤드가 발생합니다.',
+      id: 'q3',
+      prompt: '컨텍스트 스위칭 비용은 무시할 수 있다.',
+      sourceRefs: _quizSourceRefs,
     ),
     QuizQuestion(
+      id: 'q4',
       type: QuizType.multipleChoice,
-      question: '실행 시간이 가장 짧은 작업을 우선 처리하는 스케줄링 기법은?',
+      prompt: '실행 시간이 가장 짧은 작업을 우선 처리하는 스케줄링 기법은?',
       options: ['FCFS', 'SJF', 'Round Robin', 'Priority Scheduling'],
-      answer: 1,
-      explanation: 'SJF(Shortest Job First)는 실행 시간이 짧은 작업을 우선 처리합니다.',
+      sourceRefs: _quizSourceRefs,
     ),
     QuizQuestion(
+      id: 'q5',
       type: QuizType.multipleChoice,
-      question: '교착상태(deadlock)의 필요조건이 아닌 것은?',
+      prompt: '교착상태(deadlock)의 필요조건이 아닌 것은?',
       options: ['상호 배제', '점유와 대기', '선점 가능', '순환 대기'],
-      answer: 2,
-      explanation: '교착상태 발생 조건은 상호 배제, 점유와 대기, 비선점, 순환 대기입니다.',
+      sourceRefs: _quizSourceRefs,
     ),
   ];
 
-  static const wrongAnswers = [
-    WrongAnswer(
-      courseName: '운영체제',
-      week: '2주차',
-      question: '"세마포어는 이진값만 가질 수 있다."',
-      myAnswer: 'X',
-      correct: 'O',
-      isProfEmphasis: true,
-    ),
-    WrongAnswer(
-      courseName: '운영체제',
-      week: '2주차',
-      question: '"컨텍스트 스위칭 비용은 무시할 수 있다."',
-      myAnswer: 'O',
-      correct: 'X',
-      isProfEmphasis: false,
-    ),
-    WrongAnswer(
-      courseName: '운영체제',
-      week: '2주차',
-      question: '"라운드로빈은 우선순위 기반 스케줄링이다."',
-      myAnswer: 'O',
-      correct: 'X',
-      isProfEmphasis: false,
-    ),
-    WrongAnswer(
-      courseName: '운영체제',
-      week: '2주차',
-      question: '실행 시간이 가장 짧은 작업을 우선 처리하는 스케줄링 기법은?',
-      myAnswer: 'FCFS',
-      correct: 'SJF',
-      isProfEmphasis: true,
-    ),
-    WrongAnswer(
-      courseName: '자료구조',
-      week: '1주차',
-      question: '"이진 탐색 트리는 항상 균형을 이룬다."',
-      myAnswer: 'O',
-      correct: 'X',
-      isProfEmphasis: true,
-    ),
-    WrongAnswer(
-      courseName: '자료구조',
-      week: '1주차',
-      question: '"연결 리스트의 임의 위치 접근은 O(1)이다."',
-      myAnswer: 'O',
-      correct: 'X',
-      isProfEmphasis: false,
-    ),
-    WrongAnswer(
-      courseName: '데이터베이스',
-      week: '1주차',
-      question: '"제3정규형을 만족하면 자동으로 BCNF도 만족한다."',
-      myAnswer: 'O',
-      correct: 'X',
-      isProfEmphasis: false,
-    ),
-    WrongAnswer(
-      courseName: '데이터베이스',
-      week: '1주차',
-      question: '"인덱스를 추가해도 조회 성능에는 영향이 없다."',
-      myAnswer: 'O',
-      correct: 'X',
-      isProfEmphasis: true,
-    ),
-  ];
+  // Session-level progress projection, keyed by sessionId (= Lecture.id).
+  static final Map<String, ({int correct, int incorrect})> _quizProgress = {};
+
+  // Mirrors POST /quiz/questions/{questionId}/attempts. Grading happens here,
+  // not client-side, so the caller only ever sees the result of a submitted
+  // answer — never the answer key itself.
+  static Future<QuizAttemptResult> submitQuizAttempt({
+    required String sessionId,
+    required String questionId,
+    required Object answer,
+  }) async {
+    await Future.delayed(const Duration(milliseconds: 600));
+    final key = _quizAnswerKey[questionId]!;
+    final isCorrect = answer == key.correct;
+    final prev = _quizProgress[sessionId] ?? (correct: 0, incorrect: 0);
+    final next = isCorrect
+        ? (correct: prev.correct + 1, incorrect: prev.incorrect)
+        : (correct: prev.correct, incorrect: prev.incorrect + 1);
+    _quizProgress[sessionId] = next;
+    final now = DateTime.now();
+    return QuizAttemptResult(
+      attemptId: 'a${now.microsecondsSinceEpoch}',
+      isCorrect: isCorrect,
+      answer: QuizAnswerFact(value: key.correct, sourceRefs: _quizSourceRefs),
+      explanation: QuizExplanation(
+        text: key.explanation,
+        sourceRefs: _quizSourceRefs,
+      ),
+      progress: QuizProgress(
+        sessionId: sessionId,
+        correctCount: next.correct,
+        incorrectCount: next.incorrect,
+        lastAttemptAt: now,
+        updatedAt: now,
+      ),
+    );
+  }
 
   static const summaryItems = [
     SummaryItem(
