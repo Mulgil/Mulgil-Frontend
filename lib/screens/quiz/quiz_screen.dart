@@ -4,10 +4,6 @@ import '../../widgets/common_widgets.dart';
 import '../../data/mock_data.dart';
 import '../../data/notes_store.dart';
 import '../../models/lecture.dart';
-import '../../models/wrong_answer.dart';
-import '../review/widgets/wrong_answer_card.dart';
-import '../review/widgets/wrong_answer_empty_box.dart';
-import '../review/widgets/wrong_answer_stats_card.dart';
 import 'quiz_session_screen.dart';
 
 class QuizScreen extends StatefulWidget {
@@ -18,31 +14,14 @@ class QuizScreen extends StatefulWidget {
   State<QuizScreen> createState() => _QuizScreenState();
 }
 
-class _QuizScreenState extends State<QuizScreen>
-    with SingleTickerProviderStateMixin {
-  late final TabController _tab;
+class _QuizScreenState extends State<QuizScreen> {
   late String _course = widget.initialCourse ?? MockData.courseNames.first;
-
-  List<WrongAnswer> get _courseWrongAnswers =>
-      MockData.wrongAnswers.where((w) => w.courseName == _course).toList();
 
   List<Lecture> get _courseLectures {
     final courseId = MockData.courseByName(_course)?.id;
     return NotesStore.instance.lectures
         .where((l) => l.courseId == courseId)
         .toList();
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    _tab = TabController(length: 2, vsync: this);
-  }
-
-  @override
-  void dispose() {
-    _tab.dispose();
-    super.dispose();
   }
 
   @override
@@ -64,46 +43,11 @@ class _QuizScreenState extends State<QuizScreen>
                   ),
                 ],
               ),
-              const SizedBox(height: 14),
-              _buildTabBar(),
               const SizedBox(height: 16),
-              Expanded(
-                child: TabBarView(
-                  controller: _tab,
-                  children: [
-                    _buildQuizWeekList(context),
-                    _buildWrongAnswerTab(context),
-                  ],
-                ),
-              ),
+              Expanded(child: _buildQuizWeekList(context)),
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildTabBar() {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.chip,
-        borderRadius: BorderRadius.circular(AppRadius.md),
-      ),
-      child: TabBar(
-        controller: _tab,
-        indicator: BoxDecoration(
-          color: AppColors.navy,
-          borderRadius: BorderRadius.circular(AppRadius.sm),
-        ),
-        indicatorSize: TabBarIndicatorSize.tab,
-        labelColor: Colors.white,
-        unselectedLabelColor: AppColors.ink60,
-        labelStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-        dividerColor: Colors.transparent,
-        tabs: const [
-          Tab(text: '퀴즈'),
-          Tab(text: '오답노트'),
-        ],
       ),
     );
   }
@@ -135,48 +79,6 @@ class _QuizScreenState extends State<QuizScreen>
               : null,
         );
       },
-    );
-  }
-
-  Widget _buildWrongAnswerTab(BuildContext context) {
-    final answers = _courseWrongAnswers;
-    final list = answers.isEmpty
-        ? const WrongAnswerEmptyBox()
-        : ListView.separated(
-            itemCount: answers.length,
-            separatorBuilder: (_, _) => const SizedBox(height: 12),
-            itemBuilder: (_, i) => WrongAnswerCard(item: answers[i]),
-          );
-
-    if (context.isTablet) {
-      return Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(child: list),
-          const SizedBox(width: 28),
-          SizedBox(
-            width: 280,
-            child: Column(
-              children: [
-                const WrongAnswerStatsCard(),
-                const SizedBox(height: 16),
-                MulgilButton(
-                  label: '오답만 다시 퀴즈',
-                  onTap: () => _tab.animateTo(0),
-                ),
-              ],
-            ),
-          ),
-        ],
-      );
-    }
-    return Column(
-      children: [
-        Expanded(child: list),
-        const SizedBox(height: 16),
-        MulgilButton(label: '오답만 다시 퀴즈', onTap: () => _tab.animateTo(0)),
-        const SizedBox(height: 8),
-      ],
     );
   }
 }

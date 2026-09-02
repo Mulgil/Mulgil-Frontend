@@ -18,9 +18,7 @@ class SplashMobile extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const MulgilBubbles(size: 64),
-              const SizedBox(height: 20),
-              const MulgilWordmark(),
+              const MulgilWordmark(fontSize: 56),
               const SizedBox(height: 12),
               const Text(
                 '흐르듯 공부하다',
@@ -69,9 +67,7 @@ class SplashTablet extends StatelessWidget {
           const Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              MulgilBubbles(size: 72),
-              SizedBox(height: 20),
-              MulgilWordmark(fontSize: 56),
+              MulgilWordmark(fontSize: 68),
               SizedBox(height: 12),
               Text(
                 '흐르듯 공부하다',

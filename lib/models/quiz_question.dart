@@ -1,18 +1,22 @@
+import 'source_ref.dart';
+
 enum QuizType { trueFalse, multipleChoice }
 
+// Mirrors GET /sessions/{sessionId}/quiz -> QuizQuestion. The question-fetch
+// response withholds the correct answer and explanation; those are only
+// revealed by POST /quiz/questions/{questionId}/attempts.
 class QuizQuestion {
+  final String id;
   final QuizType type;
-  final String question;
+  final String prompt;
   final List<String>? options; // exactly 4 entries when type is multipleChoice
-  final int
-  answer; // true_false: 0 = O, 1 = X · multiple_choice: 0..3 index into options
-  final String explanation;
+  final List<SourceRef> sourceRefs;
 
   const QuizQuestion({
+    required this.id,
     this.type = QuizType.trueFalse,
-    required this.question,
+    required this.prompt,
     this.options,
-    required this.answer,
-    required this.explanation,
+    this.sourceRefs = const [],
   });
 }

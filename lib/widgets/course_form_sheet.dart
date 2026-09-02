@@ -4,7 +4,6 @@ import '../data/mock_data.dart';
 import '../models/course.dart';
 import '../models/timetable_slot.dart';
 import 'common_widgets.dart';
-import 'confirm_dialog.dart';
 
 // Bottom sheet for creating a Course plus one TimetableSlot per selected weekday.
 // Shared by onboarding's schedule step and the settings subject manager.
@@ -113,23 +112,10 @@ class _CourseFormSheetState extends State<CourseFormSheet> {
 
     final conflicts = _findConflictingSlots();
     if (conflicts.isNotEmpty) {
-      // A conflict on any one slot means that whole course gets replaced —
-      // its other weekdays are the same class, so they'd be left dangling
-      // (and its exams orphaned) if only the overlapping slot were removed.
-      final conflictingCourseIds = conflicts.map((s) => s.courseId).toSet();
-      final conflictingCourses = MockData.courses
-          .where((c) => conflictingCourseIds.contains(c.id))
-          .toList();
-      final names = conflictingCourses.map((c) => "'${c.name}'").join(', ');
-      final proceed = await showMulgilConfirmDialog(
+      ScaffoldMessenger.of(
         context,
-        title: '시간표가 겹쳐요',
-        message: '기존 $names 과목이 시간표·시험 일정과 함께 삭제되고 새 과목으로 대체돼요. 계속할까요?',
-        confirmLabel: '삭제하고 추가',
-        danger: true,
-      );
-      if (!proceed) return;
-      MockData.deleteCourses(conflictingCourses);
+      ).showSnackBar(const SnackBar(content: Text('기존 시간표와 겹쳐서 추가할 수 없어요')));
+      return;
     }
     if (!mounted) return;
 

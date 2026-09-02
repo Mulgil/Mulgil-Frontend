@@ -4,7 +4,6 @@ import '../theme/app_theme.dart';
 import '../data/mock_data.dart';
 import '../models/course.dart';
 import '../models/timetable_slot.dart';
-import 'confirm_dialog.dart';
 import 'common_widgets.dart';
 import 'course_form_sheet.dart';
 
@@ -45,16 +44,11 @@ class _WeeklyTimetableState extends State<WeeklyTimetable> {
   static const _timeColWidth = 32.0;
 
   Future<void> _confirmDeleteCourse(Course course) async {
-    final confirmed = await showMulgilConfirmDialog(
-      context,
-      title: '과목을 삭제할까요?',
-      message: "'${course.name}' 과목과 등록된 시간표·시험 일정이 함께 삭제돼요.",
-      confirmLabel: '삭제',
-      danger: true,
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Course deletion is not supported by the server.'),
+      ),
     );
-    if (!confirmed) return;
-    setState(() => MockData.deleteCourses([course]));
-    widget.onChanged?.call();
   }
 
   // weekday/startHour prefill the CourseFormSheet when opened from a tap on

@@ -10,7 +10,6 @@ class AppNotification {
   final String deepLink;
   final NotificationStatus status;
   final DateTime scheduledAt;
-  final bool isRead;
 
   const AppNotification({
     required this.id,
@@ -20,19 +19,5 @@ class AppNotification {
     required this.deepLink,
     required this.status,
     required this.scheduledAt,
-    this.isRead = false,
   });
-
-  AppNotification copyWith({bool? isRead}) {
-    return AppNotification(
-      id: id,
-      type: type,
-      title: title,
-      body: body,
-      deepLink: deepLink,
-      status: status,
-      scheduledAt: scheduledAt,
-      isRead: isRead ?? this.isRead,
-    );
-  }
 }

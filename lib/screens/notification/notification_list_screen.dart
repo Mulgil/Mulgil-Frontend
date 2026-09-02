@@ -15,23 +15,7 @@ class NotificationListScreen extends StatefulWidget {
 class _NotificationListScreenState extends State<NotificationListScreen> {
   List<AppNotification> get _items => MockData.notifications;
 
-  void _markAllRead() {
-    setState(() {
-      for (var i = 0; i < MockData.notifications.length; i++) {
-        MockData.notifications[i] = MockData.notifications[i].copyWith(
-          isRead: true,
-        );
-      }
-    });
-  }
-
   void _open(AppNotification n) {
-    setState(() {
-      MockData.notifications.replaceWhere(
-        (item) => item.id == n.id,
-        n.copyWith(isRead: true),
-      );
-    });
     final route = switch (n.type) {
       NotificationType.processingComplete => AppRoutes.summary,
       NotificationType.examReminder => AppRoutes.exams,
@@ -62,17 +46,6 @@ class _NotificationListScreenState extends State<NotificationListScreen> {
                     ),
                     const SizedBox(width: 8),
                     Expanded(child: Text('알림', style: AppTextStyles.h2)),
-                    TextButton(
-                      onPressed: _markAllRead,
-                      child: const Text(
-                        '모두 읽음',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: AppColors.tealDark,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
                   ],
                 ),
                 const SizedBox(height: 8),
@@ -125,7 +98,6 @@ class _NotificationCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return MulgilCard(
       onTap: onTap,
-      color: item.isRead ? null : AppColors.surfaceAlt,
       padding: const EdgeInsets.all(14),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -138,9 +110,9 @@ class _NotificationCard extends StatelessWidget {
               children: [
                 Text(
                   item.title,
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 13.5,
-                    fontWeight: item.isRead ? FontWeight.w600 : FontWeight.w800,
+                    fontWeight: FontWeight.w800,
                     color: AppColors.textPrimary,
                   ),
                 ),
@@ -163,16 +135,6 @@ class _NotificationCard extends StatelessWidget {
               ],
             ),
           ),
-          if (!item.isRead)
-            Container(
-              width: 8,
-              height: 8,
-              margin: const EdgeInsets.only(top: 4),
-              decoration: const BoxDecoration(
-                color: AppColors.coral,
-                shape: BoxShape.circle,
-              ),
-            ),
         ],
       ),
     );

@@ -3,23 +3,19 @@ import '../theme/app_theme.dart';
 import '../data/mock_data.dart';
 import '../models/exam.dart';
 import 'common_widgets.dart';
-import 'confirm_dialog.dart';
 
 // Confirms with the user, then invokes onConfirmedDelete — callers still own the
 // actual MockData.exams removal so they control their own setState/rebuild.
 Future<void> confirmDeleteExam(
   BuildContext context,
-  Exam exam,
-  VoidCallback onConfirmedDelete,
+  Exam _,
+  VoidCallback __,
 ) async {
-  final confirmed = await showMulgilConfirmDialog(
-    context,
-    title: '시험을 삭제할까요?',
-    message: "'${exam.courseName} · ${exam.title}' 일정과 생성된 요약·예상문제가 함께 삭제돼요.",
-    confirmLabel: '삭제',
-    danger: true,
+  ScaffoldMessenger.of(context).showSnackBar(
+    const SnackBar(
+      content: Text('Exam deletion is not supported by the server.'),
+    ),
   );
-  if (confirmed) onConfirmedDelete();
 }
 
 // Bottom sheet for creating or editing an Exam. Pass `existingExam` to edit in place;
@@ -76,6 +72,14 @@ class _ExamFormSheetState extends State<ExamFormSheet> {
   }
 
   void _submit() {
+    if (_isEditing) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Exam editing is not supported by the server.'),
+        ),
+      );
+      return;
+    }
     if (_titleCtrl.text.trim().isEmpty || _selectedSessions.isEmpty) {
       ScaffoldMessenger.of(
         context,

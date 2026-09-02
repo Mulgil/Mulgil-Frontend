@@ -35,9 +35,7 @@ class _LoginScreenState extends State<LoginScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const MulgilBubbles(size: 64),
-              const SizedBox(height: 20),
-              const MulgilWordmark(),
+              const MulgilWordmark(fontSize: 56),
               const SizedBox(height: 12),
               const Text(
                 '흐르듯 공부하다',

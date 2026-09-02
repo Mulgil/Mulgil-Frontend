@@ -38,8 +38,22 @@ class _ExamListScreenState extends State<ExamListScreen> {
     );
   }
 
+  // Attaching new source material after a summary/quiz already succeeded
+  // means that result's input is stale — mirrors the backend flipping a
+  // generation's status to outdated when its input version changes.
   void _attachPastExam(Exam exam) {
-    _replaceExam(exam, exam.copyWith(hasPastExamAttached: true));
+    _replaceExam(
+      exam,
+      exam.copyWith(
+        hasPastExamAttached: true,
+        summaryStatus: exam.summaryStatus == AiJobStatus.succeeded
+            ? AiJobStatus.outdated
+            : exam.summaryStatus,
+        quizStatus: exam.quizStatus == AiJobStatus.succeeded
+            ? AiJobStatus.outdated
+            : exam.quizStatus,
+      ),
+    );
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(const SnackBar(content: Text('기출 PDF가 첨부됐어요 (mock)')));
@@ -47,7 +61,9 @@ class _ExamListScreenState extends State<ExamListScreen> {
 
   Future<void> _generate(Exam exam, {required bool isSummary}) async {
     final current = isSummary ? exam.summaryStatus : exam.quizStatus;
-    if (current == AiJobStatus.succeeded && !_usedDailyLimit) {
+    final isRegeneration =
+        current == AiJobStatus.succeeded || current == AiJobStatus.outdated;
+    if (isRegeneration && !_usedDailyLimit) {
       setState(() => _usedDailyLimit = true);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
