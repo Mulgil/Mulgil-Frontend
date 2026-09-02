@@ -145,6 +145,33 @@ void main() {
       );
     });
 
+    test(
+      'uploads raw bytes to absolute signed URLs without bearer auth',
+      () async {
+        final client = ApiClient(
+          baseUri: Uri.parse('https://api.example.com'),
+          accessTokenProvider: () => 'access-token',
+          httpClient: MockClient((request) async {
+            expect(request.method, 'PUT');
+            expect(
+              request.url.toString(),
+              'https://storage.example.com/upload',
+            );
+            expect(_header(request, 'authorization'), isNull);
+            expect(_header(request, 'content-type'), 'application/pdf');
+            expect(request.bodyBytes, [1, 2, 3]);
+            return http.Response('', 200);
+          }),
+        );
+
+        await client.putBytes(
+          Uri.parse('https://storage.example.com/upload'),
+          bytes: [1, 2, 3],
+          headers: {'Content-Type': 'application/pdf'},
+        );
+      },
+    );
+
     test('does not close injected http clients', () {
       final httpClient = _CloseTrackingClient();
       final client = ApiClient(httpClient: httpClient);

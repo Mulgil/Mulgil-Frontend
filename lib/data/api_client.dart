@@ -88,6 +88,28 @@ class ApiClient {
     );
   }
 
+  Future<void> putBytes(
+    Uri uri, {
+    required List<int> bytes,
+    Map<String, String> headers = const {},
+  }) async {
+    final request = http.Request('PUT', uri);
+    request.headers.addAll(headers);
+    request.bodyBytes = bytes;
+
+    final streamed = await _http.send(request);
+    final response = await http.Response.fromStream(streamed);
+    if (response.statusCode >= 200 && response.statusCode < 300) return;
+
+    final body = _decodeBody(response, requireJson: false);
+    throw ApiException(
+      statusCode: response.statusCode,
+      code: 'UPLOAD_FAILED',
+      message: response.reasonPhrase ?? 'Upload failed.',
+      responseBody: body,
+    );
+  }
+
   void close() {
     if (_ownsHttpClient) {
       _http.close();
