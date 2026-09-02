@@ -17,19 +17,16 @@ void main() {
         expect(request.url.path, '/api/v1/courses');
         expect(_header(request, 'authorization'), 'Bearer access-token');
 
-        return http.Response(
-          jsonEncode([
-            {
-              'id': 'course-1',
-              'name': '운영체제',
-              'instructor': '김민수 교수님',
-              'term': '2026-2',
-              'createdAt': '2026-09-01T00:00:00Z',
-              'updatedAt': '2026-09-01T00:00:00Z',
-            },
-          ]),
-          200,
-        );
+        return _jsonResponse([
+          {
+            'id': 'course-1',
+            'name': '운영체제',
+            'instructor': '김민수 교수님',
+            'term': '2026-2',
+            'createdAt': '2026-09-01T00:00:00Z',
+            'updatedAt': '2026-09-01T00:00:00Z',
+          },
+        ], 200);
       });
 
       final courses = await api.listCourses();
@@ -51,17 +48,14 @@ void main() {
           'term': '2026-2',
         });
 
-        return http.Response(
-          jsonEncode({
-            'id': 'course-2',
-            'name': '자료구조',
-            'instructor': '이하나 교수님',
-            'term': '2026-2',
-            'createdAt': '2026-09-01T00:00:00Z',
-            'updatedAt': '2026-09-01T00:00:00Z',
-          }),
-          201,
-        );
+        return _jsonResponse({
+          'id': 'course-2',
+          'name': '자료구조',
+          'instructor': '이하나 교수님',
+          'term': '2026-2',
+          'createdAt': '2026-09-01T00:00:00Z',
+          'updatedAt': '2026-09-01T00:00:00Z',
+        }, 201);
       });
 
       final course = await api.createCourse(
@@ -82,21 +76,18 @@ void main() {
           'https://api.example.com/api/v1/timetable/slots?courseId=course-1',
         );
 
-        return http.Response(
-          jsonEncode([
-            {
-              'id': 'slot-1',
-              'courseId': 'course-1',
-              'weekday': 1,
-              'startTime': '09:00:00',
-              'endTime': '10:15:00',
-              'timezone': 'Asia/Seoul',
-              'createdAt': '2026-09-01T00:00:00Z',
-              'updatedAt': '2026-09-01T00:00:00Z',
-            },
-          ]),
-          200,
-        );
+        return _jsonResponse([
+          {
+            'id': 'slot-1',
+            'courseId': 'course-1',
+            'weekday': 1,
+            'startTime': '09:00:00',
+            'endTime': '10:15:00',
+            'timezone': 'Asia/Seoul',
+            'createdAt': '2026-09-01T00:00:00Z',
+            'updatedAt': '2026-09-01T00:00:00Z',
+          },
+        ], 200);
       });
 
       final slots = await api.listTimetableSlots(courseId: 'course-1');
@@ -120,19 +111,16 @@ void main() {
             'timezone': 'Asia/Seoul',
           });
 
-          return http.Response(
-            jsonEncode({
-              'id': 'slot-4',
-              'courseId': 'course-1',
-              'weekday': 4,
-              'startTime': '13:00',
-              'endTime': '14:15',
-              'timezone': 'Asia/Seoul',
-              'createdAt': '2026-09-01T00:00:00Z',
-              'updatedAt': '2026-09-01T00:00:00Z',
-            }),
-            201,
-          );
+          return _jsonResponse({
+            'id': 'slot-4',
+            'courseId': 'course-1',
+            'weekday': 4,
+            'startTime': '13:00',
+            'endTime': '14:15',
+            'timezone': 'Asia/Seoul',
+            'createdAt': '2026-09-01T00:00:00Z',
+            'updatedAt': '2026-09-01T00:00:00Z',
+          }, 201);
         });
 
         final slot = await api.createTimetableSlot(
@@ -154,22 +142,19 @@ void main() {
         expect(request.method, 'GET');
         expect(request.url.path, '/api/v1/courses/course-1/sessions');
 
-        return http.Response(
-          jsonEncode([
-            {
-              'id': 'session-1',
-              'courseId': 'course-1',
-              'sessionNumber': 3,
-              'title': '스레드와 동기화',
-              'sessionDate': '2026-09-15',
-              'startsAt': null,
-              'endsAt': null,
-              'createdAt': '2026-09-01T00:00:00Z',
-              'updatedAt': '2026-09-01T00:00:00Z',
-            },
-          ]),
-          200,
-        );
+        return _jsonResponse([
+          {
+            'id': 'session-1',
+            'courseId': 'course-1',
+            'sessionNumber': 3,
+            'title': '스레드와 동기화',
+            'sessionDate': '2026-09-15',
+            'startsAt': null,
+            'endsAt': null,
+            'createdAt': '2026-09-01T00:00:00Z',
+            'updatedAt': '2026-09-01T00:00:00Z',
+          },
+        ], 200);
       });
 
       final sessions = await api.listSessions('course-1');
@@ -208,18 +193,15 @@ void main() {
           'sessionIds': ['session-1', 'session-2'],
         });
 
-        return http.Response(
-          jsonEncode({
-            'id': 'exam-1',
-            'courseId': 'course-1',
-            'title': '중간고사',
-            'examAt': '2026-10-20T00:00:00Z',
-            'sessionIds': ['session-1', 'session-2'],
-            'createdAt': '2026-09-01T00:00:00Z',
-            'updatedAt': '2026-09-01T00:00:00Z',
-          }),
-          201,
-        );
+        return _jsonResponse({
+          'id': 'exam-1',
+          'courseId': 'course-1',
+          'title': '중간고사',
+          'examAt': '2026-10-20T00:00:00Z',
+          'sessionIds': ['session-1', 'session-2'],
+          'createdAt': '2026-09-01T00:00:00Z',
+          'updatedAt': '2026-09-01T00:00:00Z',
+        }, 201);
       });
 
       final exam = await api.createExam(
@@ -236,6 +218,14 @@ void main() {
       expect(exam.sessionTitles, ['1주차', '2주차']);
     });
   });
+}
+
+http.Response _jsonResponse(Object body, int statusCode) {
+  return http.Response.bytes(
+    utf8.encode(jsonEncode(body)),
+    statusCode,
+    headers: {'content-type': 'application/json; charset=utf-8'},
+  );
 }
 
 LearningDomainApi _api(
