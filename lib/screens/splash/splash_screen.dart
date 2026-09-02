@@ -74,14 +74,7 @@ class _SplashScreenState extends State<SplashScreen>
             opacity: _opacity.value.clamp(0.0, 1.0),
             child: Transform.scale(scale: _scale.value, child: child),
           ),
-          child: const Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              MulgilBubbles(size: 72),
-              SizedBox(height: 16),
-              MulgilWordmark(fontSize: 36),
-            ],
-          ),
+          child: const MulgilWordmark(fontSize: 44),
         ),
       ),
     );
