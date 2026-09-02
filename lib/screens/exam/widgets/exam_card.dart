@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../theme/app_theme.dart';
 import '../../../widgets/common_widgets.dart';
 import '../../../models/exam.dart';
+import '../../../utils/exam_dates.dart';
 import 'job_button.dart';
 
 class ExamCard extends StatelessWidget {
@@ -21,7 +22,7 @@ class ExamCard extends StatelessWidget {
     required this.onDelete,
   });
 
-  int get _dDay => exam.examAt.difference(DateTime.now()).inDays;
+  int get _dDay => examDday(exam.examAt);
 
   @override
   Widget build(BuildContext context) {

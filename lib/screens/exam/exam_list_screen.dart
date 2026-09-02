@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import '../../data/learning_domain_store.dart';
+import '../../models/course.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/common_widgets.dart';
 import '../../models/exam.dart';
@@ -16,7 +17,8 @@ class ExamListScreen extends StatefulWidget {
 
 class _ExamListScreenState extends State<ExamListScreen> {
   final _learningStore = LearningDomainStore.instance;
-  String? _courseFilter;
+  String? _courseIdFilter;
+  String? _courseNameFilter;
   bool _initialized = false;
 
   @override
@@ -29,15 +31,41 @@ class _ExamListScreenState extends State<ExamListScreen> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (!_initialized) {
-      _courseFilter = ModalRoute.of(context)?.settings.arguments as String?;
+      _readRouteFilter(ModalRoute.of(context)?.settings.arguments);
       _initialized = true;
+    }
+  }
+
+  void _readRouteFilter(Object? arguments) {
+    if (arguments is Exam) {
+      _courseIdFilter = arguments.courseId;
+      _courseNameFilter = arguments.courseName;
+      return;
+    }
+    if (arguments is Course) {
+      _courseIdFilter = arguments.id;
+      _courseNameFilter = arguments.name;
+      return;
+    }
+    if (arguments is String) {
+      _courseNameFilter = arguments;
     }
   }
 
   List<Exam> get _exams {
     final exams = _learningStore.exams;
-    if (_courseFilter == null) return exams;
-    return exams.where((e) => e.courseName == _courseFilter).toList();
+    if (_courseIdFilter != null) {
+      return exams.where((e) => e.courseId == _courseIdFilter).toList();
+    }
+    if (_courseNameFilter != null) {
+      return exams.where((e) => e.courseName == _courseNameFilter).toList();
+    }
+    return exams;
+  }
+
+  String get _title {
+    final courseName = _courseNameFilter;
+    return courseName == null ? '시험 관리' : '시험 관리 · $courseName';
   }
 
   void _attachPastExam(Exam _) {
@@ -92,14 +120,7 @@ class _ExamListScreenState extends State<ExamListScreen> {
                       ),
                     ),
                     const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        _courseFilter == null
-                            ? '시험 관리'
-                            : '시험 관리 · $_courseFilter',
-                        style: AppTextStyles.h2,
-                      ),
-                    ),
+                    Expanded(child: Text(_title, style: AppTextStyles.h2)),
                   ],
                 ),
                 const SizedBox(height: 14),

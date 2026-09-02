@@ -166,7 +166,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       exams: _learningStore.exams,
                       onExamTap: (exam) => Navigator.of(
                         context,
-                      ).pushNamed(AppRoutes.exams, arguments: exam.courseName),
+                      ).pushNamed(AppRoutes.exams, arguments: exam),
                     ),
                     const SizedBox(height: _sectionGap),
                     const SectionHeader(title: '이번 주 시간표'),
