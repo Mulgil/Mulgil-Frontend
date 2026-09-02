@@ -13,7 +13,7 @@
 - 실제 access token이 없으면 과목/시간표 mock을 섞어 보여주지 않고 빈 상태와 로그인 필요 안내를 보여준다.
 - Google SDK 연결 전 테스트용으로 `MULGIL_DEV_ACCESS_TOKEN`, `MULGIL_DEV_REFRESH_TOKEN` dart-define 값을 `AuthStore`에 저장할 수 있게 했다.
 - PDF 자료 업로드는 서버 차시 선택 후 `upload-url` 발급, signed URL PUT, `upload-complete` 호출까지 연결했다.
-- 녹음 업로드는 실제 파일 선택, 업로드 완료 후 서버가 내려준 차시 후보 표시, `confirm-mapping` 호출까지 연결했다.
+- 녹음 업로드는 실제 파일 선택, 업로드 완료 후 서버 차시 후보 또는 직접 선택으로 `confirm-mapping`까지 연결했다.
 
 ## 프론트에는 있지만 백엔드 계약이 아직 부족한 부분
 
@@ -49,4 +49,6 @@
 - 과목 삭제는 soft delete라 백엔드에서 목록/시간표에서 숨겨지고 연관 데이터는 보존된다.
 - 백엔드 signed upload URL은 `Content-Length`를 required header로 내려준다.
   - Flutter Web에서는 해당 헤더를 직접 설정할 수 없어, 프론트는 실제 바디 길이를 HTTP 클라이언트가 처리하게 두고 `Content-Type`만 명시한다.
+- 대용량 업로드는 파일 전체를 미리 읽지 않고 스트림으로 PUT하면서 checksum을 계산한다.
+  - 프론트에서 PDF는 50MB, 녹음은 200MB를 넘으면 업로드 전 차단한다.
 - 노트/퀴즈/요약/리포트/알림 화면은 아직 mock 데이터가 남아 있다.

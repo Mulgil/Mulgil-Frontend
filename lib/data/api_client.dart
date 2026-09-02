@@ -92,22 +92,29 @@ class ApiClient {
     Uri uri, {
     required List<int> bytes,
     Map<String, String> headers = const {},
-  }) async {
-    final request = http.Request('PUT', uri);
-    request.headers.addAll(headers);
-    request.bodyBytes = bytes;
-
-    final streamed = await _http.send(request);
-    final response = await http.Response.fromStream(streamed);
-    if (response.statusCode >= 200 && response.statusCode < 300) return;
-
-    final body = _decodeBody(response, requireJson: false);
-    throw ApiException(
-      statusCode: response.statusCode,
-      code: 'UPLOAD_FAILED',
-      message: response.reasonPhrase ?? 'Upload failed.',
-      responseBody: body,
+  }) {
+    return putByteStream(
+      uri,
+      stream: Stream<List<int>>.value(bytes),
+      contentLength: bytes.length,
+      headers: headers,
     );
+  }
+
+  Future<void> putByteStream(
+    Uri uri, {
+    required Stream<List<int>> stream,
+    required int contentLength,
+    Map<String, String> headers = const {},
+  }) async {
+    final request = http.StreamedRequest('PUT', uri)
+      ..contentLength = contentLength;
+    request.headers.addAll(headers);
+
+    final responseFuture = _http.send(request);
+    await stream.pipe(request.sink);
+    final response = await http.Response.fromStream(await responseFuture);
+    _handleUploadResponse(response);
   }
 
   void close() {
@@ -134,6 +141,18 @@ class ApiClient {
     final streamed = await _http.send(request);
     final response = await http.Response.fromStream(streamed);
     return _handleResponse(response);
+  }
+
+  void _handleUploadResponse(http.Response response) {
+    if (response.statusCode >= 200 && response.statusCode < 300) return;
+
+    final body = _decodeBody(response, requireJson: false);
+    throw ApiException(
+      statusCode: response.statusCode,
+      code: 'UPLOAD_FAILED',
+      message: response.reasonPhrase ?? 'Upload failed.',
+      responseBody: body,
+    );
   }
 
   Future<Map<String, String>> _requestHeaders({

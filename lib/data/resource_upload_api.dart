@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart';
@@ -17,16 +18,31 @@ enum MaterialSourcePhase {
 class UploadFile {
   final String filename;
   final String mimeType;
-  final Uint8List bytes;
+  final int byteSize;
+  final Stream<List<int>> Function() _openRead;
 
-  const UploadFile({
+  const UploadFile.stream({
     required this.filename,
     required this.mimeType,
-    required this.bytes,
-  });
+    required this.byteSize,
+    required Stream<List<int>> Function() openRead,
+  }) : _openRead = openRead;
 
-  int get byteSize => bytes.length;
-  String get checksumSha256 => sha256.convert(bytes).toString();
+  factory UploadFile.memory({
+    required String filename,
+    required String mimeType,
+    required List<int> bytes,
+  }) {
+    final data = Uint8List.fromList(bytes);
+    return UploadFile.stream(
+      filename: filename,
+      mimeType: mimeType,
+      byteSize: data.length,
+      openRead: () => Stream<List<int>>.value(data),
+    );
+  }
+
+  Stream<List<int>> openRead() => _openRead();
 }
 
 class UploadUrl {
@@ -84,10 +100,10 @@ class ResourceUploadApi {
       file: file,
       sourcePhase: sourcePhase,
     );
-    await _putSignedUpload(upload, file);
+    final checksumSha256 = await _putSignedUpload(upload, file);
     final job = await completeMaterialUpload(
       materialId: upload.id,
-      checksumSha256: file.checksumSha256,
+      checksumSha256: checksumSha256,
     );
     return MaterialUploadResult(materialId: upload.id, job: job);
   }
@@ -100,10 +116,10 @@ class ResourceUploadApi {
       file: file,
       startedAt: startedAt,
     );
-    await _putSignedUpload(upload, file);
+    final checksumSha256 = await _putSignedUpload(upload, file);
     return completeRecordingUpload(
       recordingId: upload.id,
-      checksumSha256: file.checksumSha256,
+      checksumSha256: checksumSha256,
     );
   }
 
@@ -194,13 +210,22 @@ class ResourceUploadApi {
     );
   }
 
-  Future<void> _putSignedUpload(UploadUrl upload, UploadFile file) {
+  Future<String> _putSignedUpload(UploadUrl upload, UploadFile file) async {
     final headers = _signedUploadHeaders(upload.requiredHeaders, file.mimeType);
-    return _client.putBytes(
+    final digestSink = _DigestSink();
+    final checksumSink = sha256.startChunkedConversion(digestSink);
+    final stream = file.openRead().map((chunk) {
+      checksumSink.add(chunk);
+      return chunk;
+    });
+    await _client.putByteStream(
       upload.uploadUrl,
-      bytes: file.bytes,
+      stream: stream,
+      contentLength: file.byteSize,
       headers: headers,
     );
+    checksumSink.close();
+    return digestSink.value;
   }
 
   Map<String, String> _signedUploadHeaders(
@@ -291,5 +316,25 @@ class ResourceUploadApi {
       message: '$message ($source)',
       responseBody: body,
     );
+  }
+}
+
+class _DigestSink implements Sink<Digest> {
+  Digest? _digest;
+
+  @override
+  void add(Digest data) {
+    _digest = data;
+  }
+
+  @override
+  void close() {}
+
+  String get value {
+    final digest = _digest;
+    if (digest == null) {
+      throw StateError('Upload checksum was not calculated.');
+    }
+    return digest.toString();
   }
 }

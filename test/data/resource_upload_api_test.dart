@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
@@ -41,7 +40,7 @@ void main() {
           case 'PUT https://storage.example.com/material-1':
             expect(_header(request, 'authorization'), isNull);
             expect(_header(request, 'content-type'), 'application/pdf');
-            expect(_header(request, 'content-length'), isNull);
+            expect(request.contentLength, 3);
             expect(request.bodyBytes, [1, 2, 3]);
             return http.Response('', 200);
           case 'POST https://api.example.com/api/v1/materials/material-1/upload-complete':
@@ -159,10 +158,10 @@ UploadFile _file({
   required String mimeType,
   required List<int> bytes,
 }) {
-  return UploadFile(
+  return UploadFile.memory(
     filename: filename,
     mimeType: mimeType,
-    bytes: Uint8List.fromList(bytes),
+    bytes: bytes,
   );
 }
 

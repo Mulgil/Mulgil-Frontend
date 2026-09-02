@@ -1,9 +1,14 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../../data/api_client.dart';
 import '../../data/app_services.dart';
+import '../../data/learning_domain_store.dart';
 import '../../data/resource_upload_api.dart';
 import '../../data/upload_file_picker.dart';
+import '../../models/course.dart';
+import '../../models/lecture.dart';
 import '../../models/recording_candidate.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/common_widgets.dart';
@@ -12,8 +17,15 @@ enum _Stage { pick, uploading, mapping, done }
 
 class RecordingUploadScreen extends StatefulWidget {
   final ResourceUploadApi? api;
+  final LearningDomainStore? store;
+  final Future<UploadFile?> Function()? pickRecordingFile;
 
-  const RecordingUploadScreen({super.key, this.api});
+  const RecordingUploadScreen({
+    super.key,
+    this.api,
+    this.store,
+    this.pickRecordingFile,
+  });
 
   @override
   State<RecordingUploadScreen> createState() => _RecordingUploadScreenState();
@@ -21,6 +33,8 @@ class RecordingUploadScreen extends StatefulWidget {
 
 class _RecordingUploadScreenState extends State<RecordingUploadScreen> {
   late final ResourceUploadApi _api;
+  late final LearningDomainStore _learningStore;
+  late final Future<UploadFile?> Function() _pickRecordingFile;
   _Stage _stage = _Stage.pick;
   DateTime _startedAt = DateTime.now();
   String? _fileName;
@@ -34,11 +48,25 @@ class _RecordingUploadScreenState extends State<RecordingUploadScreen> {
   void initState() {
     super.initState();
     _api = widget.api ?? AppServices.resourceUpload;
+    _learningStore = widget.store ?? LearningDomainStore.instance;
+    _pickRecordingFile =
+        widget.pickRecordingFile ?? UploadFilePicker.pickRecording;
+    unawaited(_learningStore.load());
+  }
+
+  List<_RecordingSession> get _sessions {
+    final sessions = <_RecordingSession>[];
+    for (final course in _learningStore.courses) {
+      for (final lecture in _learningStore.sessionsFor(course.id)) {
+        sessions.add(_RecordingSession(course: course, lecture: lecture));
+      }
+    }
+    return sessions;
   }
 
   Future<void> _pickAndUpload() async {
     try {
-      final file = await UploadFilePicker.pickRecording();
+      final file = await _pickRecordingFile();
       if (file == null) return;
       setState(() {
         _fileName = file.filename;
@@ -179,18 +207,36 @@ class _RecordingUploadScreenState extends State<RecordingUploadScreen> {
       case _Stage.uploading:
         return _UploadingStage(fileName: _fileName);
       case _Stage.mapping:
-        return _MappingStage(
-          candidates: _candidates,
-          selectedId: _selectedSessionId,
-          errorMessage: _errorMessage,
-          isConfirming: _isConfirming,
-          onSelect: (id) => setState(() => _selectedSessionId = id),
-          onConfirm: _confirmMapping,
+        return ListenableBuilder(
+          listenable: _learningStore,
+          builder: (context, _) => _MappingStage(
+            candidates: _candidates,
+            sessions: _sessions,
+            isLoadingSessions:
+                _learningStore.isLoading && !_learningStore.hasLoaded,
+            sessionErrorMessage: _learningStore.errorMessage,
+            selectedId: _selectedSessionId,
+            errorMessage: _errorMessage,
+            isConfirming: _isConfirming,
+            onRetrySessions: _learningStore.refresh,
+            onSelect: (id) => setState(() => _selectedSessionId = id),
+            onConfirm: _confirmMapping,
+          ),
         );
       case _Stage.done:
         return _DoneStage(onClose: () => Navigator.pop(context, true));
     }
   }
+}
+
+class _RecordingSession {
+  final Course course;
+  final Lecture lecture;
+
+  const _RecordingSession({required this.course, required this.lecture});
+
+  String get id => lecture.id;
+  String get label => '${course.name} · ${lecture.week} ${lecture.title}';
 }
 
 class _PickStage extends StatelessWidget {
@@ -266,7 +312,7 @@ class _PickStage extends StatelessWidget {
                 ),
                 SizedBox(height: 2),
                 Text(
-                  '최대 3시간까지 업로드할 수 있어요',
+                  '최대 3시간 · 200MB까지 업로드할 수 있어요',
                   style: TextStyle(fontSize: 11, color: AppColors.textLight),
                 ),
               ],
@@ -316,101 +362,63 @@ class _UploadingStage extends StatelessWidget {
 
 class _MappingStage extends StatelessWidget {
   final List<RecordingCandidate> candidates;
+  final List<_RecordingSession> sessions;
+  final bool isLoadingSessions;
+  final String? sessionErrorMessage;
   final String? selectedId;
   final String? errorMessage;
   final bool isConfirming;
+  final VoidCallback onRetrySessions;
   final ValueChanged<String> onSelect;
   final VoidCallback onConfirm;
 
   const _MappingStage({
     required this.candidates,
+    required this.sessions,
+    required this.isLoadingSessions,
+    required this.sessionErrorMessage,
     required this.selectedId,
     required this.errorMessage,
     required this.isConfirming,
+    required this.onRetrySessions,
     required this.onSelect,
     required this.onConfirm,
   });
 
   @override
   Widget build(BuildContext context) {
-    if (candidates.isEmpty) {
-      return const Center(
-        child: Text(
-          '겹치는 차시를 찾지 못했어요',
-          style: TextStyle(fontSize: 13, color: AppColors.textMuted),
-        ),
-      );
-    }
-
+    final hasCandidates = candidates.isNotEmpty;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          '어느 차시 녹음인가요?',
-          style: TextStyle(
+        Text(
+          hasCandidates ? '어느 차시 녹음인가요?' : '차시를 직접 선택해주세요',
+          style: const TextStyle(
             fontSize: 15,
             fontWeight: FontWeight.w700,
             color: AppColors.textPrimary,
           ),
         ),
         const SizedBox(height: 4),
-        const Text(
-          '겹치는 시간대를 기준으로 추천했어요',
-          style: TextStyle(fontSize: 12, color: AppColors.textMuted),
+        Text(
+          hasCandidates ? '겹치는 시간대를 기준으로 추천했어요' : '겹치는 차시를 찾지 못했어요',
+          style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
         ),
         const SizedBox(height: 16),
         Expanded(
           child: ListView(
             children: [
-              ...candidates.map(
-                (candidate) => Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
-                  child: GestureDetector(
+              if (hasCandidates)
+                ...candidates.map(
+                  (candidate) => _MappingOption(
+                    title: candidate.title,
+                    trailing: '${(candidate.overlapScore * 100).round()}% 일치',
+                    selected: selectedId == candidate.id,
                     onTap: () => onSelect(candidate.id),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 14,
-                      ),
-                      decoration: BoxDecoration(
-                        color: selectedId == candidate.id
-                            ? AppColors.tealSoft
-                            : AppColors.surfaceAlt,
-                        border: Border.all(
-                          color: selectedId == candidate.id
-                              ? AppColors.teal
-                              : Colors.transparent,
-                          width: 1.5,
-                        ),
-                        borderRadius: BorderRadius.circular(AppRadius.md),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Expanded(
-                            child: Text(
-                              candidate.title,
-                              style: const TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.textPrimary,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Text(
-                            '${(candidate.overlapScore * 100).round()}% 일치',
-                            style: const TextStyle(
-                              fontSize: 11,
-                              color: AppColors.tealDark,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
                   ),
-                ),
-              ),
+                )
+              else
+                ..._manualSessionWidgets(),
               if (errorMessage != null) _InlineError(message: errorMessage!),
             ],
           ),
@@ -421,6 +429,105 @@ class _MappingStage extends StatelessWidget {
           onTap: selectedId == null || isConfirming ? null : onConfirm,
         ),
       ],
+    );
+  }
+
+  List<Widget> _manualSessionWidgets() {
+    if (isLoadingSessions) {
+      return const [
+        Center(
+          child: Padding(
+            padding: EdgeInsets.only(top: 32),
+            child: CircularProgressIndicator(),
+          ),
+        ),
+      ];
+    }
+    final sessionError = sessionErrorMessage;
+    if (sessionError != null) {
+      return [
+        _InlineError(message: sessionError),
+        const SizedBox(height: 8),
+        TextButton(onPressed: onRetrySessions, child: const Text('다시 불러오기')),
+      ];
+    }
+    if (sessions.isEmpty) {
+      return const [
+        Center(
+          child: Padding(
+            padding: EdgeInsets.only(top: 32),
+            child: Text(
+              '연결할 차시가 없어요',
+              style: TextStyle(fontSize: 13, color: AppColors.textMuted),
+            ),
+          ),
+        ),
+      ];
+    }
+    return sessions
+        .map(
+          (session) => _MappingOption(
+            title: session.label,
+            trailing: '직접 선택',
+            selected: selectedId == session.id,
+            onTap: () => onSelect(session.id),
+          ),
+        )
+        .toList();
+  }
+}
+
+class _MappingOption extends StatelessWidget {
+  final String title;
+  final String trailing;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _MappingOption({
+    required this.title,
+    required this.trailing,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+          decoration: BoxDecoration(
+            color: selected ? AppColors.tealSoft : AppColors.surfaceAlt,
+            border: Border.all(
+              color: selected ? AppColors.teal : Colors.transparent,
+              width: 1.5,
+            ),
+            borderRadius: BorderRadius.circular(AppRadius.md),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Text(
+                trailing,
+                style: const TextStyle(fontSize: 11, color: AppColors.tealDark),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
