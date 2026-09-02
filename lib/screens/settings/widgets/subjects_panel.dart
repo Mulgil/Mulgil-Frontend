@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import '../../../constants/routes.dart';
 import '../../../data/mock_data.dart';
 import '../../../models/course.dart';
 import '../../../models/exam.dart';
@@ -83,6 +84,19 @@ class SettingsSubjectsPanel extends StatelessWidget {
         Row(
           children: [
             const Expanded(child: SectionLabel(label: '시험 일정')),
+            TextButton(
+              onPressed: () => Navigator.of(context).pushNamed(AppRoutes.exams),
+              style: TextButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              child: const Text(
+                '전체 관리',
+                style: TextStyle(fontSize: 12, color: AppColors.navy),
+              ),
+            ),
+            const SizedBox(width: 4),
             MulgilRaisedAddButton(onTap: onAddExam),
           ],
         ),

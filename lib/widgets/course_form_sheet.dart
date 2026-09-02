@@ -81,6 +81,7 @@ class _CourseFormSheetState extends State<CourseFormSheet> {
       return;
     }
     setState(() {
+      _errorText = null;
       if (isStart) {
         _start = picked;
         _autoFillEndTime();
@@ -92,6 +93,7 @@ class _CourseFormSheetState extends State<CourseFormSheet> {
 
   void _toggleWeekday(int wd, bool selected) {
     setState(() {
+      _errorText = null;
       selected ? _weekdays.add(wd) : _weekdays.remove(wd);
       _autoFillEndTime();
     });
@@ -187,6 +189,9 @@ class _CourseFormSheetState extends State<CourseFormSheet> {
           TextField(
             controller: _nameCtrl,
             decoration: const InputDecoration(labelText: '과목명'),
+            onChanged: (_) {
+              if (_errorText != null) setState(() => _errorText = null);
+            },
           ),
           const SizedBox(height: 12),
           TextField(
@@ -235,13 +240,25 @@ class _CourseFormSheetState extends State<CourseFormSheet> {
           ),
           if (_errorText != null) ...[
             const SizedBox(height: 12),
-            Text(
-              _errorText!,
-              style: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-                color: AppColors.coral,
-              ),
+            Row(
+              children: [
+                const Icon(
+                  Icons.error_outline,
+                  size: 16,
+                  color: AppColors.coral,
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    _errorText!,
+                    style: const TextStyle(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.coral,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ],
           const SizedBox(height: 20),
