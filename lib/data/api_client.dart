@@ -19,6 +19,7 @@ class ApiClient {
   final Uri baseUri;
   final http.Client _http;
   final AccessTokenProvider? _accessTokenProvider;
+  final bool _ownsHttpClient;
 
   ApiClient({
     Uri? baseUri,
@@ -26,7 +27,8 @@ class ApiClient {
     AccessTokenProvider? accessTokenProvider,
   }) : baseUri = _normalizeBaseUri(baseUri ?? ApiConfig.baseUri),
        _http = httpClient ?? http.Client(),
-       _accessTokenProvider = accessTokenProvider;
+       _accessTokenProvider = accessTokenProvider,
+       _ownsHttpClient = httpClient == null;
 
   Future<Object?> getJson(
     String path, {
@@ -87,7 +89,9 @@ class ApiClient {
   }
 
   void close() {
-    _http.close();
+    if (_ownsHttpClient) {
+      _http.close();
+    }
   }
 
   Future<Object?> _sendJson(
@@ -125,8 +129,10 @@ class ApiClient {
   }
 
   Object? _handleResponse(http.Response response) {
-    final body = _decodeBody(response);
-    if (response.statusCode >= 200 && response.statusCode < 300) {
+    final isSuccessful =
+        response.statusCode >= 200 && response.statusCode < 300;
+    final body = _decodeBody(response, requireJson: isSuccessful);
+    if (isSuccessful) {
       return body;
     }
 
@@ -143,16 +149,20 @@ class ApiClient {
     );
   }
 
-  Object? _decodeBody(http.Response response) {
+  Object? _decodeBody(http.Response response, {required bool requireJson}) {
     if (response.bodyBytes.isEmpty) return null;
+    final decoded = utf8.decode(response.bodyBytes, allowMalformed: true);
     try {
-      return jsonDecode(utf8.decode(response.bodyBytes));
+      return jsonDecode(decoded);
     } on FormatException {
+      if (!requireJson) {
+        return decoded;
+      }
       throw ApiException(
         statusCode: response.statusCode,
         code: 'INVALID_RESPONSE',
         message: 'Expected a JSON response.',
-        responseBody: response.body,
+        responseBody: decoded,
       );
     }
   }

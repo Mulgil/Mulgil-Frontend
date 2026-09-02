@@ -116,6 +116,43 @@ void main() {
         ),
       );
     });
+
+    test('keeps HTTP status code for non-JSON error responses', () async {
+      final client = ApiClient(
+        baseUri: Uri.parse('https://api.example.com'),
+        httpClient: MockClient(
+          (request) async => http.Response(
+            '<html>bad gateway</html>',
+            502,
+            reasonPhrase: 'Bad Gateway',
+          ),
+        ),
+      );
+
+      await expectLater(
+        client.getJson('/api/v1/courses'),
+        throwsA(
+          isA<ApiException>()
+              .having((e) => e.statusCode, 'statusCode', 502)
+              .having((e) => e.code, 'code', 'HTTP_502')
+              .having((e) => e.message, 'message', 'Bad Gateway')
+              .having(
+                (e) => e.responseBody,
+                'responseBody',
+                '<html>bad gateway</html>',
+              ),
+        ),
+      );
+    });
+
+    test('does not close injected http clients', () {
+      final httpClient = _CloseTrackingClient();
+      final client = ApiClient(httpClient: httpClient);
+
+      client.close();
+
+      expect(httpClient.isClosed, isFalse);
+    });
   });
 }
 
@@ -126,4 +163,19 @@ String? _header(http.BaseRequest request, String name) {
     }
   }
   return null;
+}
+
+class _CloseTrackingClient extends http.BaseClient {
+  bool isClosed = false;
+
+  @override
+  Future<http.StreamedResponse> send(http.BaseRequest request) {
+    throw StateError('Unexpected request.');
+  }
+
+  @override
+  void close() {
+    isClosed = true;
+    super.close();
+  }
 }
