@@ -47,8 +47,8 @@ class _CourseFormSheetState extends State<CourseFormSheet> {
   String _formatTime(TimeOfDay t) =>
       '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
 
-  // 雅?1????뤿씜?? 癰귣똾??3??볦퍢 ?怨뚯뺏, 雅?2????곴맒?? ?대Ŋ???1??볦퍢 15?브쑴???酉釉????쉘????疫꿸퀡??첎誘れ몵嚥?????
-  // ?諭????⑥눖??? ?ル굝利???볦퍢??筌욊낯?????쑎??鈺곌퀣???????됱벉.
+  // 주 1회 수업은 보통 3시간 연강, 주 2회 이상은 교시당 1시간 15분이 흔한 패턴이라 기본값으로 사용.
+  // 특수한 과목은 종료 시간을 직접 눌러서 조절할 수 있음.
   int _defaultDurationMinutesFor(int weekdayCount) =>
       weekdayCount <= 1 ? 180 : 75;
 
@@ -72,7 +72,7 @@ class _CourseFormSheetState extends State<CourseFormSheet> {
     if (!isStart && _toMinutes(picked) <= _toMinutes(_start)) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('?ル굝利???볦퍢?? ??뽰삂 ??볦퍢癰귣?????堉????곸뒄')));
+      ).showSnackBar(const SnackBar(content: Text('종료 시간은 시작 시간보다 늦어야 해요')));
       return;
     }
     setState(() {
@@ -106,14 +106,14 @@ class _CourseFormSheetState extends State<CourseFormSheet> {
     if (_nameCtrl.text.trim().isEmpty || _weekdays.isEmpty) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('?⑥눖?됵쭗?껊궢 ?遺우뵬????낆젾??곻폒?紐꾩뒄')));
+      ).showSnackBar(const SnackBar(content: Text('과목명과 요일을 입력해주세요')));
       return;
     }
 
     final conflicts = _findConflictingSlots();
     if (conflicts.isNotEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('A timetable conflict cannot replace an existing course.')),
+        const SnackBar(content: Text('기존 시간표와 겹쳐서 추가할 수 없어요')),
       );
       return;
     }
@@ -125,7 +125,7 @@ class _CourseFormSheetState extends State<CourseFormSheet> {
       name: _nameCtrl.text.trim(),
       instructor: _professorCtrl.text.trim().isEmpty
           ? null
-          : '${_professorCtrl.text.trim()} ?대Ŋ???,
+          : '${_professorCtrl.text.trim()} 교수님',
     );
     final startStr = _formatTime(_start);
     final endStr = _formatTime(_end);
@@ -158,7 +158,7 @@ class _CourseFormSheetState extends State<CourseFormSheet> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            '?⑥눖???곕떽?',
+            '과목 추가',
             style: TextStyle(
               fontSize: 17,
               fontWeight: FontWeight.w800,
@@ -168,16 +168,16 @@ class _CourseFormSheetState extends State<CourseFormSheet> {
           const SizedBox(height: 16),
           TextField(
             controller: _nameCtrl,
-            decoration: const InputDecoration(labelText: '?⑥눖?됵쭗?),
+            decoration: const InputDecoration(labelText: '과목명'),
           ),
           const SizedBox(height: 12),
           TextField(
             controller: _professorCtrl,
-            decoration: const InputDecoration(labelText: '?대Ŋ???(?醫뤾문)'),
+            decoration: const InputDecoration(labelText: '교수님 (선택)'),
           ),
           const SizedBox(height: 14),
           const Text(
-            '?遺우뵬',
+            '요일',
             style: TextStyle(
               fontSize: 12.5,
               fontWeight: FontWeight.w700,
@@ -203,20 +203,20 @@ class _CourseFormSheetState extends State<CourseFormSheet> {
               Expanded(
                 child: OutlinedButton(
                   onPressed: () => _pickTime(isStart: true),
-                  child: Text('??뽰삂 ${_formatTime(_start)}'),
+                  child: Text('시작 ${_formatTime(_start)}'),
                 ),
               ),
               const SizedBox(width: 10),
               Expanded(
                 child: OutlinedButton(
                   onPressed: () => _pickTime(isStart: false),
-                  child: Text('?ル굝利?${_formatTime(_end)}'),
+                  child: Text('종료 ${_formatTime(_end)}'),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 20),
-          MulgilButton(label: '?곕떽?', onTap: _submit),
+          MulgilButton(label: '추가', onTap: _submit),
         ],
       ),
     );

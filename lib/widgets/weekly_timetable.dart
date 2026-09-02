@@ -18,18 +18,18 @@ const _palette = [
 Color _courseColor(Course course) =>
     _palette[MockData.courses.indexOf(course) % _palette.length];
 
-// Everytime ??????遺우뵬???볦퍢 域밸챶??? MockData.courses/timetableSlots??域밸챶?嚥?域밸챶???
+// Everytime 스타일 요일×시간 그리드. MockData.courses/timetableSlots를 그대로 그린다.
 // Owns its own add/delete flow (tap a block -> confirm -> remove; tap an
 // empty cell or the "+" -> add) so every screen that embeds this gets it for
 // free without threading a callback through. MockData is plain mutable state
 // (not a ChangeNotifier), so any screen that also renders something derived
 // from it (e.g. an exam list keyed by course) must pass `onChanged` and
-// rebuild itself there ??otherwise it'll show stale data after this widget's
+// rebuild itself there — otherwise it'll show stale data after this widget's
 // own setState mutates the shared lists out from under it.
 class WeeklyTimetable extends StatefulWidget {
   final VoidCallback? onChanged;
   // When set, tapping a course block calls this instead of the default
-  // delete-confirm flow ??lets a read-only context (e.g. Home) turn a tap
+  // delete-confirm flow — lets a read-only context (e.g. Home) turn a tap
   // into "open this subject" navigation while course management screens
   // keep tap-to-delete.
   final void Function(Course course)? onCourseTap;
@@ -85,7 +85,7 @@ class _WeeklyTimetableState extends State<WeeklyTimetable> {
             borderRadius: BorderRadius.circular(AppRadius.md),
           ),
           child: const Text(
-            '+ ???쑎????볦퍢??? ?源낆쨯??곻폒?紐꾩뒄',
+            '+ 눌러서 시간표를 등록해주세요',
             style: TextStyle(color: AppColors.ink60, fontSize: 13),
           ),
         ),
@@ -93,8 +93,9 @@ class _WeeklyTimetableState extends State<WeeklyTimetable> {
     }
 
     final days = (slots.map((s) => s.weekday).toSet().toList()..sort());
-    // 9~16??? ??湲?癰귣똻肉т틠?곕뮉 疫꿸퀣? 甕곕뗄?욄에??⑥쥙?????⑥눖???筌왖?怨뚭탢????? ??볦퍢?? ??뤿씜????곷선??域밸챶????
-    // 揶쏅쵐?꾣묾?餓κ쑴堉??쇰선 癰귣똻?좑쭪? ??낅즲嚥? ??쇱젫 ??뤿씜????甕곕뗄?욅몴?甕곗щ선??롢늺 域밸챶彛?? 域밸챶?곫?揶쎛????苡???멸돌??    // ??뤿씜 ?袁⑥삋嚥?1??볦퍢 15?브쑴????媛???곕떽?嚥?癰귣똻肉т빳???
+    // 9~16시를 항상 보여주는 기준 범위로 고정 — 과목을 지우거나 늦은 시간대 수업이 없어도 그리드가
+    // 갑자기 줄어들어 보이지 않도록. 실제 수업이 이 범위를 벗어나면 그만큼, 그리고 가장 늦게 끝나는
+    // 수업 아래로 1시간 15분의 여백을 추가로 보여준다.
     const marginMinutes = 75;
     final actualStartHour = slots.map((s) => s.startMinutes ~/ 60).reduce(min);
     final actualEndMinutes = slots.map((s) => s.endMinutes).reduce(max);

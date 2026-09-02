@@ -4,7 +4,7 @@ import '../data/mock_data.dart';
 import '../models/exam.dart';
 import 'common_widgets.dart';
 
-// Confirms with the user, then invokes onConfirmedDelete ??callers still own the
+// Confirms with the user, then invokes onConfirmedDelete — callers still own the
 // actual MockData.exams removal so they control their own setState/rebuild.
 Future<void> confirmDeleteExam(
   BuildContext context,
@@ -79,7 +79,7 @@ class _ExamFormSheetState extends State<ExamFormSheet> {
     if (_titleCtrl.text.trim().isEmpty || _selectedSessions.isEmpty) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('??쀫퓮筌뤿굛??甕곕뗄?욅몴?筌뤴뫀紐???낆젾??곻폒?紐꾩뒄')));
+      ).showSnackBar(const SnackBar(content: Text('시험명과 범위를 모두 입력해주세요')));
       return;
     }
     final existing = widget.existingExam;
@@ -112,7 +112,7 @@ class _ExamFormSheetState extends State<ExamFormSheet> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            _isEditing ? '??쀫퓮 ??륁젟' : '??쀫퓮 ?源낆쨯',
+            _isEditing ? '시험 수정' : '시험 등록',
             style: const TextStyle(
               fontSize: 17,
               fontWeight: FontWeight.w800,
@@ -122,7 +122,7 @@ class _ExamFormSheetState extends State<ExamFormSheet> {
           const SizedBox(height: 16),
           DropdownButtonFormField<String>(
             initialValue: _courseName,
-            decoration: const InputDecoration(labelText: '?⑥눖??),
+            decoration: const InputDecoration(labelText: '과목'),
             items: MockData.courseNames
                 .map((name) => DropdownMenuItem(value: name, child: Text(name)))
                 .toList(),
@@ -132,8 +132,8 @@ class _ExamFormSheetState extends State<ExamFormSheet> {
           TextField(
             controller: _titleCtrl,
             decoration: const InputDecoration(
-              labelText: '??쀫퓮筌?,
-              hintText: '?? 餓λ쵌而숁⑥쥙沅?,
+              labelText: '시험명',
+              hintText: '예: 중간고사',
             ),
           ),
           const SizedBox(height: 14),
@@ -144,7 +144,7 @@ class _ExamFormSheetState extends State<ExamFormSheet> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const Text(
-                  '??쀫퓮 ?醫롮?',
+                  '시험 날짜',
                   style: TextStyle(fontSize: 13, color: AppColors.ink60),
                 ),
                 Text(
@@ -160,7 +160,7 @@ class _ExamFormSheetState extends State<ExamFormSheet> {
           ),
           const SizedBox(height: 14),
           const Text(
-            '??쀫퓮 甕곕뗄??,
+            '시험 범위',
             style: TextStyle(
               fontSize: 12.5,
               fontWeight: FontWeight.w700,
@@ -186,7 +186,7 @@ class _ExamFormSheetState extends State<ExamFormSheet> {
                 .toList(),
           ),
           const SizedBox(height: 20),
-          MulgilButton(label: _isEditing ? '??륁젟' : '?源낆쨯', onTap: _submit),
+          MulgilButton(label: _isEditing ? '수정' : '등록', onTap: _submit),
         ],
       ),
     );

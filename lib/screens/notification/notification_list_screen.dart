@@ -45,7 +45,7 @@ class _NotificationListScreenState extends State<NotificationListScreen> {
                       ),
                     ),
                     const SizedBox(width: 8),
-                    Expanded(child: Text('???뵝', style: AppTextStyles.h2)),
+                    Expanded(child: Text('알림', style: AppTextStyles.h2)),
                   ],
                 ),
                 const SizedBox(height: 8),
@@ -53,7 +53,7 @@ class _NotificationListScreenState extends State<NotificationListScreen> {
                   child: _items.isEmpty
                       ? const Center(
                           child: Text(
-                            '???뵝????곷선??,
+                            '알림이 없어요',
                             style: TextStyle(color: AppColors.textMuted),
                           ),
                         )
@@ -82,16 +82,16 @@ class _NotificationCard extends StatelessWidget {
   const _NotificationCard({required this.item, required this.onTap});
 
   String get _icon => switch (item.type) {
-    NotificationType.processingComplete => '??,
-    NotificationType.examReminder => '?諭?,
-    NotificationType.postClassReminder => '??,
+    NotificationType.processingComplete => '✨',
+    NotificationType.examReminder => '📅',
+    NotificationType.postClassReminder => '✎',
   };
 
   String get _timeAgo {
     final diff = DateTime.now().difference(item.scheduledAt);
-    if (diff.inDays >= 1) return '${diff.inDays}????;
-    if (diff.inHours >= 1) return '${diff.inHours}??볦퍢 ??;
-    return '獄쎻뫕????;
+    if (diff.inDays >= 1) return '${diff.inDays}일 전';
+    if (diff.inHours >= 1) return '${diff.inHours}시간 전';
+    return '방금 전';
   }
 
   @override
