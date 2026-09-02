@@ -5,6 +5,8 @@ import '../../data/mock_data.dart';
 import '../../data/notes_store.dart';
 import '../../models/lecture.dart';
 import '../../constants/routes.dart';
+import '../recording/recording_upload_screen.dart';
+import 'pdf_upload_screen.dart';
 import 'widgets/lecture_card.dart';
 
 class NoteListScreen extends StatefulWidget {
@@ -171,7 +173,22 @@ class _NoteListScreenState extends State<NoteListScreen> {
               subtitle: const Text('강의자료·기출 PDF를 올려요 (최대 50MB, 150페이지)'),
               onTap: () {
                 Navigator.pop(sheetCtx);
-                Navigator.of(context).pushNamed(AppRoutes.notePdfUpload);
+                showMulgilModalScreen(
+                  context,
+                  builder: (_) => const PdfUploadScreen(),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.mic_none, color: AppColors.navy),
+              title: const Text('강의 녹음 업로드'),
+              subtitle: const Text('녹음 파일을 올리면 음성 인식 후 차시에 매핑해요 (최대 3시간)'),
+              onTap: () {
+                Navigator.pop(sheetCtx);
+                showMulgilModalScreen(
+                  context,
+                  builder: (_) => const RecordingUploadScreen(),
+                );
               },
             ),
             ListTile(

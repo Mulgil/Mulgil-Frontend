@@ -19,6 +19,28 @@ Future<T?> showMulgilSheet<T>(
   );
 }
 
+// Presents a multi-step flow (file upload wizards, etc.) as a tall modal sheet
+// — dimmed background, rounded top corners — instead of a full route push, so
+// stepping through pick/upload/confirm stages doesn't read as leaving the tab.
+Future<T?> showMulgilModalScreen<T>(
+  BuildContext context, {
+  required WidgetBuilder builder,
+  double heightFraction = 0.9,
+}) {
+  return showModalBottomSheet<T>(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: AppColors.surface,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+    ),
+    builder: (ctx) => SizedBox(
+      height: MediaQuery.of(ctx).size.height * heightFraction,
+      child: builder(ctx),
+    ),
+  );
+}
+
 // Reusable bordered surface card — replaces the ad hoc box-shadow `Container`s
 // that used to be copy-pasted per screen, so every card in the app shares the
 // same flat, bordered look instead of drifting into inconsistent shadows/radii.
