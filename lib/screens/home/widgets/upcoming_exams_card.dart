@@ -4,6 +4,7 @@ import '../../../widgets/common_widgets.dart';
 import '../../../data/mock_data.dart';
 import '../../../constants/routes.dart';
 import '../../../models/exam.dart';
+import '../../../utils/exam_dates.dart';
 
 class UpcomingExamsCard extends StatefulWidget {
   final List<Exam>? exams;
@@ -28,6 +29,7 @@ class _UpcomingExamsCardState extends State<UpcomingExamsCard> {
   @override
   Widget build(BuildContext context) {
     final exams = List.of(widget.exams ?? MockData.exams)
+      ..removeWhere((exam) => !isUpcomingExam(exam.examAt))
       ..sort((a, b) => a.examAt.compareTo(b.examAt));
     if (exams.isEmpty) return const SizedBox.shrink();
     // No onTap on the card itself — an InkWell wrapping the whole PageView
@@ -61,7 +63,7 @@ class _UpcomingExamsCardState extends State<UpcomingExamsCard> {
               onPageChanged: (i) => setState(() => _page = i),
               itemBuilder: (_, i) {
                 final exam = exams[i];
-                final dDay = exam.examAt.difference(DateTime.now()).inDays;
+                final dDay = examDday(exam.examAt);
                 final ValueChanged<Exam>? onTap =
                     widget.onExamTap ??
                     (widget.exams == null
@@ -75,7 +77,7 @@ class _UpcomingExamsCardState extends State<UpcomingExamsCard> {
                   onTap: onTap == null ? null : () => onTap(exam),
                   child: Row(
                     children: [
-                      ExamDayBadge(dDay: dDay < 0 ? 0 : dDay),
+                      ExamDayBadge(dDay: dDay),
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
