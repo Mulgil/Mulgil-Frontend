@@ -164,6 +164,49 @@ void main() {
       expect(sessions.single.date, '9/15');
     });
 
+    test(
+      'lists exams by courseId and maps session titles from sessions',
+      () async {
+        const course = Course(id: 'course-1', name: '운영체제');
+        const sessions = [
+          Lecture(
+            id: 'session-1',
+            courseId: 'course-1',
+            week: '1주차',
+            title: '컴퓨터 구조 개요',
+            done: false,
+            stars: 0,
+          ),
+        ];
+        final api = _api((request) async {
+          expect(request.method, 'GET');
+          expect(request.url.path, '/api/v1/courses/course-1/exams');
+
+          return _jsonResponse([
+            {
+              'id': 'exam-1',
+              'courseId': 'course-1',
+              'title': '중간고사',
+              'examAt': '2026-10-19T15:00:00Z',
+              'sessionIds': ['session-1', 'deleted-session'],
+              'createdAt': '2026-09-01T00:00:00Z',
+              'updatedAt': '2026-09-01T00:00:00Z',
+            },
+          ], 200);
+        });
+
+        final exams = await api.listExams(course, sessions: sessions);
+
+        expect(exams.single.courseId, 'course-1');
+        expect(exams.single.courseName, '운영체제');
+        expect(exams.single.sessionIds, ['session-1', 'deleted-session']);
+        expect(exams.single.sessionTitles, ['1주차']);
+        expect(exams.single.examAt.year, 2026);
+        expect(exams.single.examAt.month, 10);
+        expect(exams.single.examAt.day, 20);
+      },
+    );
+
     test('creates exams under courseId with sessionIds', () async {
       const course = Course(id: 'course-1', name: '운영체제');
       const sessions = [
@@ -189,7 +232,7 @@ void main() {
         expect(request.url.path, '/api/v1/courses/course-1/exams');
         expect(jsonDecode(request.body), {
           'title': '중간고사',
-          'examAt': '2026-10-20T00:00:00.000Z',
+          'examAt': '2026-10-19T15:00:00.000Z',
           'sessionIds': ['session-1', 'session-2'],
         });
 
@@ -197,7 +240,7 @@ void main() {
           'id': 'exam-1',
           'courseId': 'course-1',
           'title': '중간고사',
-          'examAt': '2026-10-20T00:00:00Z',
+          'examAt': '2026-10-19T15:00:00Z',
           'sessionIds': ['session-1', 'session-2'],
           'createdAt': '2026-09-01T00:00:00Z',
           'updatedAt': '2026-09-01T00:00:00Z',
@@ -207,7 +250,7 @@ void main() {
       final exam = await api.createExam(
         course: course,
         title: '중간고사',
-        examAt: DateTime.utc(2026, 10, 20),
+        examAt: DateTime(2026, 10, 20),
         sessions: sessions,
       );
 
@@ -216,6 +259,9 @@ void main() {
       expect(exam.courseName, '운영체제');
       expect(exam.sessionIds, ['session-1', 'session-2']);
       expect(exam.sessionTitles, ['1주차', '2주차']);
+      expect(exam.examAt.year, 2026);
+      expect(exam.examAt.month, 10);
+      expect(exam.examAt.day, 20);
     });
   });
 }

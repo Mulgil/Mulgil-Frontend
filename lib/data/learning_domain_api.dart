@@ -5,6 +5,8 @@ import '../models/timetable_slot.dart';
 import 'api_client.dart';
 
 class LearningDomainApi {
+  static const _seoulOffset = Duration(hours: 9);
+
   final ApiClient _client;
 
   const LearningDomainApi(this._client);
@@ -111,7 +113,7 @@ class LearningDomainApi {
 
   Future<List<Exam>> listExams(
     Course course, {
-    List<Lecture> sessions = const [],
+    required List<Lecture> sessions,
   }) async {
     final body = await _client.getJson('/api/v1/courses/${course.id}/exams');
     return _list(body, 'GET /api/v1/courses/{courseId}/exams')
@@ -129,7 +131,7 @@ class LearningDomainApi {
       '/api/v1/courses/${course.id}/exams',
       body: {
         'title': title,
-        'examAt': examAt.toUtc().toIso8601String(),
+        'examAt': _seoulDateToInstant(examAt),
         'sessionIds': sessions.map((session) => session.id).toList(),
       },
     );
@@ -200,10 +202,11 @@ class LearningDomainApi {
       courseId: _string(json, 'courseId'),
       courseName: course.name,
       title: _string(json, 'title'),
-      examAt: DateTime.parse(_string(json, 'examAt')).toLocal(),
+      examAt: _seoulDateFromInstant(_string(json, 'examAt')),
       sessionIds: sessionIds,
       sessionTitles: sessionIds
-          .map((id) => sessionById[id]?.week ?? id)
+          .map((id) => sessionById[id]?.week)
+          .whereType<String>()
           .toList(),
     );
   }
@@ -263,6 +266,16 @@ class LearningDomainApi {
     return '${value.year.toString().padLeft(4, '0')}-'
         '${value.month.toString().padLeft(2, '0')}-'
         '${value.day.toString().padLeft(2, '0')}';
+  }
+
+  String _seoulDateToInstant(DateTime value) {
+    final seoulMidnight = DateTime.utc(value.year, value.month, value.day);
+    return seoulMidnight.subtract(_seoulOffset).toIso8601String();
+  }
+
+  DateTime _seoulDateFromInstant(String value) {
+    final seoulTime = DateTime.parse(value).toUtc().add(_seoulOffset);
+    return DateTime(seoulTime.year, seoulTime.month, seoulTime.day);
   }
 
   ApiException _shapeError(String source, String message, Object? body) {

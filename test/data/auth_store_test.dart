@@ -14,8 +14,8 @@ void main() {
 
     test('stores tokens for API requests', () async {
       AuthStore.saveTokens(
-        accessToken: 'access-token',
-        refreshToken: 'refresh-token',
+        accessToken: ' access-token ',
+        refreshToken: ' refresh-token ',
       );
 
       expect(AuthStore.isLoggedIn, isTrue);
@@ -34,6 +34,25 @@ void main() {
       expect(AuthStore.isLoggedIn, isFalse);
       expect(AuthStore.accessToken, isNull);
       expect(AuthStore.refreshToken, isNull);
+    });
+
+    test('does not treat blank tokens as logged-in state', () {
+      AuthStore.saveTokens(accessToken: ' ', refreshToken: ' ');
+
+      expect(AuthStore.isLoggedIn, isFalse);
+      expect(AuthStore.accessToken, isNull);
+      expect(AuthStore.refreshToken, isNull);
+    });
+
+    test('clearTokens also clears the login state', () {
+      AuthStore.saveTokens(
+        accessToken: 'access-token',
+        refreshToken: 'refresh-token',
+      );
+
+      AuthStore.clearTokens();
+
+      expect(AuthStore.isLoggedIn, isFalse);
     });
   });
 }

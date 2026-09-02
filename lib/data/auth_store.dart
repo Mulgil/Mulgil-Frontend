@@ -7,7 +7,7 @@ abstract final class AuthStore {
   static String? accessToken;
   static String? refreshToken;
 
-  static bool get isLoggedIn => _isLoggedIn || accessToken != null;
+  static bool get isLoggedIn => _isLoggedIn || _hasToken(accessToken);
 
   static set isLoggedIn(bool value) {
     _isLoggedIn = value;
@@ -22,12 +22,18 @@ abstract final class AuthStore {
     required String accessToken,
     required String refreshToken,
   }) {
-    AuthStore.accessToken = accessToken;
-    AuthStore.refreshToken = refreshToken;
-    _isLoggedIn = true;
+    final trimmedAccessToken = accessToken.trim();
+    AuthStore.accessToken = trimmedAccessToken.isEmpty
+        ? null
+        : trimmedAccessToken;
+    AuthStore.refreshToken = refreshToken.trim().isEmpty
+        ? null
+        : refreshToken.trim();
+    _isLoggedIn = _hasToken(AuthStore.accessToken);
   }
 
   static void clearTokens() {
+    _isLoggedIn = false;
     accessToken = null;
     refreshToken = null;
   }
@@ -36,4 +42,7 @@ abstract final class AuthStore {
     _isLoggedIn = false;
     clearTokens();
   }
+
+  static bool _hasToken(String? token) =>
+      token != null && token.trim().isNotEmpty;
 }
