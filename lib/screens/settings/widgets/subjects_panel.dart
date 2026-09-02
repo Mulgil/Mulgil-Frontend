@@ -1,7 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import '../../../constants/routes.dart';
 import '../../../data/mock_data.dart';
+import '../../../models/course.dart';
 import '../../../models/exam.dart';
+import '../../../models/timetable_slot.dart';
 import '../../../theme/app_theme.dart';
 import '../../../widgets/common_widgets.dart';
 import '../../../widgets/weekly_timetable.dart';
@@ -15,6 +19,16 @@ class SettingsSubjectsPanel extends StatelessWidget {
   final ValueChanged<Exam> onEditExam;
   final ValueChanged<Exam> onDeleteExam;
   final VoidCallback onChanged;
+  final List<Course>? courses;
+  final List<TimetableSlot>? timetableSlots;
+  final List<Exam>? exams;
+  final FutureOr<void> Function(Course course, List<TimetableSlot> slots)?
+  onAddCourse;
+  final FutureOr<void> Function(Course course)? onDeleteCourse;
+  final bool isLoading;
+  final bool needsAuthentication;
+  final String? errorMessage;
+  final VoidCallback? onRetry;
 
   const SettingsSubjectsPanel({
     super.key,
@@ -23,10 +37,20 @@ class SettingsSubjectsPanel extends StatelessWidget {
     required this.onEditExam,
     required this.onDeleteExam,
     required this.onChanged,
+    this.courses,
+    this.timetableSlots,
+    this.exams,
+    this.onAddCourse,
+    this.onDeleteCourse,
+    this.isLoading = false,
+    this.needsAuthentication = false,
+    this.errorMessage,
+    this.onRetry,
   });
 
   @override
   Widget build(BuildContext context) {
+    final visibleExams = exams ?? MockData.exams;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -38,7 +62,24 @@ class SettingsSubjectsPanel extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 20),
-        WeeklyTimetable(onChanged: onChanged),
+        if (isLoading) ...[
+          const LinearProgressIndicator(minHeight: 3),
+          const SizedBox(height: 10),
+        ],
+        if (needsAuthentication || errorMessage != null) ...[
+          _SubjectPanelNotice(
+            message: errorMessage ?? 'Google 로그인 토큰이 연결되면 서버에 저장된 과목을 불러와요.',
+            onRetry: onRetry,
+          ),
+          const SizedBox(height: 10),
+        ],
+        WeeklyTimetable(
+          courses: courses,
+          slots: timetableSlots,
+          onAdd: onAddCourse,
+          onDeleteCourse: onDeleteCourse,
+          onChanged: onChanged,
+        ),
         const SizedBox(height: 20),
         Row(
           children: [
@@ -59,10 +100,10 @@ class SettingsSubjectsPanel extends StatelessWidget {
             MulgilRaisedAddButton(onTap: onAddExam),
           ],
         ),
-        if (MockData.exams.isEmpty)
+        if (visibleExams.isEmpty)
           const EmptyExamBox()
         else
-          ...MockData.exams.map(
+          ...visibleExams.map(
             (e) => Padding(
               padding: const EdgeInsets.only(bottom: 12),
               child: ExamScheduleTile(
@@ -94,6 +135,38 @@ class SettingsSubjectsPanel extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _SubjectPanelNotice extends StatelessWidget {
+  final String message;
+  final VoidCallback? onRetry;
+
+  const _SubjectPanelNotice({required this.message, this.onRetry});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceAlt,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              message,
+              style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
+            ),
+          ),
+          if (onRetry != null)
+            TextButton(onPressed: onRetry, child: const Text('다시 시도')),
+        ],
+      ),
     );
   }
 }

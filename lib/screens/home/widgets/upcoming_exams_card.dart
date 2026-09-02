@@ -3,9 +3,13 @@ import '../../../theme/app_theme.dart';
 import '../../../widgets/common_widgets.dart';
 import '../../../data/mock_data.dart';
 import '../../../constants/routes.dart';
+import '../../../models/exam.dart';
 
 class UpcomingExamsCard extends StatefulWidget {
-  const UpcomingExamsCard({super.key});
+  final List<Exam>? exams;
+  final ValueChanged<Exam>? onExamTap;
+
+  const UpcomingExamsCard({super.key, this.exams, this.onExamTap});
 
   @override
   State<UpcomingExamsCard> createState() => _UpcomingExamsCardState();
@@ -23,7 +27,7 @@ class _UpcomingExamsCardState extends State<UpcomingExamsCard> {
 
   @override
   Widget build(BuildContext context) {
-    final exams = List.of(MockData.exams)
+    final exams = List.of(widget.exams ?? MockData.exams)
       ..sort((a, b) => a.examAt.compareTo(b.examAt));
     if (exams.isEmpty) return const SizedBox.shrink();
     // No onTap on the card itself — an InkWell wrapping the whole PageView
@@ -58,9 +62,17 @@ class _UpcomingExamsCardState extends State<UpcomingExamsCard> {
               itemBuilder: (_, i) {
                 final exam = exams[i];
                 final dDay = exam.examAt.difference(DateTime.now()).inDays;
+                final ValueChanged<Exam>? onTap =
+                    widget.onExamTap ??
+                    (widget.exams == null
+                        ? (exam) =>
+                              Navigator.of(context).pushNamed(AppRoutes.exams)
+                        : null);
                 return GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTap: () => Navigator.of(context).pushNamed(AppRoutes.exams),
+                  behavior: onTap == null
+                      ? HitTestBehavior.deferToChild
+                      : HitTestBehavior.opaque,
+                  onTap: onTap == null ? null : () => onTap(exam),
                   child: Row(
                     children: [
                       ExamDayBadge(dDay: dDay < 0 ? 0 : dDay),

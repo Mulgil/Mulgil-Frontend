@@ -3,11 +3,19 @@ import 'dart:async';
 // In-memory stand-in for a persisted session. Secure storage should replace
 // this once Google Sign-In is wired up.
 abstract final class AuthStore {
+  static const _devAccessToken = String.fromEnvironment(
+    'MULGIL_DEV_ACCESS_TOKEN',
+  );
+  static const _devRefreshToken = String.fromEnvironment(
+    'MULGIL_DEV_REFRESH_TOKEN',
+  );
+
   static bool _isLoggedIn = false;
   static String? accessToken;
   static String? refreshToken;
 
   static bool get isLoggedIn => _isLoggedIn || _hasToken(accessToken);
+  static bool get hasAccessToken => _hasToken(accessToken);
 
   static set isLoggedIn(bool value) {
     _isLoggedIn = value;
@@ -17,6 +25,12 @@ abstract final class AuthStore {
   }
 
   static FutureOr<String?> accessTokenProvider() => accessToken;
+
+  static bool saveDevTokensFromEnvironment() {
+    if (!_hasToken(_devAccessToken)) return false;
+    saveTokens(accessToken: _devAccessToken, refreshToken: _devRefreshToken);
+    return true;
+  }
 
   static void saveTokens({
     required String accessToken,
