@@ -55,17 +55,6 @@ class _NoteListScreenState extends State<NoteListScreen> {
                       ],
                     ),
                   ),
-                  OutlinedButton.icon(
-                    onPressed: () => Navigator.of(
-                      context,
-                    ).pushNamed(AppRoutes.exams, arguments: _course),
-                    icon: const Icon(Icons.event_note, size: 16),
-                    label: const Text('시험', style: TextStyle(fontSize: 12)),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.navy,
-                      side: const BorderSide(color: AppColors.navy),
-                    ),
-                  ),
                 ],
               ),
               const SizedBox(height: 14),

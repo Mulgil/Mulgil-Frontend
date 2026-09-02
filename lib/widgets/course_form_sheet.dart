@@ -28,6 +28,7 @@ class _CourseFormSheetState extends State<CourseFormSheet> {
   final Set<int> _weekdays = {}; // ISO: Monday=1 ... Sunday=7
   late TimeOfDay _start;
   late TimeOfDay _end;
+  String? _errorText;
 
   @override
   void initState() {
@@ -70,12 +71,11 @@ class _CourseFormSheetState extends State<CourseFormSheet> {
     );
     if (picked == null || !mounted) return;
     if (!isStart && _toMinutes(picked) <= _toMinutes(_start)) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('종료 시간은 시작 시간보다 늦어야 해요')));
+      setState(() => _errorText = '종료 시간은 시작 시간보다 늦어야 해요');
       return;
     }
     setState(() {
+      _errorText = null;
       if (isStart) {
         _start = picked;
         _autoFillEndTime();
@@ -87,6 +87,7 @@ class _CourseFormSheetState extends State<CourseFormSheet> {
 
   void _toggleWeekday(int wd, bool selected) {
     setState(() {
+      _errorText = null;
       selected ? _weekdays.add(wd) : _weekdays.remove(wd);
       _autoFillEndTime();
     });
@@ -104,17 +105,13 @@ class _CourseFormSheetState extends State<CourseFormSheet> {
 
   Future<void> _submit() async {
     if (_nameCtrl.text.trim().isEmpty || _weekdays.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('과목명과 요일을 입력해주세요')));
+      setState(() => _errorText = '과목명과 요일을 입력해주세요');
       return;
     }
 
     final conflicts = _findConflictingSlots();
     if (conflicts.isNotEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('기존 시간표와 겹쳐서 추가할 수 없어요')));
+      setState(() => _errorText = '기존 시간표와 겹쳐서 추가할 수 없어요');
       return;
     }
     if (!mounted) return;
@@ -169,6 +166,9 @@ class _CourseFormSheetState extends State<CourseFormSheet> {
           TextField(
             controller: _nameCtrl,
             decoration: const InputDecoration(labelText: '과목명'),
+            onChanged: (_) {
+              if (_errorText != null) setState(() => _errorText = null);
+            },
           ),
           const SizedBox(height: 12),
           TextField(
@@ -215,6 +215,25 @@ class _CourseFormSheetState extends State<CourseFormSheet> {
               ),
             ],
           ),
+          if (_errorText != null) ...[
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                const Icon(Icons.error_outline, size: 16, color: AppColors.coral),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    _errorText!,
+                    style: const TextStyle(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.coral,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
           const SizedBox(height: 20),
           MulgilButton(label: '추가', onTap: _submit),
         ],
