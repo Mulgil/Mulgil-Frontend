@@ -1,4 +1,4 @@
 {
-  "buildCommand": "git clone https://github.com/flutter/flutter.git -b 3.44.0 --depth 1 _flutter_sdk && export PATH=\"$PATH:$(pwd)/_flutter_sdk/bin\" && flutter config --no-analytics && flutter pub get && flutter build web --release --dart-define=MULGIL_GOOGLE_WEB_CLIENT_ID=$MULGIL_GOOGLE_WEB_CLIENT_ID",
+  "buildCommand": "bash scripts/vercel-build.sh",
   "outputDirectory": "build/web"
 }
