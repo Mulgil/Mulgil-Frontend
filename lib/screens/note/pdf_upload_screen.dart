@@ -1,30 +1,88 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+
+import '../../data/api_client.dart';
+import '../../data/app_services.dart';
+import '../../data/learning_domain_store.dart';
+import '../../data/resource_upload_api.dart';
+import '../../data/upload_file_picker.dart';
+import '../../models/course.dart';
+import '../../models/lecture.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/common_widgets.dart';
 
-enum _Stage { pickPhase, pickFile, uploading, done }
+enum _Stage { pickSession, pickPhase, pickFile, uploading, done }
 
-// Mirrors POST /sessions/{sessionId}/materials/upload-url -> PUT to GCS -> upload-complete.
 class PdfUploadScreen extends StatefulWidget {
-  const PdfUploadScreen({super.key});
+  final LearningDomainStore? store;
+  final ResourceUploadApi? api;
+
+  const PdfUploadScreen({super.key, this.store, this.api});
 
   @override
   State<PdfUploadScreen> createState() => _PdfUploadScreenState();
 }
 
 class _PdfUploadScreenState extends State<PdfUploadScreen> {
-  _Stage _stage = _Stage.pickPhase;
-  String? _sourcePhase;
+  late final LearningDomainStore _learningStore;
+  late final ResourceUploadApi _api;
+  _Stage _stage = _Stage.pickSession;
+  _UploadSession? _session;
+  MaterialSourcePhase? _sourcePhase;
   String? _fileName;
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _learningStore = widget.store ?? LearningDomainStore.instance;
+    _api = widget.api ?? AppServices.resourceUpload;
+    unawaited(_learningStore.load());
+  }
+
+  List<_UploadSession> get _sessions {
+    final sessions = <_UploadSession>[];
+    for (final course in _learningStore.courses) {
+      for (final lecture in _learningStore.sessionsFor(course.id)) {
+        sessions.add(_UploadSession(course: course, lecture: lecture));
+      }
+    }
+    return sessions;
+  }
 
   Future<void> _pickFile() async {
-    setState(() {
-      _fileName = '3주차_강의자료.pdf';
-      _stage = _Stage.uploading;
-    });
-    await Future.delayed(const Duration(seconds: 2));
-    if (!mounted) return;
-    setState(() => _stage = _Stage.done);
+    final session = _session;
+    final sourcePhase = _sourcePhase;
+    if (session == null || sourcePhase == null) return;
+
+    try {
+      final file = await UploadFilePicker.pickPdf();
+      if (file == null) return;
+      setState(() {
+        _fileName = file.filename;
+        _errorMessage = null;
+        _stage = _Stage.uploading;
+      });
+      await _api.uploadSessionMaterial(
+        sessionId: session.lecture.id,
+        file: file,
+        sourcePhase: sourcePhase,
+      );
+      if (!mounted) return;
+      setState(() => _stage = _Stage.done);
+    } on Exception catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _errorMessage = _messageFor(error);
+        _stage = _Stage.pickFile;
+      });
+    }
+  }
+
+  String _messageFor(Object error) {
+    if (error is ApiException) return error.message;
+    return 'PDF 업로드에 실패했어요.';
   }
 
   @override
@@ -62,35 +120,136 @@ class _PdfUploadScreenState extends State<PdfUploadScreen> {
 
   Widget _buildStage() {
     switch (_stage) {
+      case _Stage.pickSession:
+        return ListenableBuilder(
+          listenable: _learningStore,
+          builder: (context, _) {
+            if (_learningStore.isLoading && !_learningStore.hasLoaded) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            if (_learningStore.needsAuthentication ||
+                _learningStore.errorMessage != null) {
+              return _StatusNotice(
+                message:
+                    _learningStore.errorMessage ??
+                    'Google 로그인 토큰이 연결되면 업로드할 차시를 불러와요.',
+                onRetry: _learningStore.refresh,
+              );
+            }
+            return _SessionStage(
+              sessions: _sessions,
+              onSelect: (session) => setState(() {
+                _session = session;
+                _stage = _Stage.pickPhase;
+              }),
+            );
+          },
+        );
       case _Stage.pickPhase:
         return _PhaseStage(
+          session: _session!,
           onSelect: (phase) => setState(() {
             _sourcePhase = phase;
             _stage = _Stage.pickFile;
           }),
         );
       case _Stage.pickFile:
-        return _PickFileStage(sourcePhase: _sourcePhase!, onPick: _pickFile);
+        return _PickFileStage(
+          session: _session!,
+          sourcePhase: _sourcePhase!,
+          errorMessage: _errorMessage,
+          onPick: _pickFile,
+        );
       case _Stage.uploading:
         return _UploadingStage(fileName: _fileName!);
       case _Stage.done:
         return _DoneStage(
           fileName: _fileName!,
-          onClose: () => Navigator.pop(context),
+          onClose: () => Navigator.pop(context, true),
         );
     }
   }
 }
 
+class _UploadSession {
+  final Course course;
+  final Lecture lecture;
+
+  const _UploadSession({required this.course, required this.lecture});
+
+  String get label => '${course.name} · ${lecture.week} ${lecture.title}';
+}
+
+class _SessionStage extends StatelessWidget {
+  final List<_UploadSession> sessions;
+  final ValueChanged<_UploadSession> onSelect;
+
+  const _SessionStage({required this.sessions, required this.onSelect});
+
+  @override
+  Widget build(BuildContext context) {
+    if (sessions.isEmpty) {
+      return const Center(
+        child: Text(
+          '업로드할 차시가 없어요',
+          style: TextStyle(fontSize: 13, color: AppColors.ink60),
+        ),
+      );
+    }
+    return ListView.separated(
+      itemCount: sessions.length,
+      separatorBuilder: (_, _) => const SizedBox(height: 10),
+      itemBuilder: (_, index) {
+        final session = sessions[index];
+        return MulgilCard(
+          onTap: () => onSelect(session),
+          child: Row(
+            children: [
+              const Icon(
+                Icons.menu_book_outlined,
+                size: 20,
+                color: AppColors.tealDark,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  session.label,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.ink,
+                  ),
+                ),
+              ),
+              const Icon(Icons.chevron_right, size: 18, color: AppColors.ink40),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
 class _PhaseStage extends StatelessWidget {
-  final ValueChanged<String> onSelect;
-  const _PhaseStage({required this.onSelect});
+  final _UploadSession session;
+  final ValueChanged<MaterialSourcePhase> onSelect;
+
+  const _PhaseStage({required this.session, required this.onSelect});
 
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        Text(
+          session.label,
+          style: const TextStyle(
+            fontSize: 13,
+            color: AppColors.tealDark,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 20),
         const Text(
           '어떤 용도의 자료인가요?',
           style: TextStyle(
@@ -106,17 +265,17 @@ class _PhaseStage extends StatelessWidget {
         ),
         const SizedBox(height: 20),
         _PhaseOption(
-          icon: '📖',
-          title: '수업 전 예습용 (preview)',
+          icon: Icons.visibility_outlined,
+          title: '수업 전 예습용',
           desc: '강의 전에 미리 읽어볼 자료예요',
-          onTap: () => onSelect('preview_pdf'),
+          onTap: () => onSelect(MaterialSourcePhase.previewPdf),
         ),
         const SizedBox(height: 12),
         _PhaseOption(
-          icon: '📝',
-          title: '수업 후 복습용 (review)',
+          icon: Icons.edit_note_outlined,
+          title: '수업 후 복습용',
           desc: '강의가 끝난 뒤 정리·복습할 자료예요',
-          onTap: () => onSelect('review_pdf'),
+          onTap: () => onSelect(MaterialSourcePhase.reviewPdf),
         ),
       ],
     );
@@ -124,8 +283,11 @@ class _PhaseStage extends StatelessWidget {
 }
 
 class _PhaseOption extends StatelessWidget {
-  final String icon, title, desc;
+  final IconData icon;
+  final String title;
+  final String desc;
   final VoidCallback onTap;
+
   const _PhaseOption({
     required this.icon,
     required this.title,
@@ -139,7 +301,7 @@ class _PhaseOption extends StatelessWidget {
       onTap: onTap,
       child: Row(
         children: [
-          Text(icon, style: const TextStyle(fontSize: 22)),
+          Icon(icon, size: 22, color: AppColors.tealDark),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -169,14 +331,27 @@ class _PhaseOption extends StatelessWidget {
 }
 
 class _PickFileStage extends StatelessWidget {
-  final String sourcePhase;
+  final _UploadSession session;
+  final MaterialSourcePhase sourcePhase;
+  final String? errorMessage;
   final VoidCallback onPick;
-  const _PickFileStage({required this.sourcePhase, required this.onPick});
+
+  const _PickFileStage({
+    required this.session,
+    required this.sourcePhase,
+    required this.errorMessage,
+    required this.onPick,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final phaseLabel = sourcePhase == MaterialSourcePhase.previewPdf
+        ? '수업 전 예습용'
+        : '수업 후 복습용';
     return Column(
       children: [
+        _ContextLine(label: session.label, sublabel: phaseLabel),
+        const SizedBox(height: 16),
         MulgilCard(
           onTap: onPick,
           padding: const EdgeInsets.symmetric(vertical: 40),
@@ -207,13 +382,50 @@ class _PickFileStage extends StatelessWidget {
           '최대 50MB · 150페이지 · 세션당 5개까지',
           style: TextStyle(fontSize: 11, color: AppColors.ink40),
         ),
+        if (errorMessage != null) ...[
+          const SizedBox(height: 12),
+          _InlineError(message: errorMessage!),
+        ],
       ],
+    );
+  }
+}
+
+class _ContextLine extends StatelessWidget {
+  final String label;
+  final String sublabel;
+
+  const _ContextLine({required this.label, required this.sublabel});
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 13,
+              color: AppColors.ink,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            sublabel,
+            style: const TextStyle(fontSize: 12, color: AppColors.ink60),
+          ),
+        ],
+      ),
     );
   }
 }
 
 class _UploadingStage extends StatelessWidget {
   final String fileName;
+
   const _UploadingStage({required this.fileName});
 
   @override
@@ -237,6 +449,7 @@ class _UploadingStage extends StatelessWidget {
 class _DoneStage extends StatelessWidget {
   final String fileName;
   final VoidCallback onClose;
+
   const _DoneStage({required this.fileName, required this.onClose});
 
   @override
@@ -263,6 +476,53 @@ class _DoneStage extends StatelessWidget {
         const SizedBox(height: 24),
         MulgilButton(label: '확인', onTap: onClose),
       ],
+    );
+  }
+}
+
+class _StatusNotice extends StatelessWidget {
+  final String message;
+  final VoidCallback onRetry;
+
+  const _StatusNotice({required this.message, required this.onRetry});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            message,
+            style: const TextStyle(fontSize: 13, color: AppColors.ink60),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 12),
+          TextButton(onPressed: onRetry, child: const Text('다시 시도')),
+        ],
+      ),
+    );
+  }
+}
+
+class _InlineError extends StatelessWidget {
+  final String message;
+
+  const _InlineError({required this.message});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: AppColors.coralSoft,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+      ),
+      child: Text(
+        message,
+        style: const TextStyle(fontSize: 12, color: AppColors.coral),
+      ),
     );
   }
 }

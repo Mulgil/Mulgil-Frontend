@@ -3,6 +3,8 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
+import 'signed_upload_transport.dart';
+
 typedef AccessTokenProvider = FutureOr<String?> Function();
 
 abstract final class ApiConfig {
@@ -88,6 +90,37 @@ class ApiClient {
     );
   }
 
+  Future<void> putBytes(
+    Uri uri, {
+    required List<int> bytes,
+    Map<String, String> headers = const {},
+  }) {
+    return putByteStream(
+      uri,
+      stream: Stream<List<int>>.value(bytes),
+      contentLength: bytes.length,
+      headers: headers,
+    );
+  }
+
+  Future<void> putByteStream(
+    Uri uri, {
+    required Stream<List<int>> stream,
+    required int contentLength,
+    Map<String, String> headers = const {},
+    Uri? sourceUri,
+  }) async {
+    final response = await putSignedUpload(
+      httpClient: _http,
+      uploadUri: uri,
+      stream: stream,
+      contentLength: contentLength,
+      headers: headers,
+      sourceUri: sourceUri,
+    );
+    _handleUploadResponse(response);
+  }
+
   void close() {
     if (_ownsHttpClient) {
       _http.close();
@@ -112,6 +145,18 @@ class ApiClient {
     final streamed = await _http.send(request);
     final response = await http.Response.fromStream(streamed);
     return _handleResponse(response);
+  }
+
+  void _handleUploadResponse(http.Response response) {
+    if (response.statusCode >= 200 && response.statusCode < 300) return;
+
+    final body = _decodeBody(response, requireJson: false);
+    throw ApiException(
+      statusCode: response.statusCode,
+      code: 'UPLOAD_FAILED',
+      message: response.reasonPhrase ?? 'Upload failed.',
+      responseBody: body,
+    );
   }
 
   Future<Map<String, String>> _requestHeaders({

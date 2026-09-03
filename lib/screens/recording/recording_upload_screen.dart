@@ -1,35 +1,164 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
+import '../../data/api_client.dart';
+import '../../data/app_services.dart';
+import '../../data/learning_domain_store.dart';
+import '../../data/resource_upload_api.dart';
+import '../../data/upload_file_picker.dart';
+import '../../models/course.dart';
+import '../../models/lecture.dart';
+import '../../models/recording_candidate.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/common_widgets.dart';
-import '../../models/recording_candidate.dart';
 
 enum _Stage { pick, uploading, mapping, done }
 
-// Mirrors POST /recordings/upload-url -> upload-complete -> confirm-mapping.
 class RecordingUploadScreen extends StatefulWidget {
-  const RecordingUploadScreen({super.key});
+  final ResourceUploadApi? api;
+  final LearningDomainStore? store;
+  final Future<UploadFile?> Function()? pickRecordingFile;
+
+  const RecordingUploadScreen({
+    super.key,
+    this.api,
+    this.store,
+    this.pickRecordingFile,
+  });
 
   @override
   State<RecordingUploadScreen> createState() => _RecordingUploadScreenState();
 }
 
 class _RecordingUploadScreenState extends State<RecordingUploadScreen> {
+  late final ResourceUploadApi _api;
+  late final LearningDomainStore _learningStore;
+  late final Future<UploadFile?> Function() _pickRecordingFile;
   _Stage _stage = _Stage.pick;
+  DateTime _startedAt = DateTime.now();
+  String? _fileName;
+  String? _recordingId;
   String? _selectedSessionId;
+  String? _errorMessage;
+  bool _isConfirming = false;
+  List<RecordingCandidate> _candidates = const [];
+
+  @override
+  void initState() {
+    super.initState();
+    _api = widget.api ?? AppServices.resourceUpload;
+    _learningStore = widget.store ?? LearningDomainStore.instance;
+    _pickRecordingFile =
+        widget.pickRecordingFile ?? UploadFilePicker.pickRecording;
+    unawaited(_learningStore.load());
+  }
+
+  List<_RecordingSession> get _sessions {
+    final sessions = <_RecordingSession>[];
+    for (final course in _learningStore.courses) {
+      for (final lecture in _learningStore.sessionsFor(course.id)) {
+        sessions.add(_RecordingSession(course: course, lecture: lecture));
+      }
+    }
+    return sessions;
+  }
 
   Future<void> _pickAndUpload() async {
-    setState(() => _stage = _Stage.uploading);
-    await Future.delayed(const Duration(seconds: 2));
-    if (!mounted) return;
-    setState(() => _stage = _Stage.mapping);
+    try {
+      final file = await _pickRecordingFile();
+      if (file == null) return;
+      setState(() {
+        _fileName = file.filename;
+        _errorMessage = null;
+        _stage = _Stage.uploading;
+      });
+      final result = await _api.uploadRecording(
+        file: file,
+        startedAt: _startedAt,
+      );
+      if (!mounted) return;
+      setState(() {
+        _recordingId = result.recordingId;
+        _candidates = result.candidateSessions;
+        _selectedSessionId = result.candidateSessions.isEmpty
+            ? null
+            : result.candidateSessions.first.id;
+        _stage = _Stage.mapping;
+      });
+    } on Exception catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _errorMessage = _messageFor(error);
+        _stage = _Stage.pick;
+      });
+    }
   }
 
   Future<void> _confirmMapping() async {
-    if (_selectedSessionId == null) return;
-    await Future.delayed(const Duration(milliseconds: 500));
-    if (!mounted) return;
-    setState(() => _stage = _Stage.done);
+    final recordingId = _recordingId;
+    final sessionId = _selectedSessionId;
+    if (recordingId == null || sessionId == null || _isConfirming) return;
+
+    setState(() {
+      _isConfirming = true;
+      _errorMessage = null;
+    });
+    try {
+      await _api.confirmRecordingMapping(
+        recordingId: recordingId,
+        sessionId: sessionId,
+      );
+      if (!mounted) return;
+      setState(() => _stage = _Stage.done);
+    } on Exception catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _isConfirming = false;
+        _errorMessage = _messageFor(error);
+      });
+    }
+  }
+
+  Future<void> _pickDate() async {
+    final selected = await showDatePicker(
+      context: context,
+      initialDate: _startedAt,
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now().add(const Duration(days: 1)),
+    );
+    if (selected == null || !mounted) return;
+    setState(() {
+      _startedAt = DateTime(
+        selected.year,
+        selected.month,
+        selected.day,
+        _startedAt.hour,
+        _startedAt.minute,
+      );
+    });
+  }
+
+  Future<void> _pickTime() async {
+    final selected = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.fromDateTime(_startedAt),
+    );
+    if (selected == null || !mounted) return;
+    setState(() {
+      _startedAt = DateTime(
+        _startedAt.year,
+        _startedAt.month,
+        _startedAt.day,
+        selected.hour,
+        selected.minute,
+      );
+    });
+  }
+
+  String _messageFor(Object error) {
+    if (error is ApiException) return error.message;
+    return '녹음 업로드에 실패했어요.';
   }
 
   @override
@@ -68,30 +197,102 @@ class _RecordingUploadScreenState extends State<RecordingUploadScreen> {
   Widget _buildStage() {
     switch (_stage) {
       case _Stage.pick:
-        return _PickStage(onPick: _pickAndUpload);
+        return _PickStage(
+          startedAt: _startedAt,
+          errorMessage: _errorMessage,
+          onPickDate: _pickDate,
+          onPickTime: _pickTime,
+          onPick: _pickAndUpload,
+        );
       case _Stage.uploading:
-        return const _UploadingStage();
+        return _UploadingStage(fileName: _fileName);
       case _Stage.mapping:
-        return _MappingStage(
-          candidates: const [],
-          selectedId: _selectedSessionId,
-          onSelect: (id) => setState(() => _selectedSessionId = id),
-          onConfirm: _confirmMapping,
+        return ListenableBuilder(
+          listenable: _learningStore,
+          builder: (context, _) => _MappingStage(
+            candidates: _candidates,
+            sessions: _sessions,
+            isLoadingSessions:
+                _learningStore.isLoading && !_learningStore.hasLoaded,
+            sessionErrorMessage: _learningStore.errorMessage,
+            selectedId: _selectedSessionId,
+            errorMessage: _errorMessage,
+            isConfirming: _isConfirming,
+            onRetrySessions: _learningStore.refresh,
+            onSelect: (id) => setState(() => _selectedSessionId = id),
+            onConfirm: _confirmMapping,
+          ),
         );
       case _Stage.done:
-        return _DoneStage(onClose: () => Navigator.pop(context));
+        return _DoneStage(onClose: () => Navigator.pop(context, true));
     }
   }
 }
 
+class _RecordingSession {
+  final Course course;
+  final Lecture lecture;
+
+  const _RecordingSession({required this.course, required this.lecture});
+
+  String get id => lecture.id;
+  String get label => '${course.name} · ${lecture.week} ${lecture.title}';
+}
+
 class _PickStage extends StatelessWidget {
+  final DateTime startedAt;
+  final String? errorMessage;
+  final VoidCallback onPickDate;
+  final VoidCallback onPickTime;
   final VoidCallback onPick;
-  const _PickStage({required this.onPick});
+
+  const _PickStage({
+    required this.startedAt,
+    required this.errorMessage,
+    required this.onPickDate,
+    required this.onPickTime,
+    required this.onPick,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
+        MulgilCard(
+          padding: const EdgeInsets.all(14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                '녹음 시작 시각',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: onPickDate,
+                      child: Text(_dateLabel(startedAt)),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: onPickTime,
+                      child: Text(_timeLabel(startedAt)),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 14),
         SizedBox(
           width: double.infinity,
           child: MulgilCard(
@@ -111,32 +312,47 @@ class _PickStage extends StatelessWidget {
                 ),
                 SizedBox(height: 2),
                 Text(
-                  '최대 3시간까지 업로드할 수 있어요',
+                  '최대 3시간 · 200MB까지 업로드할 수 있어요',
                   style: TextStyle(fontSize: 11, color: AppColors.textLight),
                 ),
               ],
             ),
           ),
         ),
+        if (errorMessage != null) ...[
+          const SizedBox(height: 12),
+          _InlineError(message: errorMessage!),
+        ],
       ],
     );
+  }
+
+  String _dateLabel(DateTime value) {
+    return '${value.year}.${value.month}.${value.day}';
+  }
+
+  String _timeLabel(DateTime value) {
+    return '${value.hour.toString().padLeft(2, '0')}:'
+        '${value.minute.toString().padLeft(2, '0')}';
   }
 }
 
 class _UploadingStage extends StatelessWidget {
-  const _UploadingStage();
+  final String? fileName;
+
+  const _UploadingStage({required this.fileName});
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
+    return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          CircularProgressIndicator(),
-          SizedBox(height: 16),
+          const CircularProgressIndicator(),
+          const SizedBox(height: 16),
           Text(
-            '업로드 중이에요...',
-            style: TextStyle(fontSize: 13, color: AppColors.textMuted),
+            fileName == null ? '업로드 중이에요...' : '$fileName 업로드 중이에요...',
+            style: const TextStyle(fontSize: 13, color: AppColors.textMuted),
           ),
         ],
       ),
@@ -146,103 +362,179 @@ class _UploadingStage extends StatelessWidget {
 
 class _MappingStage extends StatelessWidget {
   final List<RecordingCandidate> candidates;
+  final List<_RecordingSession> sessions;
+  final bool isLoadingSessions;
+  final String? sessionErrorMessage;
   final String? selectedId;
+  final String? errorMessage;
+  final bool isConfirming;
+  final VoidCallback onRetrySessions;
   final ValueChanged<String> onSelect;
   final VoidCallback onConfirm;
+
   const _MappingStage({
     required this.candidates,
+    required this.sessions,
+    required this.isLoadingSessions,
+    required this.sessionErrorMessage,
     required this.selectedId,
+    required this.errorMessage,
+    required this.isConfirming,
+    required this.onRetrySessions,
     required this.onSelect,
     required this.onConfirm,
   });
 
   @override
   Widget build(BuildContext context) {
+    final hasCandidates = candidates.isNotEmpty;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          '어느 차시 녹음인가요?',
-          style: TextStyle(
+        Text(
+          hasCandidates ? '어느 차시 녹음인가요?' : '차시를 직접 선택해주세요',
+          style: const TextStyle(
             fontSize: 15,
             fontWeight: FontWeight.w700,
             color: AppColors.textPrimary,
           ),
         ),
         const SizedBox(height: 4),
-        const Text(
-          '녹음 처리가 끝나면 차시에 연결할 수 있어요',
-          style: TextStyle(fontSize: 12, color: AppColors.textMuted),
+        Text(
+          hasCandidates ? '겹치는 시간대를 기준으로 추천했어요' : '겹치는 차시를 찾지 못했어요',
+          style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
         ),
         const SizedBox(height: 16),
-        if (candidates.isEmpty)
-          const Expanded(
-            child: Center(
-              child: Text(
-                '추천할 차시가 아직 없어요',
-                style: TextStyle(color: AppColors.textMuted),
-              ),
+        Expanded(
+          child: ListView(
+            children: [
+              if (hasCandidates)
+                ...candidates.map(
+                  (candidate) => _MappingOption(
+                    title: candidate.title,
+                    trailing: '${(candidate.overlapScore * 100).round()}% 일치',
+                    selected: selectedId == candidate.id,
+                    onTap: () => onSelect(candidate.id),
+                  ),
+                )
+              else
+                ..._manualSessionWidgets(),
+              if (errorMessage != null) _InlineError(message: errorMessage!),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        MulgilButton(
+          label: isConfirming ? '확정 중...' : '차시 확정',
+          onTap: selectedId == null || isConfirming ? null : onConfirm,
+        ),
+      ],
+    );
+  }
+
+  List<Widget> _manualSessionWidgets() {
+    if (isLoadingSessions) {
+      return const [
+        Center(
+          child: Padding(
+            padding: EdgeInsets.only(top: 32),
+            child: CircularProgressIndicator(),
+          ),
+        ),
+      ];
+    }
+    final sessionError = sessionErrorMessage;
+    if (sessionError != null) {
+      return [
+        _InlineError(message: sessionError),
+        const SizedBox(height: 8),
+        TextButton(onPressed: onRetrySessions, child: const Text('다시 불러오기')),
+      ];
+    }
+    if (sessions.isEmpty) {
+      return const [
+        Center(
+          child: Padding(
+            padding: EdgeInsets.only(top: 32),
+            child: Text(
+              '연결할 차시가 없어요',
+              style: TextStyle(fontSize: 13, color: AppColors.textMuted),
             ),
-          )
-        else
-          ...candidates.map(
-            (c) => Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: GestureDetector(
-                onTap: () => onSelect(c.id),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 14,
-                  ),
-                  decoration: BoxDecoration(
-                    color: selectedId == c.id
-                        ? AppColors.tealSoft
-                        : AppColors.surfaceAlt,
-                    border: Border.all(
-                      color: selectedId == c.id
-                          ? AppColors.teal
-                          : Colors.transparent,
-                      width: 1.5,
-                    ),
-                    borderRadius: BorderRadius.circular(AppRadius.md),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        c.title,
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                      Text(
-                        '${(c.overlapScore * 100).round()}% 일치',
-                        style: const TextStyle(
-                          fontSize: 11,
-                          color: AppColors.tealDark,
-                        ),
-                      ),
-                    ],
+          ),
+        ),
+      ];
+    }
+    return sessions
+        .map(
+          (session) => _MappingOption(
+            title: session.label,
+            trailing: '직접 선택',
+            selected: selectedId == session.id,
+            onTap: () => onSelect(session.id),
+          ),
+        )
+        .toList();
+  }
+}
+
+class _MappingOption extends StatelessWidget {
+  final String title;
+  final String trailing;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _MappingOption({
+    required this.title,
+    required this.trailing,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+          decoration: BoxDecoration(
+            color: selected ? AppColors.tealSoft : AppColors.surfaceAlt,
+            border: Border.all(
+              color: selected ? AppColors.teal : Colors.transparent,
+              width: 1.5,
+            ),
+            borderRadius: BorderRadius.circular(AppRadius.md),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textPrimary,
                   ),
                 ),
               ),
-            ),
+              const SizedBox(width: 10),
+              Text(
+                trailing,
+                style: const TextStyle(fontSize: 11, color: AppColors.tealDark),
+              ),
+            ],
           ),
-        const Spacer(),
-        MulgilButton(
-          label: '차시 확정',
-          onTap: selectedId == null ? null : onConfirm,
         ),
-      ],
+      ),
     );
   }
 }
 
 class _DoneStage extends StatelessWidget {
   final VoidCallback onClose;
+
   const _DoneStage({required this.onClose});
 
   @override
@@ -268,6 +560,28 @@ class _DoneStage extends StatelessWidget {
         const SizedBox(height: 24),
         MulgilButton(label: '확인', onTap: onClose),
       ],
+    );
+  }
+}
+
+class _InlineError extends StatelessWidget {
+  final String message;
+
+  const _InlineError({required this.message});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: AppColors.coralSoft,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+      ),
+      child: Text(
+        message,
+        style: const TextStyle(fontSize: 12, color: AppColors.coral),
+      ),
     );
   }
 }
