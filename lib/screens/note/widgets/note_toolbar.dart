@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../../../theme/app_theme.dart';
 
 class NoteToolbar extends StatelessWidget {
@@ -8,8 +9,6 @@ class NoteToolbar extends StatelessWidget {
   final bool canRedo;
   final VoidCallback onUndo;
   final VoidCallback onRedo;
-  final bool showProfTag;
-  final VoidCallback onToggleProfTag;
 
   const NoteToolbar({
     super.key,
@@ -19,8 +18,6 @@ class NoteToolbar extends StatelessWidget {
     required this.canRedo,
     required this.onUndo,
     required this.onRedo,
-    required this.showProfTag,
-    required this.onToggleProfTag,
   });
 
   static const _tools = [
@@ -110,33 +107,6 @@ class NoteToolbar extends StatelessWidget {
                 ),
               ),
             ),
-            Container(
-              width: 1,
-              height: 24,
-              margin: const EdgeInsets.symmetric(horizontal: 4),
-              color: AppColors.border,
-            ),
-            GestureDetector(
-              onTap: onToggleProfTag,
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 8,
-                ),
-                decoration: BoxDecoration(
-                  color: showProfTag ? AppColors.coral : AppColors.chip,
-                  borderRadius: BorderRadius.circular(AppRadius.sm),
-                ),
-                child: Text(
-                  '교수★',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: showProfTag ? Colors.white : AppColors.ink,
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: 6),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(

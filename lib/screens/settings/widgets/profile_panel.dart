@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../../data/mock_data.dart';
+
+import '../../../data/auth_store.dart';
 import 'info_tile.dart';
 import 'panel_title.dart';
 import 'profile_card.dart';
@@ -10,7 +11,7 @@ class SettingsProfilePanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final user = MockData.currentUser;
+    final user = AuthStore.user;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -18,10 +19,12 @@ class SettingsProfilePanel extends StatelessWidget {
         const SizedBox(height: 20),
         const ProfileCard(),
         const SizedBox(height: 20),
-        const SectionLabel(label: '학교 정보'),
-        InfoTile(label: '학교', value: user.school),
-        InfoTile(label: '학과', value: user.department),
-        InfoTile(label: '학년', value: '${user.year}학년'),
+        const SectionLabel(label: '계정 정보'),
+        InfoTile(label: '이름', value: user?.displayLabel ?? '사용자'),
+        InfoTile(
+          label: '이메일',
+          value: user?.email.trim().isNotEmpty == true ? user!.email : '-',
+        ),
       ],
     );
   }

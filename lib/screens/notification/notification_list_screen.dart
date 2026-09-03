@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+
+import '../../data/api_client.dart';
+import '../../data/app_services.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/common_widgets.dart';
-import '../../data/mock_data.dart';
 import '../../models/app_notification.dart';
 import '../../constants/routes.dart';
 
@@ -13,7 +15,30 @@ class NotificationListScreen extends StatefulWidget {
 }
 
 class _NotificationListScreenState extends State<NotificationListScreen> {
-  List<AppNotification> get _items => MockData.notifications;
+  late Future<List<AppNotification>> _notificationsLoad;
+  String? _loadError;
+
+  @override
+  void initState() {
+    super.initState();
+    _notificationsLoad = _loadNotifications();
+  }
+
+  Future<List<AppNotification>> _loadNotifications() async {
+    try {
+      _loadError = null;
+      return await AppServices.learningDomain.listNotifications();
+    } on ApiException catch (error) {
+      _loadError = error.message;
+    } on Exception {
+      _loadError = '알림을 불러오지 못했어요.';
+    }
+    return const [];
+  }
+
+  void _retry() {
+    setState(() => _notificationsLoad = _loadNotifications());
+  }
 
   void _open(AppNotification n) {
     final route = switch (n.type) {
@@ -50,22 +75,38 @@ class _NotificationListScreenState extends State<NotificationListScreen> {
                 ),
                 const SizedBox(height: 8),
                 Expanded(
-                  child: _items.isEmpty
-                      ? const Center(
+                  child: FutureBuilder<List<AppNotification>>(
+                    future: _notificationsLoad,
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState != ConnectionState.done) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
+                      final error = _loadError;
+                      if (error != null) {
+                        return _NotificationStatusNotice(
+                          message: error,
+                          onRetry: _retry,
+                        );
+                      }
+                      final items = snapshot.data ?? const [];
+                      if (items.isEmpty) {
+                        return const Center(
                           child: Text(
                             '알림이 없어요',
                             style: TextStyle(color: AppColors.textMuted),
                           ),
-                        )
-                      : ListView.separated(
-                          itemCount: _items.length,
-                          separatorBuilder: (_, _) =>
-                              const SizedBox(height: 10),
-                          itemBuilder: (_, i) => _NotificationCard(
-                            item: _items[i],
-                            onTap: () => _open(_items[i]),
-                          ),
+                        );
+                      }
+                      return ListView.separated(
+                        itemCount: items.length,
+                        separatorBuilder: (_, _) => const SizedBox(height: 10),
+                        itemBuilder: (_, i) => _NotificationCard(
+                          item: items[i],
+                          onTap: () => _open(items[i]),
                         ),
+                      );
+                    },
+                  ),
                 ),
               ],
             ),
@@ -81,10 +122,10 @@ class _NotificationCard extends StatelessWidget {
   final VoidCallback onTap;
   const _NotificationCard({required this.item, required this.onTap});
 
-  String get _icon => switch (item.type) {
-    NotificationType.processingComplete => '✨',
-    NotificationType.examReminder => '📅',
-    NotificationType.postClassReminder => '✎',
+  IconData get _icon => switch (item.type) {
+    NotificationType.processingComplete => Icons.auto_awesome_outlined,
+    NotificationType.examReminder => Icons.event_outlined,
+    NotificationType.postClassReminder => Icons.edit_note_outlined,
   };
 
   String get _timeAgo {
@@ -102,7 +143,7 @@ class _NotificationCard extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(_icon, style: const TextStyle(fontSize: 18)),
+          Icon(_icon, size: 18, color: AppColors.navy),
           const SizedBox(width: 10),
           Expanded(
             child: Column(
@@ -136,6 +177,45 @@ class _NotificationCard extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _NotificationStatusNotice extends StatelessWidget {
+  final String message;
+  final VoidCallback onRetry;
+
+  const _NotificationStatusNotice({
+    required this.message,
+    required this.onRetry,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: AppColors.surfaceAlt,
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                message,
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: AppColors.textMuted,
+                ),
+              ),
+            ),
+            TextButton(onPressed: onRetry, child: const Text('다시 시도')),
+          ],
+        ),
       ),
     );
   }

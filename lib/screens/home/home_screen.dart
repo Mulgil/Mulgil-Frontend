@@ -1,12 +1,14 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+
 import '../../theme/app_theme.dart';
 import '../../widgets/common_widgets.dart';
 import '../../widgets/weekly_timetable.dart';
+import '../../data/auth_store.dart';
 import '../../data/learning_domain_store.dart';
-import '../../data/mock_data.dart';
 import '../../models/course.dart';
+import '../../utils/academic_calendar.dart';
 import '../note/note_list_screen.dart';
 import '../note/ai_summary_screen.dart';
 import '../quiz/quiz_screen.dart';
@@ -116,6 +118,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final today = DateTime.now();
     final pad = context.isTablet ? 28.0 : 20.0;
+    final userName = AuthStore.user?.displayLabel ?? '사용자';
     return Scaffold(
       body: SafeArea(
         child: SingleChildScrollView(
@@ -131,17 +134,14 @@ class _HomeScreenState extends State<HomeScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          '${_formatDate(today)} · ${MockData.currentWeekLabel}',
+                          '${_formatDate(today)} · ${AcademicCalendar.currentWeekLabel(today)}',
                           style: const TextStyle(
                             fontSize: 13,
                             color: AppColors.ink60,
                           ),
                         ),
                         const SizedBox(height: 2),
-                        Text(
-                          '안녕하세요, ${MockData.currentUser.name}님',
-                          style: AppTextStyles.h1,
-                        ),
+                        Text('안녕하세요, $userName님', style: AppTextStyles.h1),
                       ],
                     ),
                   ),

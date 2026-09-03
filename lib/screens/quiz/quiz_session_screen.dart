@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+
+import '../../data/api_client.dart';
+import '../../data/app_services.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/common_widgets.dart';
-import '../../data/mock_data.dart';
 import '../../models/lecture.dart';
 import '../../models/quiz_question.dart';
 import '../../widgets/confirm_dialog.dart';
@@ -9,8 +11,7 @@ import 'widgets/quiz_answer_buttons.dart';
 import 'widgets/quiz_result_card.dart';
 import 'widgets/quiz_tablet_hint.dart';
 
-// The actual question-by-question quiz flow for one week — pushed from
-// QuizScreen's week list (or straight from a note's "퀴즈 풀기" button).
+// The actual question-by-question quiz flow for one week.
 class QuizSessionScreen extends StatefulWidget {
   final String course;
   final Lecture lecture;
@@ -25,69 +26,115 @@ class QuizSessionScreen extends StatefulWidget {
 }
 
 class _QuizSessionScreenState extends State<QuizSessionScreen> {
+  late Future<void> _questionsLoad;
+  final List<QuizQuestion> _questions = [];
   int _current = 0;
-  static const int _total = 10;
   bool _showResult = false;
   bool _submitting = false;
   bool _correct = false;
   int? _correctIndex;
   String _explanation = '';
+  String? _loadError;
 
-  int get _qIdx => _current % MockData.quizQuestions.length;
+  @override
+  void initState() {
+    super.initState();
+    _questionsLoad = _loadQuestions();
+  }
+
+  Future<void> _loadQuestions() async {
+    try {
+      final questions = await AppServices.learningDomain.listSessionQuiz(
+        widget.lecture.id,
+      );
+      _questions
+        ..clear()
+        ..addAll(questions);
+      _loadError = questions.isEmpty ? '퀴즈가 아직 준비되지 않았어요.' : null;
+    } on ApiException catch (error) {
+      _loadError = error.statusCode == 409
+          ? '퀴즈가 아직 준비되지 않았어요.'
+          : error.message;
+    } on Exception {
+      _loadError = '퀴즈를 불러오지 못했어요.';
+    }
+  }
+
+  void _retry() {
+    setState(() {
+      _current = 0;
+      _showResult = false;
+      _correctIndex = null;
+      _loadError = null;
+      _questionsLoad = _loadQuestions();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
-    final q = MockData.quizQuestions[_qIdx];
     final pad = context.isTablet ? 28.0 : 20.0;
     return Scaffold(
       body: SafeArea(
         child: Padding(
           padding: EdgeInsets.fromLTRB(pad, pad, pad, 0),
-          child: Column(
-            children: [
-              Row(
+          child: FutureBuilder<void>(
+            future: _questionsLoad,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState != ConnectionState.done) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              final error = _loadError;
+              if (error != null) {
+                return _QuizSessionNotice(message: error, onRetry: _retry);
+              }
+              final q = _questions[_current];
+              return Column(
                 children: [
-                  const BackIfPushed(),
-                  Expanded(
-                    child: Text(
-                      '${widget.course} · ${widget.lecture.week}',
-                      style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.ink,
+                  Row(
+                    children: [
+                      const BackIfPushed(),
+                      Expanded(
+                        child: Text(
+                          '${widget.course} · ${widget.lecture.week}',
+                          style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.ink,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  Text(
-                    '${_current + 1} / $_total',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: AppColors.ink60,
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  GestureDetector(
-                    onTap: _confirmQuit,
-                    child: const Text(
-                      '그만풀기',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.coral,
+                      Text(
+                        '${_current + 1} / ${_questions.length}',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppColors.ink60,
+                        ),
                       ),
-                    ),
+                      const SizedBox(width: 10),
+                      GestureDetector(
+                        onTap: _confirmQuit,
+                        child: const Text(
+                          '그만풀기',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.coral,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
+                  const SizedBox(height: 10),
+                  MulgilProgressBar(value: (_current + 1) / _questions.length),
+                  const SizedBox(height: 24),
+                  if (context.isTablet)
+                    _buildTabletQuiz(q)
+                  else
+                    _buildMobileQuiz(q),
                 ],
-              ),
-              const SizedBox(height: 10),
-              MulgilProgressBar(value: (_current + 1) / _total),
-              const SizedBox(height: 24),
-              if (context.isTablet)
-                _buildTabletQuiz(q)
-              else
-                _buildMobileQuiz(q),
-            ],
+              );
+            },
           ),
         ),
       ),
@@ -95,6 +142,7 @@ class _QuizSessionScreenState extends State<QuizSessionScreen> {
   }
 
   Widget _buildMobileQuiz(QuizQuestion q) {
+    final remaining = _questions.length - _current - 1;
     return Expanded(
       child: Column(
         children: [
@@ -117,7 +165,7 @@ class _QuizSessionScreenState extends State<QuizSessionScreen> {
           _buildAnswerControls(q),
           const SizedBox(height: 16),
           Text(
-            '남은 문제 ${_total - _current - 1}개 · 예상 시간 ${(_total - _current - 1) * 30}초',
+            '남은 문제 $remaining개 · 예상 시간 ${remaining * 30}초',
             style: const TextStyle(fontSize: 12, color: AppColors.ink60),
           ),
           const Spacer(),
@@ -140,33 +188,26 @@ class _QuizSessionScreenState extends State<QuizSessionScreen> {
                 color: AppColors.surfaceAlt,
                 borderRadius: BorderRadius.circular(AppRadius.lg),
               ),
-              child: const Column(
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
+                  const Text(
                     '참고 자료',
                     style: TextStyle(fontSize: 11.5, color: AppColors.ink40),
                   ),
-                  SizedBox(height: 10),
+                  const SizedBox(height: 10),
                   Text(
-                    MockData.quizReferenceTitle,
-                    style: TextStyle(
+                    q.sourceRefs.isEmpty
+                        ? '연결된 참고 자료 없음'
+                        : '참고 자료 ${q.sourceRefs.length}개',
+                    style: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w800,
                       color: AppColors.ink,
                     ),
                   ),
-                  SizedBox(height: 6),
-                  Text(
-                    'SJF(Shortest Job First)는 실행 시간이 짧은 작업을 우선 처리하는 스케줄링 기법이다.',
-                    style: TextStyle(
-                      fontSize: 12.5,
-                      color: AppColors.ink80,
-                      height: 1.7,
-                    ),
-                  ),
-                  SizedBox(height: 10),
-                  TabletHint(),
+                  const SizedBox(height: 10),
+                  const TabletHint(),
                 ],
               ),
             ),
@@ -250,7 +291,7 @@ class _QuizSessionScreenState extends State<QuizSessionScreen> {
           child: OxButton(
             label: 'O',
             color: AppColors.tealDark,
-            onTap: () => _answer(0, q),
+            onTap: (_showResult || _submitting) ? null : () => _answer(0, q),
           ),
         ),
         const SizedBox(width: 14),
@@ -258,7 +299,7 @@ class _QuizSessionScreenState extends State<QuizSessionScreen> {
           child: OxButton(
             label: 'X',
             color: AppColors.coral,
-            onTap: () => _answer(1, q),
+            onTap: (_showResult || _submitting) ? null : () => _answer(1, q),
           ),
         ),
       ],
@@ -269,32 +310,45 @@ class _QuizSessionScreenState extends State<QuizSessionScreen> {
     if (_showResult || _submitting) return;
     setState(() => _submitting = true);
     final answerValue = q.type == QuizType.trueFalse ? choice == 0 : choice;
-    final result = await MockData.submitQuizAttempt(
-      sessionId: widget.lecture.id,
-      questionId: q.id,
-      answer: answerValue,
-    );
-    if (!mounted) return;
-    setState(() {
-      _submitting = false;
-      _correct = result.isCorrect;
-      _correctIndex = q.type == QuizType.trueFalse
-          ? (result.answer.value == true ? 0 : 1)
-          : result.answer.value as int;
-      _explanation = result.explanation.text;
-      _showResult = true;
-    });
-    await Future.delayed(const Duration(seconds: 2));
-    if (!mounted) return;
-    if (_current + 1 >= _total) {
-      _finishQuiz();
-      return;
+    try {
+      final result = await AppServices.learningDomain.submitQuizAttempt(
+        questionId: q.id,
+        answer: answerValue,
+      );
+      if (!mounted) return;
+      setState(() {
+        _correct = result.isCorrect;
+        _correctIndex = q.type == QuizType.trueFalse
+            ? (result.answer.value == true ? 0 : 1)
+            : result.answer.value as int;
+        _explanation = result.explanation.text;
+        _showResult = true;
+      });
+      await Future.delayed(const Duration(seconds: 2));
+      if (!mounted) return;
+      if (_current + 1 >= _questions.length) {
+        _finishQuiz();
+        return;
+      }
+      setState(() {
+        _current += 1;
+        _showResult = false;
+        _correctIndex = null;
+      });
+    } on ApiException catch (error) {
+      _showSubmitError(error.message);
+    } on Exception {
+      _showSubmitError('답안을 제출하지 못했어요.');
+    } finally {
+      if (mounted) setState(() => _submitting = false);
     }
-    setState(() {
-      _current += 1;
-      _showResult = false;
-      _correctIndex = null;
-    });
+  }
+
+  void _showSubmitError(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message)));
   }
 
   Future<void> _confirmQuit() async {
@@ -325,5 +379,62 @@ class _QuizSessionScreenState extends State<QuizSessionScreen> {
     );
     if (!mounted) return;
     Navigator.of(context).pop();
+  }
+}
+
+class _QuizSessionNotice extends StatelessWidget {
+  final String message;
+  final VoidCallback onRetry;
+
+  const _QuizSessionNotice({required this.message, required this.onRetry});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Row(
+          children: [
+            const BackIfPushed(),
+            Expanded(
+              child: Text(
+                '퀴즈 · $message',
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.ink,
+                ),
+              ),
+            ),
+          ],
+        ),
+        Expanded(
+          child: Center(
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              decoration: BoxDecoration(
+                color: AppColors.surfaceAlt,
+                borderRadius: BorderRadius.circular(AppRadius.md),
+                border: Border.all(color: AppColors.border),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      message,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textMuted,
+                      ),
+                    ),
+                  ),
+                  TextButton(onPressed: onRetry, child: const Text('다시 시도')),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
   }
 }

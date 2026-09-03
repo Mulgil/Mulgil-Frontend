@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+
 import '../../theme/app_theme.dart';
 import '../../widgets/common_widgets.dart';
 
-// Placeholder copy — swap in the reviewed legal text before shipping.
 class LegalDocumentScreen extends StatelessWidget {
   final String title;
   final String updatedAt;

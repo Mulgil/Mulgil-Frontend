@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+
 import '../../theme/app_theme.dart';
 import '../../widgets/common_widgets.dart';
 import '../../widgets/course_form_sheet.dart';
@@ -105,15 +106,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   void _openContactSupport() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('mulgil@gmail.com로 문의해주세요 (메일 앱 연결 예정)')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('mulgil@gmail.com로 문의해주세요.')));
   }
 
   void _openBugReport() {
     ScaffoldMessenger.of(
       context,
-    ).showSnackBar(const SnackBar(content: Text('버그 제보 폼 연결 예정 (mock)')));
+    ).showSnackBar(const SnackBar(content: Text('버그 제보 폼이 아직 연결되지 않았어요.')));
   }
 
   void _logout() {

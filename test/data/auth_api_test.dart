@@ -46,8 +46,10 @@ void main() {
 
       expect(tokens.accessToken, 'access-token');
       expect(tokens.refreshToken, 'refresh-token');
+      expect(tokens.user?.displayName, '물길');
       expect(AuthStore.accessToken, 'access-token');
       expect(AuthStore.refreshToken, 'refresh-token');
+      expect(AuthStore.user?.email, 'mulgil@example.com');
       expect(AuthStore.isLoggedIn, isTrue);
     });
 

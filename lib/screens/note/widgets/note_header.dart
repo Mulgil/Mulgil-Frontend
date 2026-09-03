@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../data/mock_data.dart';
+
 import '../../../models/lecture.dart';
 import '../../../theme/app_theme.dart';
 import '../../../widgets/common_widgets.dart';
@@ -72,6 +72,7 @@ class NoteDetailHeader extends StatelessWidget {
 void showNoteDetailMenuSheet(
   BuildContext context, {
   required Lecture lecture,
+  required String courseName,
   required bool hasPendingReview,
   required VoidCallback onOpenReview,
 }) {
@@ -90,7 +91,7 @@ void showNoteDetailMenuSheet(
             onTap: () {
               Navigator.pop(sheetCtx);
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('다운로드 URL 요청 중... (mock)')),
+                const SnackBar(content: Text('원본 PDF가 아직 연결되지 않았어요.')),
               );
             },
           ),
@@ -104,10 +105,8 @@ void showNoteDetailMenuSheet(
               Navigator.pop(sheetCtx);
               Navigator.of(context).push(
                 MaterialPageRoute(
-                  builder: (_) => SummaryDetailScreen(
-                    course: MockData.courseById(lecture.courseId)?.name ?? '',
-                    lecture: lecture,
-                  ),
+                  builder: (_) =>
+                      SummaryDetailScreen(course: courseName, lecture: lecture),
                 ),
               );
             },

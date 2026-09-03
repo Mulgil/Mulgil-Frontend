@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+
 import '../../../theme/app_theme.dart';
 import '../../../widgets/common_widgets.dart';
-import '../../../data/mock_data.dart';
 import '../../../constants/routes.dart';
 import '../../../models/exam.dart';
 import '../../../utils/exam_dates.dart';
@@ -28,7 +28,7 @@ class _UpcomingExamsCardState extends State<UpcomingExamsCard> {
 
   @override
   Widget build(BuildContext context) {
-    final exams = List.of(widget.exams ?? MockData.exams)
+    final exams = List.of(widget.exams ?? const <Exam>[])
       ..removeWhere((exam) => !isUpcomingExam(exam.examAt))
       ..sort((a, b) => a.examAt.compareTo(b.examAt));
     if (exams.isEmpty) return const SizedBox.shrink();

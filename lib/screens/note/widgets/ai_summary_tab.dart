@@ -1,15 +1,17 @@
 import 'package:flutter/material.dart';
+
 import '../../../theme/app_theme.dart';
 import '../../../widgets/common_widgets.dart';
-import '../../../data/mock_data.dart';
 import '../../../models/summary_item.dart';
 
 class SummaryTab extends StatelessWidget {
   final bool isTablet;
+  final List<SummaryItem> items;
   final VoidCallback onTakeQuiz;
   const SummaryTab({
     super.key,
     required this.isTablet,
+    required this.items,
     required this.onTakeQuiz,
   });
 
@@ -24,18 +26,18 @@ class SummaryTab extends StatelessWidget {
   }
 
   Widget _buildMobileLayout() {
+    if (items.isEmpty) return const _EmptySummary();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const SizedBox(height: 12),
-        ...MockData.summaryItems.map((item) => SummaryItemCard(item: item)),
-        const SizedBox(height: 12),
-        const ProfEmphasisBlock(),
+        ...items.map((item) => SummaryItemCard(item: item)),
       ],
     );
   }
 
   Widget _buildTabletLayout(BuildContext context) {
+    if (items.isEmpty) return const _EmptySummary();
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -43,21 +45,13 @@ class SummaryTab extends StatelessWidget {
           flex: 3,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: MockData.summaryItems
-                .map((item) => SummaryItemCard(item: item))
-                .toList(),
+            children: items.map((item) => SummaryItemCard(item: item)).toList(),
           ),
         ),
         const SizedBox(width: 24),
         Expanded(
           flex: 2,
-          child: Column(
-            children: [
-              const ProfEmphasisBlock(),
-              const SizedBox(height: 16),
-              MulgilButton(label: '퀴즈 풀기', onTap: onTakeQuiz),
-            ],
-          ),
+          child: MulgilButton(label: '퀴즈 풀기', onTap: onTakeQuiz),
         ),
       ],
     );
@@ -87,12 +81,14 @@ class SummaryItemCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Text(
-                item.title,
-                style: const TextStyle(
-                  fontSize: 13.5,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.ink,
+              Expanded(
+                child: Text(
+                  item.title,
+                  style: const TextStyle(
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.ink,
+                  ),
                 ),
               ),
               if (item.isEmphasis) ...[
@@ -107,7 +103,7 @@ class SummaryItemCard extends StatelessWidget {
                     borderRadius: BorderRadius.circular(AppRadius.sm),
                   ),
                   child: const Text(
-                    '⭐ 교수님 강조',
+                    '교수님 강조',
                     style: TextStyle(fontSize: 10, color: AppColors.coral),
                   ),
                 ),
@@ -129,48 +125,18 @@ class SummaryItemCard extends StatelessWidget {
   }
 }
 
-class ProfEmphasisBlock extends StatelessWidget {
-  const ProfEmphasisBlock({super.key});
+class _EmptySummary extends StatelessWidget {
+  const _EmptySummary();
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AppColors.coralSoft,
-        border: Border.all(color: AppColors.coral.withValues(alpha: 0.3)),
-        borderRadius: BorderRadius.circular(AppRadius.md),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            '🎯 교수님 강조 포인트',
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w700,
-              color: AppColors.coral,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            MockData.profEmphasisPoint.title,
-            style: const TextStyle(
-              fontSize: 12.5,
-              color: AppColors.ink,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            MockData.profEmphasisPoint.body,
-            style: const TextStyle(
-              fontSize: 12,
-              color: AppColors.ink80,
-              height: 1.6,
-            ),
-          ),
-        ],
+    return const Center(
+      child: Padding(
+        padding: EdgeInsets.symmetric(vertical: 80),
+        child: Text(
+          'AI 요약이 아직 없어요',
+          style: TextStyle(color: AppColors.textMuted),
+        ),
       ),
     );
   }
