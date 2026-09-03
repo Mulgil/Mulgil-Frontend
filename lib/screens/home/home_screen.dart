@@ -188,7 +188,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     WeeklyTimetable(
                       courses: _learningStore.courses,
                       slots: _learningStore.timetableSlots,
-                      canEdit: false,
+                      onAdd: _learningStore.createCourseWithSlots,
                       onCourseTap: (course) =>
                           _openCourseActionsSheet(context, course),
                     ),
