@@ -2,7 +2,7 @@
 
 ## 이번에 맞춘 부분
 
-- API 기본 주소는 `https://ssuway.lapis0875.com` 기준으로 사용한다.
+- API 기본 주소는 `https://api.mulgil.app` 기준으로 사용한다.
 - 새 API 계층에서는 `ApiClient`를 통해 JSON 요청, Bearer token, 에러 응답을 공통 처리한다.
 - 과목은 백엔드의 `GET/POST /api/v1/courses`, `PATCH/DELETE /api/v1/courses/{courseId}` 계약과 프론트 `Course` 모델을 맞췄다.
 - 시간표는 과목과 별도 리소스인 `GET/POST /api/v1/timetable/slots`, `PATCH/DELETE /api/v1/timetable/slots/{slotId}` 계약을 따른다.

@@ -8,7 +8,7 @@ import 'package:mulgil/data/api_client.dart';
 void main() {
   group('ApiClient', () {
     test('uses the deployed backend domain as the default base URL', () {
-      expect(ApiConfig.defaultBaseUrl, 'https://ssuway.lapis0875.com');
+      expect(ApiConfig.defaultBaseUrl, 'https://api.mulgil.app');
     });
 
     test('builds API URLs, encodes JSON, and adds bearer auth', () async {
