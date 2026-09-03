@@ -1,9 +1,9 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+
 import '../theme/app_theme.dart';
 import '../data/api_client.dart';
-import '../data/mock_data.dart';
 import '../models/course.dart';
 import '../models/timetable_slot.dart';
 import 'common_widgets.dart';
@@ -103,7 +103,7 @@ class _CourseFormSheetState extends State<CourseFormSheet> {
   List<TimetableSlot> _findConflictingSlots() {
     final newStart = _start.hour * 60 + _start.minute;
     final newEnd = _end.hour * 60 + _end.minute;
-    return (widget.existingSlots ?? MockData.timetableSlots).where((slot) {
+    return (widget.existingSlots ?? const <TimetableSlot>[]).where((slot) {
       if (!_weekdays.contains(slot.weekday)) return false;
       return newStart < slot.endMinutes && newEnd > slot.startMinutes;
     }).toList();

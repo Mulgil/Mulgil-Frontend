@@ -13,6 +13,7 @@ abstract final class AuthStore {
   static bool _isLoggedIn = false;
   static String? accessToken;
   static String? refreshToken;
+  static AuthUser? user;
 
   static bool get isLoggedIn => _isLoggedIn || _hasToken(accessToken);
   static bool get hasAccessToken => _hasToken(accessToken);
@@ -35,6 +36,7 @@ abstract final class AuthStore {
   static void saveTokens({
     required String accessToken,
     required String refreshToken,
+    AuthUser? user,
   }) {
     final trimmedAccessToken = accessToken.trim();
     AuthStore.accessToken = trimmedAccessToken.isEmpty
@@ -44,12 +46,14 @@ abstract final class AuthStore {
         ? null
         : refreshToken.trim();
     _isLoggedIn = _hasToken(AuthStore.accessToken);
+    AuthStore.user = _isLoggedIn ? user : null;
   }
 
   static void clearTokens() {
     _isLoggedIn = false;
     accessToken = null;
     refreshToken = null;
+    user = null;
   }
 
   static void clear() {
@@ -59,4 +63,29 @@ abstract final class AuthStore {
 
   static bool _hasToken(String? token) =>
       token != null && token.trim().isNotEmpty;
+}
+
+class AuthUser {
+  final String id;
+  final String email;
+  final String displayName;
+
+  const AuthUser({
+    required this.id,
+    required this.email,
+    required this.displayName,
+  });
+
+  String get displayLabel {
+    final name = displayName.trim();
+    if (name.isNotEmpty) return name;
+    final mail = email.trim();
+    if (mail.isEmpty) return '사용자';
+    return mail.split('@').first;
+  }
+
+  String get avatarInitial {
+    final label = displayLabel.trim();
+    return label.isEmpty ? '물' : label.substring(0, 1);
+  }
 }

@@ -4,35 +4,36 @@ import 'package:mulgil/models/exam.dart';
 import 'package:mulgil/screens/home/widgets/upcoming_exams_card.dart';
 
 void main() {
-  testWidgets('does not navigate to the mock exam route for injected exams', (
-    tester,
-  ) async {
-    await tester.pumpWidget(
-      MaterialApp(
-        routes: {
-          '/exams': (_) => const Scaffold(body: Text('mock exam route')),
-        },
-        home: Scaffold(
-          body: UpcomingExamsCard(
-            exams: [
-              _exam(
-                id: 'exam-1',
-                courseId: 'course-1',
-                courseName: '운영체제',
-                title: '중간고사',
-                examAt: DateTime.now().add(const Duration(days: 7)),
-              ),
-            ],
+  testWidgets(
+    'does not navigate to the default exam route for injected exams',
+    (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          routes: {
+            '/exams': (_) => const Scaffold(body: Text('default exam route')),
+          },
+          home: Scaffold(
+            body: UpcomingExamsCard(
+              exams: [
+                _exam(
+                  id: 'exam-1',
+                  courseId: 'course-1',
+                  courseName: '운영체제',
+                  title: '중간고사',
+                  examAt: DateTime.now().add(const Duration(days: 7)),
+                ),
+              ],
+            ),
           ),
         ),
-      ),
-    );
+      );
 
-    await tester.tap(find.text('운영체제 · 중간고사'));
-    await tester.pumpAndSettle();
+      await tester.tap(find.text('운영체제 · 중간고사'));
+      await tester.pumpAndSettle();
 
-    expect(find.text('mock exam route'), findsNothing);
-  });
+      expect(find.text('default exam route'), findsNothing);
+    },
+  );
 
   testWidgets('calls the provided tap handler for injected exams', (
     tester,

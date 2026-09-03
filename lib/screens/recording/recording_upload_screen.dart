@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+
 import '../../theme/app_theme.dart';
 import '../../widgets/common_widgets.dart';
-import '../../data/mock_data.dart';
 import '../../models/recording_candidate.dart';
 
 enum _Stage { pick, uploading, mapping, done }
@@ -73,7 +73,7 @@ class _RecordingUploadScreenState extends State<RecordingUploadScreen> {
         return const _UploadingStage();
       case _Stage.mapping:
         return _MappingStage(
-          candidates: MockData.recordingCandidates,
+          candidates: const [],
           selectedId: _selectedSessionId,
           onSelect: (id) => setState(() => _selectedSessionId = id),
           onConfirm: _confirmMapping,
@@ -171,56 +171,66 @@ class _MappingStage extends StatelessWidget {
         ),
         const SizedBox(height: 4),
         const Text(
-          '겹치는 시간대를 기준으로 추천했어요',
+          '녹음 처리가 끝나면 차시에 연결할 수 있어요',
           style: TextStyle(fontSize: 12, color: AppColors.textMuted),
         ),
         const SizedBox(height: 16),
-        ...candidates.map(
-          (c) => Padding(
-            padding: const EdgeInsets.only(bottom: 10),
-            child: GestureDetector(
-              onTap: () => onSelect(c.id),
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 14,
-                ),
-                decoration: BoxDecoration(
-                  color: selectedId == c.id
-                      ? AppColors.tealSoft
-                      : AppColors.surfaceAlt,
-                  border: Border.all(
-                    color: selectedId == c.id
-                        ? AppColors.teal
-                        : Colors.transparent,
-                    width: 1.5,
+        if (candidates.isEmpty)
+          const Expanded(
+            child: Center(
+              child: Text(
+                '추천할 차시가 아직 없어요',
+                style: TextStyle(color: AppColors.textMuted),
+              ),
+            ),
+          )
+        else
+          ...candidates.map(
+            (c) => Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: GestureDetector(
+                onTap: () => onSelect(c.id),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 14,
                   ),
-                  borderRadius: BorderRadius.circular(AppRadius.md),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      c.title,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
-                      ),
+                  decoration: BoxDecoration(
+                    color: selectedId == c.id
+                        ? AppColors.tealSoft
+                        : AppColors.surfaceAlt,
+                    border: Border.all(
+                      color: selectedId == c.id
+                          ? AppColors.teal
+                          : Colors.transparent,
+                      width: 1.5,
                     ),
-                    Text(
-                      '${(c.overlapScore * 100).round()}% 일치',
-                      style: const TextStyle(
-                        fontSize: 11,
-                        color: AppColors.tealDark,
+                    borderRadius: BorderRadius.circular(AppRadius.md),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        c.title,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textPrimary,
+                        ),
                       ),
-                    ),
-                  ],
+                      Text(
+                        '${(c.overlapScore * 100).round()}% 일치',
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: AppColors.tealDark,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
           ),
-        ),
         const Spacer(),
         MulgilButton(
           label: '차시 확정',

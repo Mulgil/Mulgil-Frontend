@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import '../../../data/mock_data.dart';
+
 import '../../../models/lecture.dart';
 import '../../../theme/app_theme.dart';
+import '../../../utils/academic_calendar.dart';
 import '../../../widgets/common_widgets.dart';
 
 class LectureCard extends StatelessWidget {
@@ -29,7 +30,7 @@ class LectureCard extends StatelessWidget {
                     color: AppColors.ink,
                   ),
                 ),
-                if (lecture.week == MockData.currentWeekLabel) ...[
+                if (lecture.week == AcademicCalendar.currentWeekLabel()) ...[
                   const SizedBox(width: 6),
                   const CurrentWeekBadge(),
                 ],

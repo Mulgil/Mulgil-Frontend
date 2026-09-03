@@ -20,6 +20,7 @@ class AuthApi {
     AuthStore.saveTokens(
       accessToken: tokens.accessToken,
       refreshToken: tokens.refreshToken,
+      user: tokens.user,
     );
     return tokens;
   }
@@ -39,8 +40,13 @@ class AuthApi {
 class AuthTokens {
   final String accessToken;
   final String refreshToken;
+  final AuthUser? user;
 
-  const AuthTokens({required this.accessToken, required this.refreshToken});
+  const AuthTokens({
+    required this.accessToken,
+    required this.refreshToken,
+    this.user,
+  });
 
   factory AuthTokens.fromJson(Map<String, Object?> json) {
     final accessToken = json['accessToken']?.toString().trim() ?? '';
@@ -52,6 +58,20 @@ class AuthTokens {
         message: 'Auth token response is missing required tokens.',
       );
     }
-    return AuthTokens(accessToken: accessToken, refreshToken: refreshToken);
+    return AuthTokens(
+      accessToken: accessToken,
+      refreshToken: refreshToken,
+      user: _userFromJson(json['user']),
+    );
+  }
+
+  static AuthUser? _userFromJson(Object? value) {
+    if (value is! Map) return null;
+    final user = value.map((key, detail) => MapEntry(key.toString(), detail));
+    final id = user['id']?.toString().trim() ?? '';
+    final email = user['email']?.toString().trim() ?? '';
+    final displayName = user['displayName']?.toString().trim() ?? '';
+    if (id.isEmpty && email.isEmpty && displayName.isEmpty) return null;
+    return AuthUser(id: id, email: email, displayName: displayName);
   }
 }

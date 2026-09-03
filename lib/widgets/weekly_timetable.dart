@@ -2,9 +2,9 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+
 import '../theme/app_theme.dart';
 import '../data/api_client.dart';
-import '../data/mock_data.dart';
 import '../models/course.dart';
 import '../models/timetable_slot.dart';
 import 'confirm_dialog.dart';
@@ -24,8 +24,8 @@ Color _courseColor(Course course, List<Course> courses) {
   return _palette[(index < 0 ? 0 : index) % _palette.length];
 }
 
-// Everytime 스타일 요일×시간 그리드. 실제 API 데이터가 들어오면 그 값을 그리고,
-// 아직 연결하지 않은 화면에서는 기존 MockData fallback을 유지한다.
+// Everytime 스타일 요일×시간 그리드. 화면은 서버에서 내려온 값만 그리고,
+// 비어 있으면 비어 있는 시간표를 그대로 보여준다.
 class WeeklyTimetable extends StatefulWidget {
   final List<Course>? courses;
   final List<TimetableSlot>? slots;
@@ -61,8 +61,8 @@ class _WeeklyTimetableState extends State<WeeklyTimetable> {
   static const _hourHeight = 52.0;
   static const _timeColWidth = 32.0;
 
-  List<Course> get _courses => widget.courses ?? MockData.courses;
-  List<TimetableSlot> get _slots => widget.slots ?? MockData.timetableSlots;
+  List<Course> get _courses => widget.courses ?? const [];
+  List<TimetableSlot> get _slots => widget.slots ?? const [];
 
   Course? _courseById(List<Course> courses, String id) {
     for (final course in courses) {
@@ -83,7 +83,11 @@ class _WeeklyTimetableState extends State<WeeklyTimetable> {
     if (!confirmed) return;
     try {
       if (widget.onDeleteCourse == null) {
-        setState(() => MockData.deleteCourses([course]));
+        throw const ApiException(
+          statusCode: 0,
+          code: 'SAVE_UNAVAILABLE',
+          message: '시간표 저장 연결을 확인해주세요.',
+        );
       } else {
         await widget.onDeleteCourse!(course);
         if (mounted) setState(() {});
@@ -112,10 +116,11 @@ class _WeeklyTimetableState extends State<WeeklyTimetable> {
             : TimeOfDay(hour: startHour, minute: 0),
         onAdd: (course, slots) async {
           if (widget.onAdd == null) {
-            setState(() {
-              MockData.courses.add(course);
-              MockData.timetableSlots.addAll(slots);
-            });
+            throw const ApiException(
+              statusCode: 0,
+              code: 'SAVE_UNAVAILABLE',
+              message: '시간표 저장 연결을 확인해주세요.',
+            );
           } else {
             await widget.onAdd!(course, slots);
             if (mounted) setState(() {});

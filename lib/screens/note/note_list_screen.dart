@@ -1,8 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+
 import '../../theme/app_theme.dart';
 import '../../widgets/common_widgets.dart';
-import '../../data/mock_data.dart';
+import '../../data/learning_domain_store.dart';
 import '../../data/notes_store.dart';
+import '../../models/course.dart';
 import '../../models/lecture.dart';
 import '../../constants/routes.dart';
 import '../recording/recording_upload_screen.dart';
@@ -19,9 +23,29 @@ class NoteListScreen extends StatefulWidget {
 
 class _NoteListScreenState extends State<NoteListScreen> {
   int _filter = 0;
-  late String _course = widget.initialCourse ?? MockData.courseNames.first;
+  String? _courseName;
+  final _learningStore = LearningDomainStore.instance;
 
   static const _filters = ['전체', '필기있음', '퀴즈완료'];
+
+  @override
+  void initState() {
+    super.initState();
+    _courseName = widget.initialCourse;
+    unawaited(_learningStore.load());
+  }
+
+  Course? _selectedCourse() {
+    final courses = _learningStore.courses;
+    if (courses.isEmpty) return null;
+    final selectedName = _courseName;
+    if (selectedName != null) {
+      for (final course in courses) {
+        if (course.name == selectedName) return course;
+      }
+    }
+    return courses.first;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -30,90 +54,44 @@ class _NoteListScreenState extends State<NoteListScreen> {
       body: SafeArea(
         child: Padding(
           padding: EdgeInsets.fromLTRB(pad, pad, pad, 0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
+          child: ListenableBuilder(
+            listenable: _learningStore,
+            builder: (context, _) {
+              final selectedCourse = _selectedCourse();
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const BackIfPushed(),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        CourseDropdown(
-                          selected: _course,
-                          options: MockData.courseNames,
-                          onChanged: (v) => setState(() => _course = v),
-                        ),
-                        Text(
-                          MockData.courseProfessors[_course] ?? '',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: AppColors.textMuted,
-                          ),
-                        ),
-                      ],
+                  Row(
+                    children: [
+                      const BackIfPushed(),
+                      Expanded(child: _buildCourseHeader(selectedCourse)),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: _filters
+                          .asMap()
+                          .entries
+                          .map(
+                            (e) => Padding(
+                              padding: const EdgeInsets.only(right: 8),
+                              child: MulgilChip(
+                                label: e.value,
+                                selected: _filter == e.key,
+                                onTap: () => setState(() => _filter = e.key),
+                              ),
+                            ),
+                          )
+                          .toList(),
                     ),
                   ),
+                  const SizedBox(height: 14),
+                  Expanded(child: _buildLectureList(selectedCourse)),
                 ],
-              ),
-              const SizedBox(height: 14),
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: _filters
-                      .asMap()
-                      .entries
-                      .map(
-                        (e) => Padding(
-                          padding: const EdgeInsets.only(right: 8),
-                          child: MulgilChip(
-                            label: e.value,
-                            selected: _filter == e.key,
-                            onTap: () => setState(() => _filter = e.key),
-                          ),
-                        ),
-                      )
-                      .toList(),
-                ),
-              ),
-              const SizedBox(height: 14),
-              Expanded(
-                child: ListenableBuilder(
-                  listenable: NotesStore.instance,
-                  builder: (context, _) {
-                    final courseLectures = _courseLectures();
-                    final lectures = _filteredLectures(courseLectures);
-                    if (lectures.isEmpty) {
-                      return Center(
-                        child: Text(
-                          courseLectures.isEmpty
-                              ? '$_course 과목에는 아직 필기가 없어요'
-                              : '조건에 맞는 필기가 없어요',
-                          style: const TextStyle(color: AppColors.textMuted),
-                        ),
-                      );
-                    }
-                    return ListView.separated(
-                      itemCount: lectures.length,
-                      separatorBuilder: (_, _) => const SizedBox(height: 10),
-                      itemBuilder: (ctx, i) {
-                        final lecture = lectures[i];
-                        return LectureCard(
-                          lecture: lecture,
-                          onTap: lecture.done
-                              ? () => Navigator.of(context).pushNamed(
-                                  AppRoutes.noteDetail,
-                                  arguments: lecture,
-                                )
-                              : null,
-                        );
-                      },
-                    );
-                  },
-                ),
-              ),
-            ],
+              );
+            },
           ),
         ),
       ),
@@ -125,14 +103,86 @@ class _NoteListScreenState extends State<NoteListScreen> {
     );
   }
 
-  // Notes belonging to the selected course, before the 전체/필기있음/퀴즈완료 tab
-  // filter — kept separate so the empty state can tell "이 과목엔 필기가 아예
-  // 없음" apart from "필터 조건에 맞는 게 없음".
-  List<Lecture> _courseLectures() {
-    final courseId = MockData.courseByName(_course)?.id;
-    return NotesStore.instance.lectures
-        .where((l) => l.courseId == courseId)
+  Widget _buildCourseHeader(Course? selectedCourse) {
+    if (selectedCourse == null) {
+      return Text('필기', style: AppTextStyles.h2);
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        CourseDropdown(
+          selected: selectedCourse.name,
+          options: _learningStore.courseNames,
+          onChanged: (value) => setState(() => _courseName = value),
+        ),
+        if (selectedCourse.instructor != null)
+          Text(
+            selectedCourse.instructor!,
+            style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildLectureList(Course? selectedCourse) {
+    if (_learningStore.isLoading && !_learningStore.hasLoaded) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (_learningStore.needsAuthentication ||
+        _learningStore.errorMessage != null) {
+      return _NoteStatusNotice(
+        message:
+            _learningStore.errorMessage ??
+            'Google 로그인 토큰이 연결되면 서버 필기 목록을 불러와요.',
+        onRetry: _learningStore.refresh,
+      );
+    }
+    if (selectedCourse == null) {
+      return const Center(
+        child: Text(
+          '등록된 과목이 없어요',
+          style: TextStyle(color: AppColors.textMuted),
+        ),
+      );
+    }
+    return ListenableBuilder(
+      listenable: NotesStore.instance,
+      builder: (context, _) {
+        final courseLectures = _courseLectures(selectedCourse);
+        final lectures = _filteredLectures(courseLectures);
+        if (lectures.isEmpty) {
+          return Center(
+            child: Text(
+              courseLectures.isEmpty
+                  ? '${selectedCourse.name} 과목에는 아직 차시가 없어요'
+                  : '조건에 맞는 필기가 없어요',
+              style: const TextStyle(color: AppColors.textMuted),
+            ),
+          );
+        }
+        return ListView.separated(
+          itemCount: lectures.length,
+          separatorBuilder: (_, _) => const SizedBox(height: 10),
+          itemBuilder: (ctx, i) {
+            final lecture = lectures[i];
+            return LectureCard(
+              lecture: lecture,
+              onTap: () => Navigator.of(
+                context,
+              ).pushNamed(AppRoutes.noteDetail, arguments: lecture),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  List<Lecture> _courseLectures(Course course) {
+    final localNotes = NotesStore.instance.lectures
+        .where((lecture) => lecture.courseId == course.id)
         .toList();
+    final sessions = _learningStore.sessionsFor(course.id);
+    return [...localNotes, ...sessions];
   }
 
   List<Lecture> _filteredLectures(List<Lecture> courseLectures) {
@@ -147,6 +197,13 @@ class _NoteListScreenState extends State<NoteListScreen> {
   }
 
   void _openAddSheet(BuildContext context) {
+    final selectedCourse = _selectedCourse();
+    if (selectedCourse == null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('과목을 먼저 등록해주세요.')));
+      return;
+    }
     showMulgilSheet(
       context,
       builder: (sheetCtx) => SafeArea(
@@ -189,7 +246,7 @@ class _NoteListScreenState extends State<NoteListScreen> {
               subtitle: const Text('타이핑 또는 필기로 바로 시작해요'),
               onTap: () {
                 Navigator.pop(sheetCtx);
-                _promptNewNoteTitle(context);
+                _promptNewNoteTitle(context, selectedCourse);
               },
             ),
             const SizedBox(height: 8),
@@ -199,7 +256,7 @@ class _NoteListScreenState extends State<NoteListScreen> {
     );
   }
 
-  void _promptNewNoteTitle(BuildContext context) {
+  void _promptNewNoteTitle(BuildContext context, Course course) {
     final ctrl = TextEditingController();
     showDialog<void>(
       context: context,
@@ -209,7 +266,7 @@ class _NoteListScreenState extends State<NoteListScreen> {
           controller: ctrl,
           autofocus: true,
           decoration: const InputDecoration(hintText: '노트 제목을 입력하세요'),
-          onSubmitted: (_) => _createAndOpenNote(dialogCtx, ctrl.text),
+          onSubmitted: (_) => _createAndOpenNote(dialogCtx, ctrl.text, course),
         ),
         actions: [
           TextButton(
@@ -217,7 +274,7 @@ class _NoteListScreenState extends State<NoteListScreen> {
             child: const Text('취소'),
           ),
           TextButton(
-            onPressed: () => _createAndOpenNote(dialogCtx, ctrl.text),
+            onPressed: () => _createAndOpenNote(dialogCtx, ctrl.text, course),
             child: const Text('만들기'),
           ),
         ],
@@ -225,20 +282,53 @@ class _NoteListScreenState extends State<NoteListScreen> {
     );
   }
 
-  void _createAndOpenNote(BuildContext dialogCtx, String rawTitle) {
+  void _createAndOpenNote(
+    BuildContext dialogCtx,
+    String rawTitle,
+    Course course,
+  ) {
     final title = rawTitle.trim().isEmpty ? '제목 없는 노트' : rawTitle.trim();
-    final courseId = MockData.courseByName(_course)?.id;
     Navigator.pop(dialogCtx);
-    if (courseId == null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('과목을 다시 선택해주세요')));
-      return;
-    }
     final lecture = NotesStore.instance.createNote(
       title: title,
-      courseId: courseId,
+      courseId: course.id,
     );
     Navigator.of(context).pushNamed(AppRoutes.noteDetail, arguments: lecture);
+  }
+}
+
+class _NoteStatusNotice extends StatelessWidget {
+  final String message;
+  final VoidCallback onRetry;
+
+  const _NoteStatusNotice({required this.message, required this.onRetry});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: AppColors.surfaceAlt,
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                message,
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: AppColors.textMuted,
+                ),
+              ),
+            ),
+            TextButton(onPressed: onRetry, child: const Text('다시 시도')),
+          ],
+        ),
+      ),
+    );
   }
 }
