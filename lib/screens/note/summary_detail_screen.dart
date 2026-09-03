@@ -1,4 +1,9 @@
 import 'package:flutter/material.dart';
+
+import '../../data/api_client.dart';
+import '../../data/app_services.dart';
+import '../../data/learning_domain_api.dart';
+import '../../data/notes_store.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/common_widgets.dart';
 import '../../models/lecture.dart';
@@ -7,8 +12,7 @@ import 'widgets/ai_summary_tab.dart';
 import 'widgets/ai_mindmap_tab.dart';
 import 'widgets/ai_original_tab.dart';
 
-// The 요약/마인드맵/원본 필기 tab view for one specific week — pushed from
-// AiSummaryScreen's week list (or straight from a note's "AI 요약" link).
+// The 요약/마인드맵/원본 필기 tab view for one specific week.
 class SummaryDetailScreen extends StatefulWidget {
   final String course;
   final Lecture lecture;
@@ -25,17 +29,40 @@ class SummaryDetailScreen extends StatefulWidget {
 class _SummaryDetailScreenState extends State<SummaryDetailScreen>
     with SingleTickerProviderStateMixin {
   late final TabController _tab;
+  late Future<SessionSummary?> _summaryLoad;
+  String? _loadError;
 
   @override
   void initState() {
     super.initState();
     _tab = TabController(length: 3, vsync: this);
+    _summaryLoad = _loadSummary();
   }
 
   @override
   void dispose() {
     _tab.dispose();
     super.dispose();
+  }
+
+  Future<SessionSummary?> _loadSummary() async {
+    try {
+      _loadError = null;
+      return await AppServices.learningDomain.getSessionSummary(
+        widget.lecture.id,
+      );
+    } on ApiException catch (error) {
+      _loadError = error.statusCode == 404 || error.statusCode == 409
+          ? 'AI 요약이 아직 준비되지 않았어요.'
+          : error.message;
+    } on Exception {
+      _loadError = 'AI 요약을 불러오지 못했어요.';
+    }
+    return null;
+  }
+
+  void _retry() {
+    setState(() => _summaryLoad = _loadSummary());
   }
 
   void _openQuiz() {
@@ -52,29 +79,72 @@ class _SummaryDetailScreenState extends State<SummaryDetailScreen>
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
-        child: Column(
-          children: [
-            _buildHeader(context),
-            _buildTabBar(context),
-            Expanded(
-              child: TabBarView(
-                controller: _tab,
+        child: FutureBuilder<SessionSummary?>(
+          future: _summaryLoad,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState != ConnectionState.done) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            final summary = snapshot.data;
+            final error = _loadError;
+            if (summary == null || error != null) {
+              return Column(
                 children: [
-                  SummaryTab(isTablet: context.isTablet, onTakeQuiz: _openQuiz),
-                  const MindmapTab(),
-                  const OriginalTab(),
+                  _buildHeader(context),
+                  Expanded(
+                    child: _SummaryDetailNotice(
+                      message: error ?? 'AI 요약이 아직 준비되지 않았어요.',
+                      onRetry: _retry,
+                    ),
+                  ),
                 ],
-              ),
-            ),
-            if (!context.isTablet)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
-                child: MulgilButton(label: '퀴즈 풀기', onTap: _openQuiz),
-              ),
-          ],
+              );
+            }
+            return Column(
+              children: [
+                _buildHeader(context),
+                _buildTabBar(context),
+                Expanded(
+                  child: TabBarView(
+                    controller: _tab,
+                    children: [
+                      SummaryTab(
+                        isTablet: context.isTablet,
+                        items: summary.items,
+                        onTakeQuiz: _openQuiz,
+                      ),
+                      MindmapTab(
+                        centerLabel: widget.lecture.title,
+                        nodeLabels: summary.mindmapNodeLabels,
+                      ),
+                      OriginalTab(paragraphs: _originalParagraphs()),
+                    ],
+                  ),
+                ),
+                if (!context.isTablet)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+                    child: MulgilButton(label: '퀴즈 풀기', onTap: _openQuiz),
+                  ),
+              ],
+            );
+          },
         ),
       ),
     );
+  }
+
+  List<String> _originalParagraphs() {
+    final body = NotesStore.instance
+        .contentFor(widget.lecture)
+        .typedText
+        .trim();
+    if (body.isEmpty) return const [];
+    return body
+        .split(RegExp(r'(?:\r?\n\s*){2,}'))
+        .map((paragraph) => paragraph.trim())
+        .where((paragraph) => paragraph.isNotEmpty)
+        .toList();
   }
 
   Widget _buildHeader(BuildContext context) {
@@ -102,7 +172,7 @@ class _SummaryDetailScreenState extends State<SummaryDetailScreen>
               borderRadius: BorderRadius.circular(AppRadius.sm),
             ),
             child: const Text(
-              '✨ AI 생성',
+              'AI 생성',
               style: TextStyle(
                 fontSize: 11,
                 color: AppColors.tealDark,
@@ -139,6 +209,43 @@ class _SummaryDetailScreenState extends State<SummaryDetailScreen>
           Tab(text: '마인드맵'),
           Tab(text: '원본 필기'),
         ],
+      ),
+    );
+  }
+}
+
+class _SummaryDetailNotice extends StatelessWidget {
+  final String message;
+  final VoidCallback onRetry;
+
+  const _SummaryDetailNotice({required this.message, required this.onRetry});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Container(
+        width: double.infinity,
+        margin: const EdgeInsets.all(20),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: AppColors.surfaceAlt,
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                message,
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: AppColors.textMuted,
+                ),
+              ),
+            ),
+            TextButton(onPressed: onRetry, child: const Text('다시 시도')),
+          ],
+        ),
       ),
     );
   }

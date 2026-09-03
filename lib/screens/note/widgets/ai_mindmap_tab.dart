@@ -1,13 +1,30 @@
 import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
+
 import '../../../theme/app_theme.dart';
-import '../../../data/mock_data.dart';
 
 class MindmapTab extends StatelessWidget {
-  const MindmapTab({super.key});
+  final String centerLabel;
+  final List<String> nodeLabels;
+
+  const MindmapTab({
+    super.key,
+    required this.centerLabel,
+    required this.nodeLabels,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final visibleLabels = nodeLabels.take(4).toList();
+    if (visibleLabels.length < 4) {
+      return const Center(
+        child: Text(
+          '마인드맵이 아직 없어요',
+          style: TextStyle(color: AppColors.textMuted),
+        ),
+      );
+    }
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
@@ -21,8 +38,8 @@ class MindmapTab extends StatelessWidget {
           ),
           child: CustomPaint(
             painter: MindmapPainter(
-              centerLabel: MockData.mindmapCenterLabel,
-              nodeLabels: MockData.mindmapNodeLabels,
+              centerLabel: centerLabel,
+              nodeLabels: visibleLabels,
             ),
             child: const Center(),
           ),
@@ -32,8 +49,6 @@ class MindmapTab extends StatelessWidget {
   }
 }
 
-// Fixed 4-node radial layout — the offsets are a visual template, not data,
-// so `nodeLabels` must have exactly 4 entries to match.
 class MindmapPainter extends CustomPainter {
   final String centerLabel;
   final List<String> nodeLabels;
@@ -70,13 +85,9 @@ class MindmapPainter extends CustomPainter {
         fontWeight: FontWeight.w700,
       ),
     );
-    tp.layout();
+    tp.layout(maxWidth: 76);
     tp.paint(canvas, Offset(cx - tp.width / 2, cy - tp.height / 2));
 
-    // Bounds the loop to whichever list is shorter so a `nodeLabels` list
-    // that drifts from 4 entries can't index past either array — the assert
-    // below is a debug-time early warning, not the actual safety net (Dart
-    // strips asserts from release builds).
     final nodeCount = math.min(_offsets.length, nodeLabels.length);
     for (var i = 0; i < nodeCount; i++) {
       final dx = _offsets[i].dx;
@@ -90,7 +101,7 @@ class MindmapPainter extends CustomPainter {
           style: const TextStyle(color: Colors.white, fontSize: 10),
         ),
       );
-      lbl.layout();
+      lbl.layout(maxWidth: 52);
       lbl.paint(
         canvas,
         Offset(cx + dx - lbl.width / 2, cy + dy - lbl.height / 2),
@@ -99,5 +110,7 @@ class MindmapPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter old) => false;
+  bool shouldRepaint(covariant MindmapPainter old) {
+    return old.centerLabel != centerLabel || old.nodeLabels != nodeLabels;
+  }
 }

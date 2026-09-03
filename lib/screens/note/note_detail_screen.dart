@@ -1,7 +1,9 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
+
 import '../../theme/app_theme.dart';
-import '../../data/mock_data.dart';
+import '../../data/learning_domain_store.dart';
 import '../../data/notes_store.dart';
 import '../../models/lecture.dart';
 import '../../models/draw_stroke.dart';
@@ -27,10 +29,9 @@ enum _NoteMode { drawing, typed }
 class _NoteDetailScreenState extends State<NoteDetailScreen> {
   _NoteMode _mode = _NoteMode.drawing;
   int _tool = 0;
-  bool _showProfTag = true;
   final _typedCtrl = TextEditingController();
   bool _contentLoaded = false;
-  late Lecture _lecture;
+  Lecture? _lecture;
   static const _pageCount = 4;
   int _currentPage = 0;
   bool _pageSidebarVisible = true;
@@ -41,10 +42,11 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
   bool _eraseChanged = false;
   DrawStroke? _currentStroke;
 
-  List<DrawStroke> get _strokes => _pageStrokes.putIfAbsent(
-    _currentPage,
-    () => List.of(NotesStore.instance.pageStrokes(_lecture, _currentPage)),
-  );
+  List<DrawStroke> get _strokes => _pageStrokes.putIfAbsent(_currentPage, () {
+    final lecture = _lecture;
+    if (lecture == null) return [];
+    return List.of(NotesStore.instance.pageStrokes(lecture, _currentPage));
+  });
   List<_DrawAction> get _history =>
       _pageHistory.putIfAbsent(_currentPage, () => []);
   List<_DrawAction> get _redoHistory =>
@@ -61,7 +63,9 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
   };
 
   void _onTypedChanged() {
-    NotesStore.instance.updateTypedText(_lecture, _typedCtrl.text);
+    final lecture = _lecture;
+    if (lecture == null) return;
+    NotesStore.instance.updateTypedText(lecture, _typedCtrl.text);
     setState(() => _typedSaving = true);
     _saveTimer?.cancel();
     _saveTimer = Timer(const Duration(milliseconds: 600), () {
@@ -69,9 +73,7 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
     });
   }
 
-  final List<PendingHandwritingBlock> _pendingReview = [
-    PendingHandwritingBlock(id: 'hb1', guess: MockData.pendingHandwritingGuess),
-  ];
+  final List<PendingHandwritingBlock> _pendingReview = [];
 
   @override
   void didChangeDependencies() {
@@ -79,9 +81,11 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
     if (!_contentLoaded) {
       _contentLoaded = true;
       final args = ModalRoute.of(context)?.settings.arguments;
-      _lecture = args is Lecture ? args : MockData.lectures.first;
-      _typedCtrl.text = NotesStore.instance.contentFor(_lecture).typedText;
-      _typedCtrl.addListener(_onTypedChanged);
+      if (args is Lecture) {
+        _lecture = args;
+        _typedCtrl.text = NotesStore.instance.contentFor(args).typedText;
+        _typedCtrl.addListener(_onTypedChanged);
+      }
     }
   }
 
@@ -179,7 +183,7 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
   }
 
   void _persistCurrentPage() =>
-      NotesStore.instance.updatePageStrokes(_lecture, _currentPage, _strokes);
+      NotesStore.instance.updatePageStrokes(_lecture!, _currentPage, _strokes);
 
   bool get _canUndo => _history.isNotEmpty;
   bool get _canRedo => _redoHistory.isNotEmpty;
@@ -209,9 +213,13 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
   }
 
   void _openMenuSheet() {
+    final lecture = _lecture;
+    if (lecture == null) return;
     showNoteDetailMenuSheet(
       context,
-      lecture: _lecture,
+      lecture: lecture,
+      courseName:
+          LearningDomainStore.instance.courseById(lecture.courseId)?.name ?? '',
       hasPendingReview: _pendingReview.isNotEmpty,
       onOpenReview: _openReviewSheet,
     );
@@ -227,13 +235,23 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final lecture = _lecture;
+    if (lecture == null) {
+      return Scaffold(
+        body: SafeArea(
+          child: Center(
+            child: Text('필기 정보를 찾을 수 없어요', style: AppTextStyles.bodySmall),
+          ),
+        ),
+      );
+    }
     final isDrawing = _mode == _NoteMode.drawing;
     return Scaffold(
       backgroundColor: Colors.white,
       body: Column(
         children: [
           NoteDetailHeader(
-            title: '${_lecture.week} · ${_lecture.title}',
+            title: '${lecture.week} · ${lecture.title}',
             onBack: () => Navigator.pop(context),
             onMenu: _openMenuSheet,
           ),
@@ -250,9 +268,6 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
               canRedo: _canRedo,
               onUndo: _undo,
               onRedo: _redo,
-              showProfTag: _showProfTag,
-              onToggleProfTag: () =>
-                  setState(() => _showProfTag = !_showProfTag),
             ),
             if (_pendingReview.isNotEmpty)
               NoteReviewBanner(
@@ -290,7 +305,6 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
 
   Widget _buildCanvas() {
     return NoteCanvas(
-      showProfTag: _showProfTag,
       strokes: _strokes,
       currentStroke: _currentStroke,
       onPanStart: (d) => _startStroke(d.localPosition),

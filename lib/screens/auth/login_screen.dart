@@ -1,30 +1,166 @@
+import 'dart:async';
 import 'dart:math' as math;
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import '../../data/api_client.dart';
+import '../../data/app_services.dart';
+import '../../data/auth_api.dart';
+import '../../data/google_auth_service.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/mulgil_logo.dart';
-import '../../data/auth_store.dart';
+import '../../widgets/google_sign_in_sdk_button.dart';
 import '../../constants/routes.dart';
 
-// Replace with POST /auth/oauth/google once the Google Sign-In SDK is wired up.
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+  final AuthApi? authApi;
+  final GoogleAuthService? googleAuthService;
+
+  const LoginScreen({super.key, this.authApi, this.googleAuthService});
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
 }
 
 class _LoginScreenState extends State<LoginScreen> {
+  late final AuthApi _authApi;
+  late final GoogleAuthService _googleAuthService;
+  late final Future<void> _googleInitialization;
+  StreamSubscription<GoogleSignInAuthenticationEvent>? _authSubscription;
+
   bool _loading = false;
+  bool _completingSignIn = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _authApi = widget.authApi ?? AppServices.auth;
+    _googleAuthService = widget.googleAuthService ?? AppServices.googleAuth;
+    _googleInitialization = _initializeGoogleSignIn();
+  }
+
+  @override
+  void dispose() {
+    _authSubscription?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _initializeGoogleSignIn() async {
+    await _googleAuthService.initialize();
+    if (!kIsWeb) return;
+
+    _authSubscription = _googleAuthService.authenticationEvents.listen(
+      _handleGoogleAuthenticationEvent,
+      onError: _handleGoogleAuthenticationError,
+    );
+
+    _googleAuthService.attemptLightweightAuthentication();
+  }
 
   Future<void> _signInWithGoogle() async {
-    setState(() => _loading = true);
-    await Future.delayed(const Duration(milliseconds: 900));
-    if (!mounted) return;
-    setState(() => _loading = false);
-    if (!AuthStore.saveDevTokensFromEnvironment()) {
-      AuthStore.isLoggedIn = true;
+    if (_loading) return;
+    _setLoading(true);
+    try {
+      if (!_googleAuthService.supportsAuthenticate()) {
+        _showSignInFailure('Google 로그인 버튼을 눌러주세요.');
+        return;
+      }
+      await _completeGoogleSignIn(await _googleAuthService.authenticate());
+    } catch (error) {
+      _showSignInFailure(error);
+    } finally {
+      if (!_completingSignIn) {
+        _setLoading(false);
+      }
     }
-    Navigator.of(context).pushReplacementNamed(AppRoutes.onboarding);
+  }
+
+  Future<void> _handleGoogleAuthenticationEvent(
+    GoogleSignInAuthenticationEvent event,
+  ) async {
+    if (event is GoogleSignInAuthenticationEventSignIn) {
+      await _completeGoogleSignIn(event.user);
+    }
+  }
+
+  void _handleGoogleAuthenticationError(
+    Object error, [
+    StackTrace? stackTrace,
+  ]) {
+    _showSignInFailure(error);
+  }
+
+  Future<void> _completeGoogleSignIn(GoogleSignInAccount account) async {
+    if (_completingSignIn) return;
+    _completingSignIn = true;
+    _setLoading(true);
+    try {
+      final idToken = account.authentication.idToken?.trim();
+      if (idToken == null || idToken.isEmpty) {
+        throw StateError('Missing Google ID token.');
+      }
+
+      await _authApi.signInWithGoogleIdToken(idToken);
+      if (!mounted) return;
+      Navigator.of(context).pushReplacementNamed(AppRoutes.onboarding);
+    } catch (error) {
+      _showSignInFailure(error);
+    } finally {
+      _completingSignIn = false;
+      _setLoading(false);
+    }
+  }
+
+  void _setLoading(bool value) {
+    if (!mounted || _loading == value) return;
+    setState(() => _loading = value);
+  }
+
+  void _showSignInFailure(Object error) {
+    if (!mounted) return;
+    _setLoading(false);
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(_messageFor(error))));
+  }
+
+  String _messageFor(Object error) {
+    if (error is GoogleSignInException) {
+      return switch (error.code) {
+        GoogleSignInExceptionCode.canceled => 'Google 로그인이 취소됐어요.',
+        GoogleSignInExceptionCode.uiUnavailable => 'Google 로그인 창을 열 수 없어요.',
+        _ => error.description ?? 'Google 로그인에 실패했어요.',
+      };
+    }
+    if (error is ApiException) {
+      return error.message;
+    }
+    if (error is String) {
+      return error;
+    }
+    return 'Google 로그인에 실패했어요. 잠시 후 다시 시도해주세요.';
+  }
+
+  Widget _buildGoogleSignInEntry(BuildContext context) {
+    return FutureBuilder<void>(
+      future: _googleInitialization,
+      builder: (context, snapshot) {
+        final isReady =
+            snapshot.connectionState == ConnectionState.done &&
+            !snapshot.hasError;
+        if (kIsWeb && isReady) {
+          return _GoogleSignInWebButton(loading: _loading);
+        }
+        return _GoogleSignInButton(
+          loading: _loading || (!isReady && !snapshot.hasError),
+          onTap: _loading
+              ? null
+              : snapshot.hasError
+              ? () => _showSignInFailure('Google 로그인 설정을 확인해주세요.')
+              : _signInWithGoogle,
+        );
+      },
+    );
   }
 
   @override
@@ -44,10 +180,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 style: TextStyle(color: Color(0xFFc9d8e0), fontSize: 16),
               ),
               const SizedBox(height: 56),
-              _GoogleSignInButton(
-                loading: _loading,
-                onTap: _loading ? null : _signInWithGoogle,
-              ),
+              _buildGoogleSignInEntry(context),
               const SizedBox(height: 12),
               const Text(
                 '계속 진행하면 이용약관과 개인정보처리방침에 동의하는 것으로 간주됩니다',
@@ -57,6 +190,47 @@ class _LoginScreenState extends State<LoginScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _GoogleSignInWebButton extends StatelessWidget {
+  final bool loading;
+
+  const _GoogleSignInWebButton({required this.loading});
+
+  @override
+  Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final buttonWidth = math.min(400.0, math.max(240.0, screenWidth - 80));
+    return SizedBox(
+      width: buttonWidth,
+      height: 44,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          AbsorbPointer(
+            absorbing: loading,
+            child: googleSignInSdkButton(minimumWidth: buttonWidth),
+          ),
+          if (loading)
+            const Positioned.fill(
+              child: ColoredBox(
+                color: Colors.white70,
+                child: Center(
+                  child: SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: AppColors.navy,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }

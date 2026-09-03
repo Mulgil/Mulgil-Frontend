@@ -8,7 +8,7 @@ import 'signed_upload_transport.dart';
 typedef AccessTokenProvider = FutureOr<String?> Function();
 
 abstract final class ApiConfig {
-  static const defaultBaseUrl = 'https://ssuway.lapis0875.com';
+  static const defaultBaseUrl = 'https://api.mulgil.app';
   static const baseUrl = String.fromEnvironment(
     'MULGIL_API_BASE_URL',
     defaultValue: defaultBaseUrl,

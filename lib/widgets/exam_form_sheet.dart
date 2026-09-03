@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
+
 import '../theme/app_theme.dart';
-import '../data/mock_data.dart';
+import '../models/course.dart';
 import '../models/exam.dart';
+import '../models/lecture.dart';
 import 'common_widgets.dart';
 
-// Confirms with the user, then invokes onConfirmedDelete — callers still own the
-// actual MockData.exams removal so they control their own setState/rebuild.
 Future<void> confirmDeleteExam(
   BuildContext context,
   Exam _,
-  VoidCallback __,
+  VoidCallback _,
 ) async {
   ScaffoldMessenger.of(context).showSnackBar(
     const SnackBar(
@@ -23,11 +23,15 @@ Future<void> confirmDeleteExam(
 class ExamFormSheet extends StatefulWidget {
   final Exam? existingExam;
   final String? initialCourseName;
+  final List<Course> courses;
+  final List<Lecture> sessions;
   final ValueChanged<Exam> onSubmit;
   const ExamFormSheet({
     super.key,
     this.existingExam,
     this.initialCourseName,
+    this.courses = const [],
+    this.sessions = const [],
     required this.onSubmit,
   });
 
@@ -42,18 +46,26 @@ class _ExamFormSheetState extends State<ExamFormSheet> {
   late DateTime _examAt =
       widget.existingExam?.examAt ??
       DateTime.now().add(const Duration(days: 7));
-  late String _courseName =
+  late String? _courseName =
       widget.existingExam?.courseName ??
       widget.initialCourseName ??
-      MockData.courseNames.first;
+      _firstCourseName();
   late final Set<String> _selectedSessions = {
     ...?widget.existingExam?.sessionTitles,
   };
 
   bool get _isEditing => widget.existingExam != null;
 
+  List<String> get _courseNames =>
+      widget.courses.map((course) => course.name).toList();
+
   List<String> get _availableSessions =>
-      MockData.lectures.map((l) => l.week).toList();
+      widget.sessions.map((session) => session.week).toList();
+
+  String? _firstCourseName() {
+    if (widget.courses.isEmpty) return null;
+    return widget.courses.first.name;
+  }
 
   @override
   void dispose() {
@@ -80,17 +92,21 @@ class _ExamFormSheetState extends State<ExamFormSheet> {
       );
       return;
     }
-    if (_titleCtrl.text.trim().isEmpty || _selectedSessions.isEmpty) {
+    final courseName = _courseName;
+    if (courseName == null ||
+        courseName.isEmpty ||
+        _titleCtrl.text.trim().isEmpty ||
+        _selectedSessions.isEmpty) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('시험명과 범위를 모두 입력해주세요')));
+      ).showSnackBar(const SnackBar(content: Text('과목, 시험명, 범위를 모두 입력해주세요')));
       return;
     }
     final existing = widget.existingExam;
     widget.onSubmit(
       Exam(
         id: existing?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
-        courseName: _courseName,
+        courseName: courseName,
         title: _titleCtrl.text.trim(),
         examAt: _examAt,
         sessionTitles: _selectedSessions.toList()..sort(),
@@ -125,9 +141,11 @@ class _ExamFormSheetState extends State<ExamFormSheet> {
           ),
           const SizedBox(height: 16),
           DropdownButtonFormField<String>(
-            initialValue: _courseName,
+            initialValue: _courseNames.contains(_courseName)
+                ? _courseName
+                : null,
             decoration: const InputDecoration(labelText: '과목'),
-            items: MockData.courseNames
+            items: _courseNames
                 .map((name) => DropdownMenuItem(value: name, child: Text(name)))
                 .toList(),
             onChanged: (v) => setState(() => _courseName = v ?? _courseName),

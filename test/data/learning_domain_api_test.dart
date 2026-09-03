@@ -5,8 +5,10 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:mulgil/data/api_client.dart';
 import 'package:mulgil/data/learning_domain_api.dart';
+import 'package:mulgil/models/app_notification.dart';
 import 'package:mulgil/models/course.dart';
 import 'package:mulgil/models/lecture.dart';
+import 'package:mulgil/models/quiz_question.dart';
 import 'package:mulgil/models/timetable_slot.dart';
 
 void main() {
@@ -262,6 +264,129 @@ void main() {
       expect(exam.examAt.year, 2026);
       expect(exam.examAt.month, 10);
       expect(exam.examAt.day, 20);
+    });
+
+    test('reads generated session summaries', () async {
+      final api = _api((request) async {
+        expect(request.method, 'GET');
+        expect(
+          request.url.toString(),
+          'https://api.example.com/api/v1/sessions/session-1/summaries?type=review',
+        );
+
+        return _jsonResponse({
+          'summary': {
+            'id': 'summary-1',
+            'type': 'review',
+            'inputVersion': 2,
+            'items': [
+              {'text': '프로세스와 스레드 차이를 정리합니다.'},
+            ],
+            'tables': [],
+          },
+          'mindmap': {
+            'id': 'mindmap-1',
+            'inputVersion': 2,
+            'nodes': [
+              {'label': '프로세스'},
+              {'label': '스레드'},
+              {'label': '스케줄링'},
+              {'label': '동기화'},
+            ],
+            'edges': [],
+          },
+        }, 200);
+      });
+
+      final summary = await api.getSessionSummary('session-1');
+
+      expect(summary.items.single.body, '프로세스와 스레드 차이를 정리합니다.');
+      expect(summary.mindmapNodeLabels, ['프로세스', '스레드', '스케줄링', '동기화']);
+    });
+
+    test('lists public session quiz questions', () async {
+      final api = _api((request) async {
+        expect(request.method, 'GET');
+        expect(request.url.path, '/api/v1/sessions/session-1/quiz');
+
+        return _jsonResponse([
+          {
+            'id': 'question-1',
+            'type': 'multiple_choice',
+            'prompt': '정답은 무엇인가요?',
+            'options': ['A', 'B', 'C', 'D'],
+            'sourceRefs': [],
+          },
+        ], 200);
+      });
+
+      final questions = await api.listSessionQuiz('session-1');
+
+      expect(questions.single.id, 'question-1');
+      expect(questions.single.type, QuizType.multipleChoice);
+      expect(questions.single.options, ['A', 'B', 'C', 'D']);
+    });
+
+    test('submits quiz attempts and maps grading results', () async {
+      final api = _api((request) async {
+        expect(request.method, 'POST');
+        expect(request.url.path, '/api/v1/quiz/questions/question-1/attempts');
+        expect(jsonDecode(request.body), {'answer': 1});
+
+        return _jsonResponse({
+          'attemptId': 'attempt-1',
+          'isCorrect': true,
+          'answer': {'value': 1, 'sourceRefs': []},
+          'explanation': {'text': '정답 해설입니다.', 'sourceRefs': []},
+          'progress': {
+            'scopeType': 'session',
+            'scopeId': 'session-1',
+            'correctCount': 1,
+            'incorrectCount': 0,
+            'lastAttemptAt': '2026-09-03T12:00:00Z',
+            'updatedAt': '2026-09-03T12:00:00Z',
+          },
+        }, 201);
+      });
+
+      final result = await api.submitQuizAttempt(
+        questionId: 'question-1',
+        answer: 1,
+      );
+
+      expect(result.isCorrect, isTrue);
+      expect(result.answer.value, 1);
+      expect(result.explanation.text, '정답 해설입니다.');
+      expect(result.progress.sessionId, 'session-1');
+    });
+
+    test('lists notifications from backend payloads', () async {
+      final api = _api((request) async {
+        expect(request.method, 'GET');
+        expect(
+          request.url.toString(),
+          'https://api.example.com/api/v1/notifications?unreadOnly=false',
+        );
+
+        return _jsonResponse([
+          {
+            'id': 'notification-1',
+            'type': 'exam_reminder',
+            'title': '시험 알림',
+            'body': '내일 시험이 있어요.',
+            'deepLink': 'mulgil://exams/1',
+            'status': 'sent',
+            'scheduledAt': '2026-09-03T12:00:00Z',
+            'sentAt': '2026-09-03T12:00:00Z',
+          },
+        ], 200);
+      });
+
+      final notifications = await api.listNotifications();
+
+      expect(notifications.single.type, NotificationType.examReminder);
+      expect(notifications.single.status, NotificationStatus.sent);
+      expect(notifications.single.title, '시험 알림');
     });
   });
 }

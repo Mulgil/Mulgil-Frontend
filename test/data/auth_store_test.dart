@@ -5,7 +5,7 @@ void main() {
   tearDown(AuthStore.clear);
 
   group('AuthStore', () {
-    test('keeps the existing mock login flag working', () {
+    test('keeps the existing local login flag working', () {
       AuthStore.isLoggedIn = true;
 
       expect(AuthStore.isLoggedIn, isTrue);
@@ -17,11 +17,17 @@ void main() {
       AuthStore.saveTokens(
         accessToken: ' access-token ',
         refreshToken: ' refresh-token ',
+        user: const AuthUser(
+          id: 'user-1',
+          email: 'user@example.com',
+          displayName: '물길',
+        ),
       );
 
       expect(AuthStore.isLoggedIn, isTrue);
       expect(AuthStore.hasAccessToken, isTrue);
       expect(AuthStore.refreshToken, 'refresh-token');
+      expect(AuthStore.user?.displayLabel, '물길');
       expect(await AuthStore.accessTokenProvider(), 'access-token');
     });
 
@@ -42,6 +48,7 @@ void main() {
       expect(AuthStore.hasAccessToken, isFalse);
       expect(AuthStore.accessToken, isNull);
       expect(AuthStore.refreshToken, isNull);
+      expect(AuthStore.user, isNull);
     });
 
     test('does not treat blank tokens as logged-in state', () {

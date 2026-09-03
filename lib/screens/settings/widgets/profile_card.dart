@@ -1,13 +1,18 @@
 import 'package:flutter/material.dart';
+
 import '../../../theme/app_theme.dart';
-import '../../../data/mock_data.dart';
+import '../../../data/auth_store.dart';
 
 class ProfileCard extends StatelessWidget {
   const ProfileCard({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final user = MockData.currentUser;
+    final user = AuthStore.user;
+    final name = user?.displayLabel ?? '사용자';
+    final subtitle = user?.email.trim().isNotEmpty == true
+        ? user!.email
+        : 'Google 계정으로 로그인됨';
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -20,7 +25,7 @@ class ProfileCard extends StatelessWidget {
             radius: 26,
             backgroundColor: AppColors.teal,
             child: Text(
-              user.avatarInitial,
+              user?.avatarInitial ?? '물',
               style: const TextStyle(
                 fontSize: 18,
                 color: Colors.white,
@@ -33,7 +38,7 @@ class ProfileCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                user.name,
+                name,
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
@@ -41,7 +46,7 @@ class ProfileCard extends StatelessWidget {
                 ),
               ),
               Text(
-                '${user.department} · ${user.year}학년',
+                subtitle,
                 style: const TextStyle(fontSize: 12, color: Color(0xFF9fb6c4)),
               ),
             ],

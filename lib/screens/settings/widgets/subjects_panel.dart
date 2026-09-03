@@ -1,8 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+
 import '../../../constants/routes.dart';
-import '../../../data/mock_data.dart';
 import '../../../models/course.dart';
 import '../../../models/exam.dart';
 import '../../../models/timetable_slot.dart';
@@ -50,7 +50,7 @@ class SettingsSubjectsPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final visibleExams = exams ?? MockData.exams;
+    final visibleExams = exams ?? const <Exam>[];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

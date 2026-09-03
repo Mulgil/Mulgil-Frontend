@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../theme/app_theme.dart';
 
 // Shared bottom-sheet chrome (white background, rounded top corners) used across
@@ -130,7 +131,7 @@ class MulgilButton extends StatelessWidget {
   }
 }
 
-// Marks the week matching MockData.currentWeekLabel across the 필기/퀴즈/요약
+// Marks the week matching the current academic week across the 필기/퀴즈/요약
 // week lists, so students land near the right week without hunting for it.
 class CurrentWeekBadge extends StatelessWidget {
   const CurrentWeekBadge({super.key});

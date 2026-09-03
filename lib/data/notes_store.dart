@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
+
 import '../models/lecture.dart';
 import '../models/draw_stroke.dart';
-import 'mock_data.dart';
 
 class NoteContent {
   String typedText;
@@ -9,18 +9,13 @@ class NoteContent {
   NoteContent({this.typedText = ''}) : pagesStrokes = [];
 }
 
-// In-memory store standing in for the notes backend — replace with API calls
-// (GET/POST /notes, PATCH /notes/{id}) when the server is ready.
+// In-memory store for notes drafted during the current app session.
 class NotesStore extends ChangeNotifier {
-  NotesStore._internal() : _lectures = List.of(MockData.lectures) {
-    for (final l in _lectures.where((l) => l.done)) {
-      _contents[l.id] = NoteContent(typedText: '# ${l.week} - ${l.title}\n\n');
-    }
-  }
+  NotesStore._internal();
 
   static final NotesStore instance = NotesStore._internal();
 
-  final List<Lecture> _lectures;
+  final List<Lecture> _lectures = [];
   final Map<String, NoteContent> _contents = {};
   int _newNoteCount = 0;
 
