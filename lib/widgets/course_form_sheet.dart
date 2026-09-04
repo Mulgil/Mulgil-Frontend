@@ -8,7 +8,9 @@ import '../models/course.dart';
 import '../models/timetable_slot.dart';
 import 'common_widgets.dart';
 
-// Bottom sheet for creating a Course plus one TimetableSlot per selected weekday.
+part 'course_form_sheet_view.dart';
+
+// Bottom sheet for creating a Course plus independently timed slots per weekday.
 // Shared by onboarding's schedule step and the settings subject manager.
 class CourseFormSheet extends StatefulWidget {
   final FutureOr<void> Function(Course course, List<TimetableSlot> slots) onAdd;
@@ -30,18 +32,15 @@ class CourseFormSheet extends StatefulWidget {
 class _CourseFormSheetState extends State<CourseFormSheet> {
   final _nameCtrl = TextEditingController();
   final _professorCtrl = TextEditingController();
-  final Set<int> _weekdays = {}; // ISO: Monday=1 ... Sunday=7
-  late TimeOfDay _start;
-  late TimeOfDay _end;
+  final Map<int, ({TimeOfDay start, TimeOfDay end})> _timesByWeekday = {};
   bool _submitting = false;
   String? _errorText;
 
   @override
   void initState() {
     super.initState();
-    if (widget.initialWeekday != null) _weekdays.add(widget.initialWeekday!);
-    _start = widget.initialStart ?? const TimeOfDay(hour: 9, minute: 0);
-    _end = _addMinutes(_start, _defaultDurationMinutesFor(_weekdays.length));
+    final initialWeekday = widget.initialWeekday;
+    if (initialWeekday != null) _timesByWeekday[initialWeekday] = _newTime();
   }
 
   @override
@@ -66,60 +65,82 @@ class _CourseFormSheetState extends State<CourseFormSheet> {
 
   int _toMinutes(TimeOfDay t) => t.hour * 60 + t.minute;
 
-  void _autoFillEndTime() {
-    _end = _addMinutes(_start, _defaultDurationMinutesFor(_weekdays.length));
+  ({TimeOfDay start, TimeOfDay end}) _newTime() {
+    final start = _timesByWeekday.isEmpty
+        ? widget.initialStart ?? const TimeOfDay(hour: 9, minute: 0)
+        : _timesByWeekday.values.first.start;
+    return (
+      start: start,
+      end: _addMinutes(
+        start,
+        _defaultDurationMinutesFor(_timesByWeekday.length + 1),
+      ),
+    );
   }
 
-  Future<void> _pickTime({required bool isStart}) async {
+  Future<void> _pickTime(int weekday, {required bool isStart}) async {
+    final time = _timesByWeekday[weekday];
+    if (time == null) return;
     final picked = await showTimePicker(
       context: context,
-      initialTime: isStart ? _start : _end,
+      initialTime: isStart ? time.start : time.end,
     );
     if (picked == null || !mounted) return;
-    if (!isStart && _toMinutes(picked) <= _toMinutes(_start)) {
+    if (!isStart && _toMinutes(picked) <= _toMinutes(time.start)) {
       setState(() => _errorText = '종료 시간은 시작 시간보다 늦어야 해요');
       return;
     }
     setState(() {
       _errorText = null;
-      if (isStart) {
-        _start = picked;
-        _autoFillEndTime();
-      } else {
-        _end = picked;
-      }
+      _timesByWeekday[weekday] = isStart
+          ? (
+              start: picked,
+              end: _addMinutes(
+                picked,
+                _defaultDurationMinutesFor(_timesByWeekday.length),
+              ),
+            )
+          : (start: time.start, end: picked);
     });
   }
 
   void _toggleWeekday(int wd, bool selected) {
     setState(() {
       _errorText = null;
-      selected ? _weekdays.add(wd) : _weekdays.remove(wd);
-      _autoFillEndTime();
+      if (selected) {
+        _timesByWeekday[wd] = _newTime();
+      } else {
+        _timesByWeekday.remove(wd);
+      }
     });
   }
 
-  // Same weekday + overlapping [start,end) range against every already-registered slot.
-  List<TimetableSlot> _findConflictingSlots() {
-    final newStart = _start.hour * 60 + _start.minute;
-    final newEnd = _end.hour * 60 + _end.minute;
-    return (widget.existingSlots ?? const <TimetableSlot>[]).where((slot) {
-      if (!_weekdays.contains(slot.weekday)) return false;
-      return newStart < slot.endMinutes && newEnd > slot.startMinutes;
-    }).toList();
+  bool _hasConflictingSlot() => _timesByWeekday.entries.any(
+    (entry) => (widget.existingSlots ?? const <TimetableSlot>[]).any(
+      (slot) =>
+          slot.weekday == entry.key &&
+          _toMinutes(entry.value.start) < slot.endMinutes &&
+          _toMinutes(entry.value.end) > slot.startMinutes,
+    ),
+  );
+
+  List<MapEntry<int, ({TimeOfDay start, TimeOfDay end})>> get _timeEntries =>
+      _timesByWeekday.entries.toList()..sort((a, b) => a.key.compareTo(b.key));
+
+  void _clearError() {
+    if (_errorText != null) setState(() => _errorText = null);
   }
 
   Future<void> _submit() async {
     if (_submitting) return;
     setState(() => _errorText = null);
 
-    if (_nameCtrl.text.trim().isEmpty || _weekdays.isEmpty) {
+    if (_nameCtrl.text.trim().isEmpty || _timesByWeekday.isEmpty) {
       setState(() => _errorText = '과목명과 요일을 입력해주세요');
       return;
     }
 
-    final conflicts = _findConflictingSlots();
-    if (conflicts.isNotEmpty) {
+    if (_hasConflictingSlot()) {
       setState(() => _errorText = '기존 시간표와 겹쳐서 추가할 수 없어요');
       return;
     }
@@ -133,16 +154,14 @@ class _CourseFormSheetState extends State<CourseFormSheet> {
           ? null
           : '${_professorCtrl.text.trim()} 교수님',
     );
-    final startStr = _formatTime(_start);
-    final endStr = _formatTime(_end);
-    final slots = _weekdays
+    final slots = _timeEntries
         .map(
-          (wd) => TimetableSlot(
-            id: 't${DateTime.now().microsecondsSinceEpoch}_$wd',
+          (entry) => TimetableSlot(
+            id: 't${DateTime.now().microsecondsSinceEpoch}_${entry.key}',
             courseId: courseId,
-            weekday: wd,
-            startTime: startStr,
-            endTime: endStr,
+            weekday: entry.key,
+            startTime: _formatTime(entry.value.start),
+            endTime: _formatTime(entry.value.end),
           ),
         )
         .toList();
@@ -165,109 +184,5 @@ class _CourseFormSheetState extends State<CourseFormSheet> {
   }
 
   @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.fromLTRB(
-        20,
-        20,
-        20,
-        MediaQuery.of(context).viewInsets.bottom + 20,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            '과목 추가',
-            style: TextStyle(
-              fontSize: 17,
-              fontWeight: FontWeight.w800,
-              color: AppColors.ink,
-            ),
-          ),
-          const SizedBox(height: 16),
-          TextField(
-            controller: _nameCtrl,
-            decoration: const InputDecoration(labelText: '과목명'),
-            onChanged: (_) {
-              if (_errorText != null) setState(() => _errorText = null);
-            },
-          ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: _professorCtrl,
-            decoration: const InputDecoration(labelText: '교수님 (선택)'),
-          ),
-          const SizedBox(height: 14),
-          const Text(
-            '요일',
-            style: TextStyle(
-              fontSize: 12.5,
-              fontWeight: FontWeight.w700,
-              color: AppColors.ink,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            children: List.generate(7, (i) => i + 1)
-                .map(
-                  (wd) => ChoiceChip(
-                    label: Text(TimetableSlot.weekdayLabels[wd - 1]),
-                    selected: _weekdays.contains(wd),
-                    onSelected: (sel) => _toggleWeekday(wd, sel),
-                  ),
-                )
-                .toList(),
-          ),
-          const SizedBox(height: 14),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: () => _pickTime(isStart: true),
-                  child: Text('시작 ${_formatTime(_start)}'),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: () => _pickTime(isStart: false),
-                  child: Text('종료 ${_formatTime(_end)}'),
-                ),
-              ),
-            ],
-          ),
-          if (_errorText != null) ...[
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                const Icon(
-                  Icons.error_outline,
-                  size: 16,
-                  color: AppColors.coral,
-                ),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: Text(
-                    _errorText!,
-                    style: const TextStyle(
-                      fontSize: 12.5,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.coral,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
-          const SizedBox(height: 20),
-          MulgilButton(
-            label: _submitting ? '추가 중...' : '추가',
-            onTap: _submitting ? null : _submit,
-          ),
-        ],
-      ),
-    );
-  }
+  Widget build(BuildContext context) => _buildForm(context);
 }
