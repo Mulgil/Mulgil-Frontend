@@ -79,6 +79,79 @@ void main() {
       ]);
     });
 
+    test('lists session materials and issues a download URL', () async {
+      final api = _api((request) async {
+        switch ('${request.method} ${request.url}') {
+          case 'GET https://api.example.com/api/v1/sessions/session-1/materials':
+            return _jsonResponse([
+              {
+                'id': 'material-1',
+                'sessionId': 'session-1',
+                'filename': 'week-1.pdf',
+                'mimeType': 'application/pdf',
+                'byteSize': 1024,
+                'pageCount': 12,
+                'sourcePhase': 'preview_pdf',
+                'version': 1,
+                'status': 'uploaded',
+              },
+            ], 200);
+          case 'GET https://api.example.com/api/v1/materials/material-1/download-url':
+            return _jsonResponse({
+              'downloadUrl': 'https://storage.example.com/material-1',
+              'expiresAt': '2026-09-01T00:10:00Z',
+            }, 200);
+        }
+        fail('Unexpected request: ${request.method} ${request.url}');
+      });
+
+      final materials = await api.listSessionMaterials('session-1');
+      final download = await api.issueMaterialDownloadUrl(materials.single.id);
+
+      expect(materials.single.filename, 'week-1.pdf');
+      expect(materials.single.pageCount, 12);
+      expect(materials.single.sourcePhase, MaterialSourcePhase.previewPdf);
+      expect(materials.single.isDownloadable, isTrue);
+      expect(
+        download.downloadUrl,
+        Uri.parse('https://storage.example.com/material-1'),
+      );
+    });
+
+    test('lists, gets, and retries session processing jobs', () async {
+      final queuedJob = {
+        'id': 'job-1',
+        'type': 'pdf_extract',
+        'status': 'queued',
+        'inputVersion': 1,
+        'attemptCount': 0,
+        'maxAttempts': 3,
+        'errorCode': null,
+        'createdAt': '2026-09-01T00:00:00Z',
+        'finishedAt': null,
+      };
+      final api = _api((request) async {
+        switch ('${request.method} ${request.url}') {
+          case 'GET https://api.example.com/api/v1/sessions/session-1/jobs':
+            return _jsonResponse([queuedJob], 200);
+          case 'GET https://api.example.com/api/v1/jobs/job-1':
+            return _jsonResponse({...queuedJob, 'status': 'failed'}, 200);
+          case 'POST https://api.example.com/api/v1/jobs/job-1/retry':
+            return _jsonResponse(queuedJob, 202);
+        }
+        fail('Unexpected request: ${request.method} ${request.url}');
+      });
+
+      final jobs = await api.listSessionJobs('session-1');
+      final failedJob = await api.getJob('job-1');
+      final retriedJob = await api.retryJob('job-1');
+
+      expect(jobs.single.status, ProcessingJobStatus.queued);
+      expect(jobs.single.status.isActive, isTrue);
+      expect(failedJob.canRetry, isTrue);
+      expect(retriedJob.status, ProcessingJobStatus.queued);
+    });
+
     test('uploads recordings and confirms server candidate mapping', () async {
       AuthStore.saveTokens(
         accessToken: 'access-token',

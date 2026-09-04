@@ -75,6 +75,7 @@ void showNoteDetailMenuSheet(
   required String courseName,
   required bool hasPendingReview,
   required VoidCallback onOpenReview,
+  required VoidCallback onOpenMaterials,
 }) {
   showMulgilSheet(
     context,
@@ -87,12 +88,10 @@ void showNoteDetailMenuSheet(
               Icons.picture_as_pdf_outlined,
               color: AppColors.navy,
             ),
-            title: const Text('원본 PDF 보기'),
+            title: const Text('첨부 자료 보기'),
             onTap: () {
               Navigator.pop(sheetCtx);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('원본 PDF가 아직 연결되지 않았어요.')),
-              );
+              onOpenMaterials();
             },
           ),
           ListTile(
