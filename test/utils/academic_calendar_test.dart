@@ -17,5 +17,25 @@ void main() {
     test('falls back to the previous fall semester before spring starts', () {
       expect(AcademicCalendar.currentWeekNumber(DateTime(2026, 1, 1)), 18);
     });
+
+    test('resolves the stored term before using the current date', () {
+      expect(
+        AcademicCalendar.semesterStartForTerm(
+          '2026-2',
+          fallback: DateTime(2027, 3, 3),
+        ),
+        DateTime(2026, 9, 1),
+      );
+      expect(
+        AcademicCalendar.semesterStartForTerm('2026-Spring'),
+        DateTime(2026, 3, 2),
+      );
+    });
+
+    test('returns a stable term code for each semester', () {
+      expect(AcademicCalendar.termCode(DateTime(2026, 3, 2)), '2026-1');
+      expect(AcademicCalendar.termCode(DateTime(2026, 9, 1)), '2026-2');
+      expect(AcademicCalendar.termCode(DateTime(2026, 1, 1)), '2025-2');
+    });
   });
 }

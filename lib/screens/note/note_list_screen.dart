@@ -8,6 +8,7 @@ import '../../data/learning_domain_store.dart';
 import '../../data/notes_store.dart';
 import '../../models/course.dart';
 import '../../models/lecture.dart';
+import '../../utils/academic_calendar.dart';
 import '../../constants/routes.dart';
 import '../recording/recording_upload_screen.dart';
 import 'pdf_upload_screen.dart';
@@ -160,16 +161,50 @@ class _NoteListScreenState extends State<NoteListScreen> {
             ),
           );
         }
-        return ListView.separated(
-          itemCount: lectures.length,
-          separatorBuilder: (_, _) => const SizedBox(height: 10),
+        final groups = _groupLecturesByWeek(lectures);
+        return ListView.builder(
+          itemCount: groups.length,
           itemBuilder: (ctx, i) {
-            final lecture = lectures[i];
-            return LectureCard(
-              lecture: lecture,
-              onTap: () => Navigator.of(
-                context,
-              ).pushNamed(AppRoutes.noteDetail, arguments: lecture),
+            final group = groups[i];
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 18),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(left: 2, bottom: 8),
+                    child: Row(
+                      children: [
+                        Text(
+                          group.label,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.ink60,
+                          ),
+                        ),
+                        if (group.label ==
+                            AcademicCalendar.currentWeekLabel()) ...[
+                          const SizedBox(width: 6),
+                          const CurrentWeekBadge(),
+                        ],
+                      ],
+                    ),
+                  ),
+                  ...group.lectures.map(
+                    (lecture) => Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: LectureCard(
+                        lecture: lecture,
+                        showWeek: false,
+                        onTap: () => Navigator.of(
+                          context,
+                        ).pushNamed(AppRoutes.noteDetail, arguments: lecture),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             );
           },
         );
@@ -194,6 +229,24 @@ class _NoteListScreenState extends State<NoteListScreen> {
       default:
         return courseLectures;
     }
+  }
+
+  List<_LectureWeekGroup> _groupLecturesByWeek(List<Lecture> lectures) {
+    final sorted = [...lectures]
+      ..sort((a, b) {
+        final weekOrder = (a.weekNumber ?? 999).compareTo(b.weekNumber ?? 999);
+        if (weekOrder != 0) return weekOrder;
+        return (a.sessionNumber ?? 999).compareTo(b.sessionNumber ?? 999);
+      });
+    final grouped = <String, List<Lecture>>{};
+    for (final lecture in sorted) {
+      grouped.putIfAbsent(lecture.week, () => []).add(lecture);
+    }
+    return grouped.entries
+        .map(
+          (entry) => _LectureWeekGroup(label: entry.key, lectures: entry.value),
+        )
+        .toList(growable: false);
   }
 
   void _openAddSheet(BuildContext context) {
@@ -295,6 +348,13 @@ class _NoteListScreenState extends State<NoteListScreen> {
     );
     Navigator.of(context).pushNamed(AppRoutes.noteDetail, arguments: lecture);
   }
+}
+
+class _LectureWeekGroup {
+  final String label;
+  final List<Lecture> lectures;
+
+  const _LectureWeekGroup({required this.label, required this.lectures});
 }
 
 class _NoteStatusNotice extends StatelessWidget {

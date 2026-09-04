@@ -7,6 +7,7 @@ import '../models/quiz_question.dart';
 import '../models/source_ref.dart';
 import '../models/summary_item.dart';
 import '../models/timetable_slot.dart';
+import '../utils/academic_calendar.dart';
 import 'api_client.dart';
 
 class SessionSummary {
@@ -239,10 +240,13 @@ class LearningDomainApi {
     final json = _map(value, 'class session');
     final sessionNumber = _int(json, 'sessionNumber');
     final sessionDate = DateTime.parse(_string(json, 'sessionDate'));
+    final weekNumber = AcademicCalendar.weekNumberFor(sessionDate);
     return Lecture(
       id: _string(json, 'id'),
       courseId: _string(json, 'courseId'),
-      week: '$sessionNumber주차',
+      sessionNumber: sessionNumber,
+      weekNumber: weekNumber,
+      week: '$weekNumber주차',
       title: _string(json, 'title'),
       date: '${sessionDate.month}/${sessionDate.day}',
       done: false,

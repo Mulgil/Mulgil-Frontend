@@ -1,6 +1,8 @@
 class Lecture {
   final String id;
   final String courseId;
+  final int? sessionNumber;
+  final int? weekNumber;
   final String week;
   final String title;
   final String? date;
@@ -11,6 +13,8 @@ class Lecture {
   const Lecture({
     required this.id,
     required this.courseId,
+    this.sessionNumber,
+    this.weekNumber,
     required this.week,
     required this.title,
     this.date,

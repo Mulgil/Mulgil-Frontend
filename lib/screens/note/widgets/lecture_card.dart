@@ -8,7 +8,13 @@ import '../../../widgets/common_widgets.dart';
 class LectureCard extends StatelessWidget {
   final Lecture lecture;
   final VoidCallback? onTap;
-  const LectureCard({super.key, required this.lecture, this.onTap});
+  final bool showWeek;
+  const LectureCard({
+    super.key,
+    required this.lecture,
+    this.onTap,
+    this.showWeek = true,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -23,14 +29,17 @@ class LectureCard extends StatelessWidget {
             Row(
               children: [
                 Text(
-                  '${lecture.week} - ${lecture.title}',
+                  showWeek
+                      ? '${lecture.week} - ${lecture.title}'
+                      : lecture.title,
                   style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
                     color: AppColors.ink,
                   ),
                 ),
-                if (lecture.week == AcademicCalendar.currentWeekLabel()) ...[
+                if (showWeek &&
+                    lecture.week == AcademicCalendar.currentWeekLabel()) ...[
                   const SizedBox(width: 6),
                   const CurrentWeekBadge(),
                 ],
