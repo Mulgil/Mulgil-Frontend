@@ -244,10 +244,8 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
           DateTime.now().difference(startTime) >= _mentionLongPressDuration;
       if (isLongPress) {
         _decrementMention(hit);
-      } else if (hit.frequency < 3) {
-        setState(() => hit!.frequency += 1);
-        _persistCurrentPageMentions();
-        _showMentionToast('언급 빈도 +1 · ${'⭐' * hit.frequency}');
+      } else {
+        _incrementMention(hit);
       }
       return;
     }
@@ -260,16 +258,19 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
       if (m.rect.overlaps(dragRect)) overlapping = m;
     }
     if (overlapping != null) {
-      if (overlapping.frequency < 3) {
-        setState(() => overlapping!.frequency += 1);
-        _persistCurrentPageMentions();
-        _showMentionToast('언급 빈도 +1 · ${'⭐' * overlapping.frequency}');
-      }
+      _incrementMention(overlapping);
       return;
     }
 
     setState(() => _mentions.add(ProfMention(start: start, end: current)));
     _persistCurrentPageMentions();
+  }
+
+  void _incrementMention(ProfMention mention) {
+    if (mention.frequency >= 3) return;
+    setState(() => mention.frequency += 1);
+    _persistCurrentPageMentions();
+    _showMentionToast('언급 빈도 +1 · ${'⭐' * mention.frequency}');
   }
 
   void _decrementMention(ProfMention mention) {
