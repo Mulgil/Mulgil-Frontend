@@ -29,8 +29,9 @@ class PdfUploadOutcome {
 class PdfUploadScreen extends StatefulWidget {
   final LearningDomainStore? store;
   final ResourceUploadApi? api;
+  final Future<UploadFile?> Function()? pickPdfFile;
 
-  const PdfUploadScreen({super.key, this.store, this.api});
+  const PdfUploadScreen({super.key, this.store, this.api, this.pickPdfFile});
 
   @override
   State<PdfUploadScreen> createState() => _PdfUploadScreenState();
@@ -39,6 +40,7 @@ class PdfUploadScreen extends StatefulWidget {
 class _PdfUploadScreenState extends State<PdfUploadScreen> {
   late final LearningDomainStore _learningStore;
   late final ResourceUploadApi _api;
+  late final Future<UploadFile?> Function() _pickPdfFile;
   _Stage _stage = _Stage.pickSession;
   _UploadSession? _session;
   MaterialSourcePhase? _sourcePhase;
@@ -51,6 +53,7 @@ class _PdfUploadScreenState extends State<PdfUploadScreen> {
     super.initState();
     _learningStore = widget.store ?? LearningDomainStore.instance;
     _api = widget.api ?? AppServices.resourceUpload;
+    _pickPdfFile = widget.pickPdfFile ?? UploadFilePicker.pickPdf;
     unawaited(_learningStore.load());
   }
 
@@ -70,7 +73,7 @@ class _PdfUploadScreenState extends State<PdfUploadScreen> {
     if (session == null || sourcePhase == null) return;
 
     try {
-      final file = await UploadFilePicker.pickPdf();
+      final file = await _pickPdfFile();
       if (file == null) return;
       setState(() {
         _fileName = file.filename;
