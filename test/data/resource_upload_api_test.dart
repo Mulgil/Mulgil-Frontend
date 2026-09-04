@@ -12,7 +12,7 @@ void main() {
   tearDown(AuthStore.clear);
 
   group('ResourceUploadApi', () {
-    test('uploads session PDFs through signed URL flow', () async {
+    test('uploads session PDFs and refreshes server-owned material state', () async {
       AuthStore.saveTokens(
         accessToken: 'access-token',
         refreshToken: 'refresh',
@@ -51,6 +51,35 @@ void main() {
                   '039058c6f2c0cb492c533b0a4d14ef77cc0f78abccced5287d84a1a2011cfb81',
             });
             return _jsonResponse({'jobId': 'job-1', 'status': 'queued'}, 202);
+          case 'GET https://api.example.com/api/v1/sessions/session-1/materials':
+            return _jsonResponse([
+              {
+                'id': 'material-1',
+                'sessionId': 'session-1',
+                'filename': 'week-1.pdf',
+                'mimeType': 'application/pdf',
+                'byteSize': 3,
+                'pageCount': 1,
+                'sourcePhase': 'preview_pdf',
+                'version': 1,
+                'status': 'uploaded',
+              },
+            ], 200);
+          case 'GET https://api.example.com/api/v1/sessions/session-1/jobs':
+            return _jsonResponse([
+              {
+                'id': 'job-1',
+                'type': 'pdf_extract',
+                'status': 'queued',
+                'inputVersion': 1,
+                'attemptCount': 0,
+                'maxAttempts': 3,
+                'errorCode': null,
+                'retryable': false,
+                'createdAt': '2026-09-01T00:00:00Z',
+                'finishedAt': null,
+              },
+            ], 200);
         }
         fail('Unexpected request: ${request.method} ${request.url}');
       });
@@ -72,10 +101,21 @@ void main() {
       expect(result.materialId, 'material-1');
       expect(result.job.jobId, 'job-1');
       expect(openReadCount, 2);
+      final materials = await api.listSessionMaterials('session-1');
+      final jobs = await api.listSessionJobs('session-1');
+
+      expect(materials.single.id, result.materialId);
+      expect(materials.single.status, MaterialUploadStatus.uploaded);
+      expect(materials.single.isDownloadable, isTrue);
+      expect(jobs.single.id, result.job.jobId);
+      expect(jobs.single.type, 'pdf_extract');
+      expect(jobs.single.status, ProcessingJobStatus.queued);
       expect(requests, [
         'POST https://api.example.com/api/v1/sessions/session-1/materials/upload-url',
         'PUT https://storage.example.com/material-1',
         'POST https://api.example.com/api/v1/materials/material-1/upload-complete',
+        'GET https://api.example.com/api/v1/sessions/session-1/materials',
+        'GET https://api.example.com/api/v1/sessions/session-1/jobs',
       ]);
     });
 
@@ -111,6 +151,7 @@ void main() {
       expect(materials.single.filename, 'week-1.pdf');
       expect(materials.single.pageCount, 12);
       expect(materials.single.sourcePhase, MaterialSourcePhase.previewPdf);
+      expect(materials.single.status, MaterialUploadStatus.uploaded);
       expect(materials.single.isDownloadable, isTrue);
       expect(
         download.downloadUrl,
@@ -118,7 +159,25 @@ void main() {
       );
     });
 
-    test('lists, gets, and retries session processing jobs', () async {
+    test('deletes session materials through the resource API', () async {
+      final requests = <String>[];
+      final api = _api((request) async {
+        requests.add('${request.method} ${request.url}');
+        switch ('${request.method} ${request.url}') {
+          case 'DELETE https://api.example.com/api/v1/materials/material-1':
+            return http.Response('', 204);
+        }
+        fail('Unexpected request: ${request.method} ${request.url}');
+      });
+
+      await api.deleteMaterial('material-1');
+
+      expect(requests, [
+        'DELETE https://api.example.com/api/v1/materials/material-1',
+      ]);
+    });
+
+    test('lists and gets session processing jobs', () async {
       final queuedJob = {
         'id': 'job-1',
         'type': 'pdf_extract',
@@ -127,6 +186,7 @@ void main() {
         'attemptCount': 0,
         'maxAttempts': 3,
         'errorCode': null,
+        'retryable': false,
         'createdAt': '2026-09-01T00:00:00Z',
         'finishedAt': null,
       };
@@ -135,21 +195,23 @@ void main() {
           case 'GET https://api.example.com/api/v1/sessions/session-1/jobs':
             return _jsonResponse([queuedJob], 200);
           case 'GET https://api.example.com/api/v1/jobs/job-1':
-            return _jsonResponse({...queuedJob, 'status': 'failed'}, 200);
-          case 'POST https://api.example.com/api/v1/jobs/job-1/retry':
-            return _jsonResponse(queuedJob, 202);
+            return _jsonResponse({
+              ...queuedJob,
+              'status': 'failed',
+              'errorCode': 'PROVIDER_TIMEOUT',
+              'retryable': true,
+            }, 200);
         }
         fail('Unexpected request: ${request.method} ${request.url}');
       });
 
       final jobs = await api.listSessionJobs('session-1');
       final failedJob = await api.getJob('job-1');
-      final retriedJob = await api.retryJob('job-1');
 
       expect(jobs.single.status, ProcessingJobStatus.queued);
       expect(jobs.single.status.isActive, isTrue);
-      expect(failedJob.canRetry, isTrue);
-      expect(retriedJob.status, ProcessingJobStatus.queued);
+      expect(failedJob.status, ProcessingJobStatus.failed);
+      expect(failedJob.retryable, isTrue);
     });
 
     test('uploads recordings and confirms server candidate mapping', () async {

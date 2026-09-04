@@ -49,7 +49,7 @@ class _SessionMaterialsSheetState extends State<SessionMaterialsSheet> {
   bool _isLoading = true;
   String? _errorMessage;
   String? _openingMaterialId;
-  String? _retryingJobId;
+  String? _deletingMaterialId;
   List<SessionMaterial> _materials = const [];
   List<SessionProcessingJob> _jobs = const [];
 
@@ -81,7 +81,9 @@ class _SessionMaterialsSheetState extends State<SessionMaterialsSheet> {
       ]);
       if (!mounted) return;
       setState(() {
-        _materials = response[0] as List<SessionMaterial>;
+        _materials = (response[0] as List<SessionMaterial>)
+            .where((material) => material.isVisible)
+            .toList(growable: false);
         _jobs = response[1] as List<SessionProcessingJob>;
         _errorMessage = null;
       });
@@ -107,7 +109,11 @@ class _SessionMaterialsSheetState extends State<SessionMaterialsSheet> {
   }
 
   Future<void> _openMaterial(SessionMaterial material) async {
-    if (!material.isDownloadable || _openingMaterialId != null) return;
+    if (!material.isDownloadable ||
+        _openingMaterialId != null ||
+        _deletingMaterialId != null) {
+      return;
+    }
     setState(() => _openingMaterialId = material.id);
     try {
       final download = await _api.issueMaterialDownloadUrl(material.id);
@@ -134,11 +140,11 @@ class _SessionMaterialsSheetState extends State<SessionMaterialsSheet> {
     }
   }
 
-  Future<void> _retryJob(SessionProcessingJob job) async {
-    if (!job.canRetry || _retryingJobId != null) return;
-    setState(() => _retryingJobId = job.id);
+  Future<void> _deleteMaterial(SessionMaterial material) async {
+    if (_deletingMaterialId != null || _openingMaterialId != null) return;
+    setState(() => _deletingMaterialId = material.id);
     try {
-      await _api.retryJob(job.id);
+      await _api.deleteMaterial(material.id);
       await _load();
     } on ApiException catch (error) {
       if (mounted) {
@@ -150,10 +156,10 @@ class _SessionMaterialsSheetState extends State<SessionMaterialsSheet> {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(const SnackBar(content: Text('작업 재시도에 실패했어요.')));
+        ).showSnackBar(const SnackBar(content: Text('PDF를 삭제하지 못했어요.')));
       }
     } finally {
-      if (mounted) setState(() => _retryingJobId = null);
+      if (mounted) setState(() => _deletingMaterialId = null);
     }
   }
 
@@ -216,11 +222,7 @@ class _SessionMaterialsSheetState extends State<SessionMaterialsSheet> {
         physics: const AlwaysScrollableScrollPhysics(),
         children: [
           if (_jobs.isNotEmpty) ...[
-            _ProcessingStatusCard(
-              jobs: _jobs,
-              retryingJobId: _retryingJobId,
-              onRetry: _retryJob,
-            ),
+            _ProcessingStatusCard(jobs: _jobs),
             const SizedBox(height: 16),
           ],
           Text(
@@ -241,7 +243,9 @@ class _SessionMaterialsSheetState extends State<SessionMaterialsSheet> {
                 child: _MaterialTile(
                   material: material,
                   isOpening: _openingMaterialId == material.id,
+                  isDeleting: _deletingMaterialId == material.id,
                   onOpen: () => _openMaterial(material),
+                  onDelete: () => _deleteMaterial(material),
                 ),
               ),
             ),
@@ -257,35 +261,30 @@ Future<bool> _launchExternalUrl(Uri url) {
 
 class _ProcessingStatusCard extends StatelessWidget {
   final List<SessionProcessingJob> jobs;
-  final String? retryingJobId;
-  final ValueChanged<SessionProcessingJob> onRetry;
 
-  const _ProcessingStatusCard({
-    required this.jobs,
-    required this.retryingJobId,
-    required this.onRetry,
-  });
+  const _ProcessingStatusCard({required this.jobs});
 
   @override
   Widget build(BuildContext context) {
-    final activeJobs = jobs.where((job) => job.status.isActive).toList();
-    final failedJobs = jobs.where((job) => job.canRetry).toList();
-    final hasActiveJobs = activeJobs.isNotEmpty;
+    final hasActiveJobs = jobs.any((job) => job.status.isActive);
+    final hasFailedJobs = jobs.any(
+      (job) => job.status == ProcessingJobStatus.failed,
+    );
     final icon = hasActiveJobs
         ? Icons.hourglass_top_outlined
-        : failedJobs.isNotEmpty
+        : hasFailedJobs
         ? Icons.error_outline
         : Icons.check_circle_outline;
     final color = hasActiveJobs
         ? AppColors.tealDark
-        : failedJobs.isNotEmpty
+        : hasFailedJobs
         ? AppColors.coral
         : AppColors.teal;
     final message = hasActiveJobs
-        ? 'AI가 자료를 처리하고 있어요. 이 화면은 자동으로 새로고침됩니다.'
-        : failedJobs.isNotEmpty
-        ? '실패한 처리 작업이 있어요. 다시 시도할 수 있습니다.'
-        : 'PDF 처리 작업이 완료됐어요.';
+        ? '업로드된 PDF를 AI가 분석하고 있어요. 완료되면 요약과 퀴즈에 반영됩니다.'
+        : hasFailedJobs
+        ? 'PDF 업로드는 완료됐지만 AI 분석이 완료되지 않았어요.'
+        : '업로드된 PDF를 AI 분석에 사용할 준비가 됐어요.';
 
     return Container(
       padding: const EdgeInsets.all(14),
@@ -301,9 +300,9 @@ class _ProcessingStatusCard extends StatelessWidget {
             children: [
               Icon(icon, size: 18, color: color),
               const SizedBox(width: 8),
-              Text(
+              const Text(
                 'AI 처리 상태',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
                   color: AppColors.ink,
@@ -316,28 +315,6 @@ class _ProcessingStatusCard extends StatelessWidget {
             message,
             style: const TextStyle(fontSize: 12, color: AppColors.ink60),
           ),
-          for (final job in failedJobs) ...[
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    '${_jobLabel(job.type)} 실패${job.errorCode == null ? '' : ' · ${job.errorCode}'}',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: AppColors.coral,
-                    ),
-                  ),
-                ),
-                TextButton(
-                  onPressed: retryingJobId == job.id
-                      ? null
-                      : () => onRetry(job),
-                  child: Text(retryingJobId == job.id ? '재시도 중' : '재시도'),
-                ),
-              ],
-            ),
-          ],
         ],
       ),
     );
@@ -347,12 +324,16 @@ class _ProcessingStatusCard extends StatelessWidget {
 class _MaterialTile extends StatelessWidget {
   final SessionMaterial material;
   final bool isOpening;
+  final bool isDeleting;
   final VoidCallback onOpen;
+  final VoidCallback onDelete;
 
   const _MaterialTile({
     required this.material,
     required this.isOpening,
+    required this.isDeleting,
     required this.onOpen,
+    required this.onDelete,
   });
 
   @override
@@ -364,7 +345,7 @@ class _MaterialTile extends StatelessWidget {
     ];
     return MulgilCard(
       padding: const EdgeInsets.fromLTRB(14, 12, 8, 12),
-      onTap: material.isDownloadable ? onOpen : null,
+      onTap: material.isDownloadable && !isDeleting ? onOpen : null,
       child: Row(
         children: [
           const Icon(
@@ -392,12 +373,16 @@ class _MaterialTile extends StatelessWidget {
                   metadata.join(' · '),
                   style: const TextStyle(fontSize: 11, color: AppColors.ink60),
                 ),
+                const SizedBox(height: 6),
+                _MaterialStatusPill(status: material.status),
               ],
             ),
           ),
           IconButton(
             tooltip: material.isDownloadable ? 'PDF 열기' : '업로드 완료 전 자료',
-            onPressed: material.isDownloadable && !isOpening ? onOpen : null,
+            onPressed: material.isDownloadable && !isOpening && !isDeleting
+                ? onOpen
+                : null,
             icon: isOpening
                 ? const SizedBox(
                     width: 18,
@@ -406,7 +391,65 @@ class _MaterialTile extends StatelessWidget {
                   )
                 : const Icon(Icons.open_in_new, size: 20),
           ),
+          IconButton(
+            tooltip: 'PDF 삭제',
+            onPressed: isDeleting || isOpening ? null : onDelete,
+            icon: isDeleting
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.close, size: 20),
+          ),
         ],
+      ),
+    );
+  }
+}
+
+class _MaterialStatusPill extends StatelessWidget {
+  final MaterialUploadStatus status;
+
+  const _MaterialStatusPill({required this.status});
+
+  @override
+  Widget build(BuildContext context) {
+    final (label, foreground, background) = switch (status) {
+      MaterialUploadStatus.uploaded => (
+        '업로드 완료',
+        AppColors.green,
+        AppColors.greenSoft,
+      ),
+      MaterialUploadStatus.created => (
+        '업로드 중',
+        AppColors.tealDark,
+        AppColors.tealSoft,
+      ),
+      MaterialUploadStatus.cancelled ||
+      MaterialUploadStatus.outdated => ('삭제됨', AppColors.ink60, AppColors.chip),
+      MaterialUploadStatus.unknown => (
+        '상태 확인 필요',
+        AppColors.ink60,
+        AppColors.chip,
+      ),
+    };
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+        decoration: BoxDecoration(
+          color: background,
+          borderRadius: BorderRadius.circular(AppRadius.sm),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+            color: foreground,
+          ),
+        ),
       ),
     );
   }
@@ -462,16 +505,6 @@ class _LoadError extends StatelessWidget {
       ),
     );
   }
-}
-
-String _jobLabel(String type) {
-  return switch (type) {
-    'pdf_extract' => 'PDF 텍스트 추출',
-    'chunk_embed' => '자료 분석',
-    'preview_generate' => '예습 자료 생성',
-    'review_generate' => '복습 자료 생성',
-    _ => 'AI 처리',
-  };
 }
 
 String _formatBytes(int bytes) {

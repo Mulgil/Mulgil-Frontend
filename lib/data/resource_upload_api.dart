@@ -23,6 +23,30 @@ enum MaterialSourcePhase {
   }
 }
 
+enum MaterialUploadStatus {
+  created('created'),
+  uploaded('uploaded'),
+  cancelled('cancelled'),
+  outdated('outdated'),
+  unknown('unknown');
+
+  final String wireName;
+
+  const MaterialUploadStatus(this.wireName);
+
+  static MaterialUploadStatus fromWireName(String value) {
+    return MaterialUploadStatus.values.firstWhere(
+      (status) => status.wireName == value,
+      orElse: () => MaterialUploadStatus.unknown,
+    );
+  }
+
+  bool get isUploaded => this == uploaded;
+  bool get isPending => this == created;
+  bool get isFailed => this == cancelled || this == outdated;
+  bool get isVisible => this != cancelled && this != outdated;
+}
+
 enum ProcessingJobStatus {
   queued,
   running,
@@ -52,7 +76,7 @@ class SessionMaterial {
   final int? pageCount;
   final MaterialSourcePhase sourcePhase;
   final int version;
-  final String status;
+  final MaterialUploadStatus status;
 
   const SessionMaterial({
     required this.id,
@@ -66,7 +90,8 @@ class SessionMaterial {
     required this.status,
   });
 
-  bool get isDownloadable => status != 'created' && status != 'cancelled';
+  bool get isVisible => status.isVisible;
+  bool get isDownloadable => status.isUploaded;
 }
 
 class MaterialDownloadUrl {
@@ -87,6 +112,7 @@ class SessionProcessingJob {
   final int attemptCount;
   final int maxAttempts;
   final String? errorCode;
+  final bool retryable;
   final DateTime createdAt;
   final DateTime? finishedAt;
   final String? materialId;
@@ -99,12 +125,11 @@ class SessionProcessingJob {
     required this.attemptCount,
     required this.maxAttempts,
     required this.errorCode,
+    this.retryable = false,
     required this.createdAt,
     required this.finishedAt,
     this.materialId,
   });
-
-  bool get canRetry => status == ProcessingJobStatus.failed;
 }
 
 class UploadFile {
@@ -120,6 +145,7 @@ class UploadFile {
     required this.byteSize,
     required Stream<List<int>> Function() openRead,
     this.sourceUri,
+    // ignore: prefer_initializing_formals
   }) : _openRead = openRead;
 
   factory UploadFile.memory({
@@ -274,6 +300,10 @@ class ResourceUploadApi {
     );
   }
 
+  Future<void> deleteMaterial(String materialId) async {
+    await _client.deleteJson('/api/v1/materials/$materialId');
+  }
+
   Future<List<SessionProcessingJob>> listSessionJobs(String sessionId) async {
     final body = await _client.getJson('/api/v1/sessions/$sessionId/jobs');
     return _list(
@@ -284,11 +314,6 @@ class ResourceUploadApi {
 
   Future<SessionProcessingJob> getJob(String jobId) async {
     final body = await _client.getJson('/api/v1/jobs/$jobId');
-    return _sessionProcessingJobFromJson(body);
-  }
-
-  Future<SessionProcessingJob> retryJob(String jobId) async {
-    final body = await _client.postJson('/api/v1/jobs/$jobId/retry');
     return _sessionProcessingJobFromJson(body);
   }
 
@@ -414,7 +439,7 @@ class ResourceUploadApi {
           _string(json, 'sourcePhase'),
         ),
         version: _int(json, 'version'),
-        status: _string(json, 'status'),
+        status: MaterialUploadStatus.fromWireName(_string(json, 'status')),
       );
     } on FormatException catch (error) {
       throw _shapeError('material', error.message, json);
@@ -431,6 +456,7 @@ class ResourceUploadApi {
       attemptCount: _int(json, 'attemptCount'),
       maxAttempts: _int(json, 'maxAttempts'),
       errorCode: _optionalString(json, 'errorCode'),
+      retryable: json['retryable'] == true,
       createdAt: DateTime.parse(_string(json, 'createdAt')),
       finishedAt: _optionalDateTime(json, 'finishedAt'),
       materialId: _optionalString(json, 'materialId'),
