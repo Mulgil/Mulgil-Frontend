@@ -115,15 +115,35 @@ void main() {
         refreshToken: 'refresh',
       );
       final requests = <String>[];
+      final sessionRequests = <Map<String, Object?>>[];
+      final createdSessions = <Map<String, Object?>>[];
       final store = LearningDomainStore(
         _api((request) async {
           requests.add('${request.method} ${request.url.path}');
+          if (request.method == 'POST' &&
+              request.url.path == '/api/v1/courses/course-server/sessions') {
+            final body = (jsonDecode(request.body) as Map).map(
+              (key, value) => MapEntry(key.toString(), value),
+            );
+            sessionRequests.add(body);
+            final created = _sessionJson(
+              id: 'session-${body['sessionNumber']}',
+              courseId: 'course-server',
+              sessionNumber: body['sessionNumber']! as int,
+              title: body['title']! as String,
+              sessionDate: body['sessionDate']! as String,
+              startsAt: body['startsAt']! as String,
+              endsAt: body['endsAt']! as String,
+            );
+            createdSessions.add(created);
+            return _jsonResponse(created, 201);
+          }
           switch ('${request.method} ${request.url.path}') {
             case 'POST /api/v1/courses':
               expect(jsonDecode(request.body), {
                 'name': '자료구조',
                 'instructor': '이하나 교수님',
-                'term': null,
+                'term': '2026-2',
               });
               return _jsonResponse(
                 _courseJson(id: 'course-server', name: '자료구조'),
@@ -147,14 +167,22 @@ void main() {
               ], 200);
             case 'GET /api/v1/timetable/slots':
               return _jsonResponse([
-                _slotJson(id: 'slot-server', courseId: 'course-server'),
+                _slotJson(
+                  id: 'slot-server',
+                  courseId: 'course-server',
+                  weekday: 2,
+                  startTime: '10:30:00',
+                  endTime: '11:45:00',
+                ),
               ], 200);
             case 'GET /api/v1/courses/course-server/sessions':
+              return _jsonResponse(createdSessions, 200);
             case 'GET /api/v1/courses/course-server/exams':
               return _jsonResponse([], 200);
           }
           fail('Unexpected request: ${request.method} ${request.url}');
         }),
+        now: () => DateTime(2026, 9, 3),
       );
 
       await store.createCourseWithSlots(
@@ -170,16 +198,51 @@ void main() {
         ],
       );
 
-      expect(requests, [
+      expect(requests.take(5), [
         'POST /api/v1/courses',
         'POST /api/v1/timetable/slots',
         'GET /api/v1/courses',
         'GET /api/v1/timetable/slots',
         'GET /api/v1/courses/course-server/sessions',
-        'GET /api/v1/courses/course-server/exams',
       ]);
+      expect(
+        requests
+            .where(
+              (request) =>
+                  request == 'POST /api/v1/courses/course-server/sessions',
+            )
+            .length,
+        16,
+      );
+      expect(sessionRequests.first, {
+        'sessionNumber': 1,
+        'title': '1차시',
+        'sessionDate': '2026-09-01',
+        'startsAt': '2026-09-01T01:30:00.000Z',
+        'endsAt': '2026-09-01T02:45:00.000Z',
+      });
+      expect(sessionRequests.last['sessionNumber'], 16);
+      expect(sessionRequests.last['sessionDate'], '2026-12-15');
+      expect(
+        requests[requests.length - 2],
+        'GET /api/v1/courses/course-server/sessions',
+      );
+      expect(requests.last, 'GET /api/v1/courses/course-server/exams');
       expect(store.courses.single.id, 'course-server');
       expect(store.timetableSlots.single.courseId, 'course-server');
+      expect(store.sessionsFor('course-server'), hasLength(16));
+
+      await store.refresh(requireSuccess: true);
+      expect(
+        requests
+            .where(
+              (request) =>
+                  request == 'POST /api/v1/courses/course-server/sessions',
+            )
+            .length,
+        16,
+        reason: 'A refresh must not create duplicate sessions.',
+      );
     });
 
     test(
@@ -351,13 +414,19 @@ Map<String, Object?> _courseJson({required String id, required String name}) {
   };
 }
 
-Map<String, Object?> _slotJson({required String id, required String courseId}) {
+Map<String, Object?> _slotJson({
+  required String id,
+  required String courseId,
+  int weekday = 1,
+  String startTime = '09:00:00',
+  String endTime = '10:15:00',
+}) {
   return {
     'id': id,
     'courseId': courseId,
-    'weekday': 1,
-    'startTime': '09:00:00',
-    'endTime': '10:15:00',
+    'weekday': weekday,
+    'startTime': startTime,
+    'endTime': endTime,
     'timezone': 'Asia/Seoul',
     'createdAt': '2026-09-01T00:00:00Z',
     'updatedAt': '2026-09-01T00:00:00Z',
@@ -367,15 +436,20 @@ Map<String, Object?> _slotJson({required String id, required String courseId}) {
 Map<String, Object?> _sessionJson({
   required String id,
   required String courseId,
+  int sessionNumber = 1,
+  String title = '컴퓨터 구조 개요',
+  String sessionDate = '2026-09-01',
+  String? startsAt,
+  String? endsAt,
 }) {
   return {
     'id': id,
     'courseId': courseId,
-    'sessionNumber': 1,
-    'title': '컴퓨터 구조 개요',
-    'sessionDate': '2026-09-01',
-    'startsAt': null,
-    'endsAt': null,
+    'sessionNumber': sessionNumber,
+    'title': title,
+    'sessionDate': sessionDate,
+    'startsAt': startsAt,
+    'endsAt': endsAt,
     'createdAt': '2026-09-01T00:00:00Z',
     'updatedAt': '2026-09-01T00:00:00Z',
   };

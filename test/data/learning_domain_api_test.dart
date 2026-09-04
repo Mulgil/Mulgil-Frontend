@@ -162,6 +162,8 @@ void main() {
       final sessions = await api.listSessions('course-1');
 
       expect(sessions.single.id, 'session-1');
+      expect(sessions.single.sessionNumber, 3);
+      expect(sessions.single.weekNumber, 3);
       expect(sessions.single.week, '3주차');
       expect(sessions.single.date, '9/15');
     });

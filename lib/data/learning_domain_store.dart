@@ -4,6 +4,8 @@ import '../models/course.dart';
 import '../models/exam.dart';
 import '../models/lecture.dart';
 import '../models/timetable_slot.dart';
+import '../utils/academic_calendar.dart';
+import '../utils/session_schedule.dart';
 import 'api_client.dart';
 import 'app_services.dart';
 import 'auth_store.dart';
@@ -13,8 +15,10 @@ class LearningDomainStore extends ChangeNotifier {
   static final instance = LearningDomainStore(AppServices.learningDomain);
 
   final LearningDomainApi _api;
+  final DateTime Function() _now;
 
-  LearningDomainStore(this._api);
+  LearningDomainStore(this._api, {DateTime Function()? now})
+    : _now = now ?? DateTime.now;
 
   bool _isLoading = false;
   bool _hasLoaded = false;
@@ -115,7 +119,15 @@ class LearningDomainStore extends ChangeNotifier {
       final exams = <Exam>[];
 
       for (final course in courses) {
-        final sessions = await _api.listSessions(course.id);
+        final courseSlots = timetableSlots
+            .where((slot) => slot.courseId == course.id)
+            .toList();
+        var sessions = await _api.listSessions(course.id);
+        sessions = await _ensureScheduledSessions(
+          course,
+          courseSlots,
+          sessions,
+        );
         sessionsByCourseId[course.id] = sessions;
         exams.addAll(await _api.listExams(course, sessions: sessions));
       }
@@ -139,7 +151,7 @@ class LearningDomainStore extends ChangeNotifier {
     final created = await _api.createCourse(
       name: course.name,
       instructor: course.instructor,
-      term: course.term,
+      term: course.term ?? AcademicCalendar.termCode(_now()),
     );
     try {
       for (final slot in slots) {
@@ -160,6 +172,65 @@ class LearningDomainStore extends ChangeNotifier {
       rethrow;
     }
     await refresh(requireSuccess: true);
+  }
+
+  Future<List<Lecture>> _ensureScheduledSessions(
+    Course course,
+    List<TimetableSlot> slots,
+    List<Lecture> sessions,
+  ) async {
+    if (slots.isEmpty) return sessions;
+    final generatedSessionsOnly = sessions.every(
+      (session) => RegExp(r'^\d+차시$').hasMatch(session.title),
+    );
+    if (sessions.isNotEmpty && !generatedSessionsOnly) return sessions;
+
+    final planned = SessionSchedule.plan(
+      slots: slots,
+      semesterStart: AcademicCalendar.semesterStartForTerm(
+        course.term,
+        fallback: _now(),
+      ),
+    );
+    final existingNumbers = sessions
+        .map((session) => session.sessionNumber)
+        .whereType<int>()
+        .toSet();
+    final missing = planned
+        .where((session) => !existingNumbers.contains(session.sessionNumber))
+        .toList();
+    if (missing.isEmpty) return sessions;
+
+    for (final session in missing) {
+      try {
+        await _api.createSession(
+          courseId: course.id,
+          sessionNumber: session.sessionNumber,
+          title: session.title,
+          sessionDate: session.sessionDate,
+          startsAt: session.startsAt,
+          endsAt: session.endsAt,
+        );
+      } on ApiException catch (error) {
+        if (error.statusCode != 422) rethrow;
+      }
+    }
+
+    final refreshed = await _api.listSessions(course.id);
+    final refreshedNumbers = refreshed
+        .map((session) => session.sessionNumber)
+        .whereType<int>()
+        .toSet();
+    if (!planned.every(
+      (session) => refreshedNumbers.contains(session.sessionNumber),
+    )) {
+      throw const ApiException(
+        statusCode: 0,
+        code: 'SESSION_SCHEDULE_INCOMPLETE',
+        message: '16주차 차시를 모두 생성하지 못했어요. 다시 시도해주세요.',
+      );
+    }
+    return refreshed;
   }
 
   Future<void> deleteCourse(Course course) async {
