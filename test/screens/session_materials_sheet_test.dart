@@ -34,7 +34,12 @@ void main() {
                 },
               ]);
             case 'GET https://api.example.com/api/v1/sessions/session-1/jobs':
-              return _jsonResponse([]);
+              return _jsonResponse([
+                _jobJson(
+                  status: 'succeeded',
+                  finishedAt: '2026-09-01T00:01:00Z',
+                ),
+              ]);
             case 'GET https://api.example.com/api/v1/materials/material-1/download-url':
               return _jsonResponse({
                 'downloadUrl': 'https://storage.example.com/material-1',
@@ -70,8 +75,9 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('week-1.pdf'), findsOneWidget);
-    expect(find.text('예습 · 2페이지 · 2KB'), findsOneWidget);
-    expect(find.text('업로드 완료'), findsOneWidget);
+    expect(find.text('업로드 완료 · 예습 · 2페이지 · 2KB'), findsOneWidget);
+    expect(find.text('PDF 분석 완료'), findsOneWidget);
+    expect(find.text('요약/퀴즈에 사용할 준비가 끝났어요.'), findsOneWidget);
 
     await tester.tap(find.byIcon(Icons.open_in_new));
     await tester.pumpAndSettle();
@@ -126,6 +132,9 @@ void main() {
 
     await tester.tap(find.byIcon(Icons.close));
     await tester.pumpAndSettle();
+    expect(find.text('week-1.pdf를 첨부 자료에서 삭제할까요?'), findsOneWidget);
+    await tester.tap(find.text('삭제'));
+    await tester.pumpAndSettle();
 
     expect(deleted, isTrue);
     expect(find.text('week-1.pdf'), findsNothing);
@@ -152,18 +161,12 @@ void main() {
               return _jsonResponse([_materialJson()]);
             case 'GET https://api.example.com/api/v1/sessions/session-1/jobs':
               return _jsonResponse([
-                {
-                  'id': 'job-1',
-                  'type': 'chunk_embed',
-                  'status': 'failed',
-                  'inputVersion': 1,
-                  'attemptCount': 1,
-                  'maxAttempts': 3,
-                  'errorCode': 'PROVIDER_FAILED',
-                  'retryable': true,
-                  'createdAt': '2026-09-01T00:00:00Z',
-                  'finishedAt': '2026-09-01T00:01:00Z',
-                },
+                _jobJson(
+                  status: 'failed',
+                  errorCode: 'PROVIDER_FAILED',
+                  retryable: true,
+                  finishedAt: '2026-09-01T00:01:00Z',
+                ),
               ]);
           }
           fail('Unexpected request: ${request.method} ${request.url}');
@@ -190,8 +193,9 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('업로드 완료'), findsOneWidget);
-    expect(find.text('PDF 업로드는 완료됐지만 AI 분석이 완료되지 않았어요.'), findsOneWidget);
+    expect(find.text('업로드 완료 · 예습 · 2페이지 · 2KB'), findsOneWidget);
+    expect(find.text('PDF 분석 실패'), findsOneWidget);
+    expect(find.text('PDF는 업로드됐지만, 요약/퀴즈에는 아직 사용할 수 없어요.'), findsOneWidget);
     expect(find.textContaining('PROVIDER_FAILED'), findsNothing);
     expect(find.text('재시도'), findsNothing);
   });
@@ -208,6 +212,26 @@ Map<String, Object?> _materialJson({String status = 'uploaded'}) {
     'sourcePhase': 'preview_pdf',
     'version': 1,
     'status': status,
+  };
+}
+
+Map<String, Object?> _jobJson({
+  required String status,
+  String? errorCode,
+  bool retryable = false,
+  String? finishedAt,
+}) {
+  return {
+    'id': 'job-1',
+    'type': 'chunk_embed',
+    'status': status,
+    'inputVersion': 1,
+    'attemptCount': 1,
+    'maxAttempts': 3,
+    'errorCode': errorCode,
+    'retryable': retryable,
+    'createdAt': '2026-09-01T00:00:00Z',
+    'finishedAt': finishedAt,
   };
 }
 

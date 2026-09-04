@@ -245,13 +245,37 @@ class _SessionMaterialsSheetState extends State<SessionMaterialsSheet> {
                   isOpening: _openingMaterialId == material.id,
                   isDeleting: _deletingMaterialId == material.id,
                   onOpen: () => _openMaterial(material),
-                  onDelete: () => _deleteMaterial(material),
+                  onDelete: () => _confirmDeleteMaterial(material),
                 ),
               ),
             ),
         ],
       ),
     );
+  }
+
+  Future<void> _confirmDeleteMaterial(SessionMaterial material) async {
+    if (_deletingMaterialId != null || _openingMaterialId != null) return;
+    final shouldDelete = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('PDF 삭제'),
+        content: Text('${material.filename}를 첨부 자료에서 삭제할까요?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('취소'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('삭제'),
+          ),
+        ],
+      ),
+    );
+    if (shouldDelete == true) {
+      await _deleteMaterial(material);
+    }
   }
 }
 
@@ -270,6 +294,11 @@ class _ProcessingStatusCard extends StatelessWidget {
     final hasFailedJobs = jobs.any(
       (job) => job.status == ProcessingJobStatus.failed,
     );
+    final title = hasActiveJobs
+        ? 'PDF 분석 중'
+        : hasFailedJobs
+        ? 'PDF 분석 실패'
+        : 'PDF 분석 완료';
     final icon = hasActiveJobs
         ? Icons.hourglass_top_outlined
         : hasFailedJobs
@@ -281,10 +310,10 @@ class _ProcessingStatusCard extends StatelessWidget {
         ? AppColors.coral
         : AppColors.teal;
     final message = hasActiveJobs
-        ? '업로드된 PDF를 AI가 분석하고 있어요. 완료되면 요약과 퀴즈에 반영됩니다.'
+        ? 'AI가 PDF 내용을 읽고 있어요. 분석이 끝나면 요약/퀴즈에 자동으로 반영돼요.'
         : hasFailedJobs
-        ? 'PDF 업로드는 완료됐지만 AI 분석이 완료되지 않았어요.'
-        : '업로드된 PDF를 AI 분석에 사용할 준비가 됐어요.';
+        ? 'PDF는 업로드됐지만, 요약/퀴즈에는 아직 사용할 수 없어요.'
+        : '요약/퀴즈에 사용할 준비가 끝났어요.';
 
     return Container(
       padding: const EdgeInsets.all(14),
@@ -300,9 +329,9 @@ class _ProcessingStatusCard extends StatelessWidget {
             children: [
               Icon(icon, size: 18, color: color),
               const SizedBox(width: 8),
-              const Text(
-                'AI 처리 상태',
-                style: TextStyle(
+              Text(
+                title,
+                style: const TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
                   color: AppColors.ink,
@@ -339,6 +368,7 @@ class _MaterialTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final metadata = <String>[
+      _materialStatusLabel(material.status),
       material.sourcePhase == MaterialSourcePhase.previewPdf ? '예습' : '복습',
       if (material.pageCount != null) '${material.pageCount}페이지',
       _formatBytes(material.byteSize),
@@ -373,8 +403,6 @@ class _MaterialTile extends StatelessWidget {
                   metadata.join(' · '),
                   style: const TextStyle(fontSize: 11, color: AppColors.ink60),
                 ),
-                const SizedBox(height: 6),
-                _MaterialStatusPill(status: material.status),
               ],
             ),
           ),
@@ -392,7 +420,7 @@ class _MaterialTile extends StatelessWidget {
                 : const Icon(Icons.open_in_new, size: 20),
           ),
           IconButton(
-            tooltip: 'PDF 삭제',
+            tooltip: '첨부 자료에서 삭제',
             onPressed: isDeleting || isOpening ? null : onDelete,
             icon: isDeleting
                 ? const SizedBox(
@@ -403,53 +431,6 @@ class _MaterialTile extends StatelessWidget {
                 : const Icon(Icons.close, size: 20),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _MaterialStatusPill extends StatelessWidget {
-  final MaterialUploadStatus status;
-
-  const _MaterialStatusPill({required this.status});
-
-  @override
-  Widget build(BuildContext context) {
-    final (label, foreground, background) = switch (status) {
-      MaterialUploadStatus.uploaded => (
-        '업로드 완료',
-        AppColors.green,
-        AppColors.greenSoft,
-      ),
-      MaterialUploadStatus.created => (
-        '업로드 중',
-        AppColors.tealDark,
-        AppColors.tealSoft,
-      ),
-      MaterialUploadStatus.cancelled ||
-      MaterialUploadStatus.outdated => ('삭제됨', AppColors.ink60, AppColors.chip),
-      MaterialUploadStatus.unknown => (
-        '상태 확인 필요',
-        AppColors.ink60,
-        AppColors.chip,
-      ),
-    };
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-        decoration: BoxDecoration(
-          color: background,
-          borderRadius: BorderRadius.circular(AppRadius.sm),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.w700,
-            color: foreground,
-          ),
-        ),
       ),
     );
   }
@@ -510,4 +491,14 @@ class _LoadError extends StatelessWidget {
 String _formatBytes(int bytes) {
   if (bytes < 1024 * 1024) return '${(bytes / 1024).ceil()}KB';
   return '${(bytes / (1024 * 1024)).toStringAsFixed(1)}MB';
+}
+
+String _materialStatusLabel(MaterialUploadStatus status) {
+  return switch (status) {
+    MaterialUploadStatus.uploaded => '업로드 완료',
+    MaterialUploadStatus.created => '업로드 중',
+    MaterialUploadStatus.cancelled => '삭제됨',
+    MaterialUploadStatus.outdated => '만료됨',
+    MaterialUploadStatus.unknown => '상태 확인 필요',
+  };
 }
