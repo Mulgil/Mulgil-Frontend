@@ -23,12 +23,14 @@ class ApiClient {
   final AccessTokenProvider? _accessTokenProvider;
   final bool _ownsHttpClient;
 
+  // Keep the public parameter name stable for callers.
   ApiClient({
     Uri? baseUri,
     http.Client? httpClient,
     AccessTokenProvider? accessTokenProvider,
   }) : baseUri = _normalizeBaseUri(baseUri ?? ApiConfig.baseUri),
        _http = httpClient ?? http.Client(),
+       // ignore: prefer_initializing_formals
        _accessTokenProvider = accessTokenProvider,
        _ownsHttpClient = httpClient == null;
 
