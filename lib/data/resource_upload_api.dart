@@ -17,7 +17,8 @@ enum MaterialSourcePhase {
   static MaterialSourcePhase fromWireName(String value) {
     return MaterialSourcePhase.values.firstWhere(
       (phase) => phase.wireName == value,
-      orElse: () => throw FormatException('Unknown material source phase: $value'),
+      orElse: () =>
+          throw FormatException('Unknown material source phase: $value'),
     );
   }
 }
@@ -253,9 +254,7 @@ class ResourceUploadApi {
   }
 
   Future<List<SessionMaterial>> listSessionMaterials(String sessionId) async {
-    final body = await _client.getJson(
-      '/api/v1/sessions/$sessionId/materials',
-    );
+    final body = await _client.getJson('/api/v1/sessions/$sessionId/materials');
     return _list(
       body,
       'GET /api/v1/sessions/{sessionId}/materials',
@@ -268,10 +267,7 @@ class ResourceUploadApi {
     final body = await _client.getJson(
       '/api/v1/materials/$materialId/download-url',
     );
-    final json = _map(
-      body,
-      'GET /api/v1/materials/{materialId}/download-url',
-    );
+    final json = _map(body, 'GET /api/v1/materials/{materialId}/download-url');
     return MaterialDownloadUrl(
       downloadUrl: Uri.parse(_string(json, 'downloadUrl')),
       expiresAt: DateTime.parse(_string(json, 'expiresAt')),

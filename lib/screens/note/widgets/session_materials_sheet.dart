@@ -21,11 +21,8 @@ Future<void> showSessionMaterialsSheet(
   return showMulgilModalScreen<void>(
     context,
     heightFraction: 0.78,
-    builder: (_) => SessionMaterialsSheet(
-      lecture: lecture,
-      api: api,
-      openUrl: openUrl,
-    ),
+    builder: (_) =>
+        SessionMaterialsSheet(lecture: lecture, api: api, openUrl: openUrl),
   );
 }
 
@@ -122,9 +119,9 @@ class _SessionMaterialsSheetState extends State<SessionMaterialsSheet> {
       }
     } on ApiException catch (error) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(error.message)),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(error.message)));
       }
     } on Exception {
       if (mounted) {
@@ -145,15 +142,15 @@ class _SessionMaterialsSheetState extends State<SessionMaterialsSheet> {
       await _load();
     } on ApiException catch (error) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(error.message)),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(error.message)));
       }
     } on Exception {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('작업 재시도에 실패했어요.')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('작업 재시도에 실패했어요.')));
       }
     } finally {
       if (mounted) setState(() => _retryingJobId = null);
@@ -326,11 +323,16 @@ class _ProcessingStatusCard extends StatelessWidget {
                 Expanded(
                   child: Text(
                     '${_jobLabel(job.type)} 실패${job.errorCode == null ? '' : ' · ${job.errorCode}'}',
-                    style: const TextStyle(fontSize: 12, color: AppColors.coral),
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppColors.coral,
+                    ),
                   ),
                 ),
                 TextButton(
-                  onPressed: retryingJobId == job.id ? null : () => onRetry(job),
+                  onPressed: retryingJobId == job.id
+                      ? null
+                      : () => onRetry(job),
                   child: Text(retryingJobId == job.id ? '재시도 중' : '재시도'),
                 ),
               ],
