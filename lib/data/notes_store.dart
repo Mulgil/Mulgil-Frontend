@@ -2,11 +2,13 @@ import 'package:flutter/foundation.dart';
 
 import '../models/lecture.dart';
 import '../models/draw_stroke.dart';
+import '../models/prof_mention.dart';
 
 class NoteContent {
   String typedText;
   final List<List<DrawStroke>> pagesStrokes;
-  NoteContent({this.typedText = ''}) : pagesStrokes = [];
+  final List<List<ProfMention>> pagesMentions;
+  NoteContent({this.typedText = ''}) : pagesStrokes = [], pagesMentions = [];
 }
 
 // In-memory store for notes drafted during the current app session.
@@ -68,6 +70,23 @@ class NotesStore extends ChangeNotifier {
     }
     pages[page] = strokes;
     notifyListeners();
+  }
+
+  List<ProfMention> pageMentions(Lecture lecture, int page) {
+    final pages = contentFor(lecture).pagesMentions;
+    return page < pages.length ? pages[page] : const [];
+  }
+
+  void updatePageMentions(
+    Lecture lecture,
+    int page,
+    List<ProfMention> mentions,
+  ) {
+    final pages = contentFor(lecture).pagesMentions;
+    while (pages.length <= page) {
+      pages.add([]);
+    }
+    pages[page] = mentions;
   }
 
   String _todayLabel() {
