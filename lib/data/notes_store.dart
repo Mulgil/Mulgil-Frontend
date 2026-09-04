@@ -17,19 +17,30 @@ class NotesStore extends ChangeNotifier {
 
   final List<Lecture> _lectures = [];
   final Map<String, NoteContent> _contents = {};
-  int _newNoteCount = 0;
+
+  static const memoWeekLabel = '메모';
 
   List<Lecture> get lectures => List.unmodifiable(_lectures);
 
   NoteContent contentFor(Lecture lecture) =>
       _contents.putIfAbsent(lecture.id, () => NoteContent());
 
+  bool isMemo(Lecture lecture) => lecture.id.startsWith('note-');
+
+  bool hasContent(Lecture lecture) {
+    final content = _contents[lecture.id];
+    if (content == null) return false;
+    return content.pagesStrokes.any((page) => page.isNotEmpty) ||
+        content.typedText.trim().isNotEmpty;
+  }
+
+  bool hasNotes(Lecture lecture) => lecture.done || hasContent(lecture);
+
   Lecture createNote({required String title, required String courseId}) {
-    _newNoteCount++;
     final lecture = Lecture(
       id: 'note-${DateTime.now().microsecondsSinceEpoch}',
       courseId: courseId,
-      week: '메모 $_newNoteCount',
+      week: memoWeekLabel,
       title: title,
       date: _todayLabel(),
       done: true,
@@ -56,6 +67,7 @@ class NotesStore extends ChangeNotifier {
       pages.add([]);
     }
     pages[page] = strokes;
+    notifyListeners();
   }
 
   String _todayLabel() {

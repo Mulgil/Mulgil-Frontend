@@ -26,15 +26,20 @@ class NoteCanvas extends StatelessWidget {
       onPanStart: onPanStart,
       onPanUpdate: onPanUpdate,
       onPanEnd: onPanEnd,
-      child: Stack(
-        children: [
-          Container(color: AppColors.bg),
-          Positioned.fill(
-            child: CustomPaint(
-              painter: StrokesPainter(strokes: strokes, current: currentStroke),
+      child: ClipRect(
+        child: Stack(
+          children: [
+            Container(color: AppColors.bg),
+            Positioned.fill(
+              child: CustomPaint(
+                painter: StrokesPainter(
+                  strokes: strokes,
+                  current: currentStroke,
+                ),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
