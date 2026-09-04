@@ -31,6 +31,7 @@ class _SummaryDetailScreenState extends State<SummaryDetailScreen>
   late final TabController _tab;
   late Future<SessionSummary?> _summaryLoad;
   String? _loadError;
+  _SummarySource _source = _SummarySource.review;
 
   @override
   void initState() {
@@ -50,6 +51,7 @@ class _SummaryDetailScreenState extends State<SummaryDetailScreen>
       _loadError = null;
       return await AppServices.learningDomain.getSessionSummary(
         widget.lecture.id,
+        type: _source.apiValue,
       );
     } on ApiException catch (error) {
       _loadError = error.statusCode == 404 || error.statusCode == 409
@@ -63,6 +65,14 @@ class _SummaryDetailScreenState extends State<SummaryDetailScreen>
 
   void _retry() {
     setState(() => _summaryLoad = _loadSummary());
+  }
+
+  void _selectSource(_SummarySource source) {
+    if (_source == source) return;
+    setState(() {
+      _source = source;
+      _summaryLoad = _loadSummary();
+    });
   }
 
   void _openQuiz() {
@@ -91,6 +101,7 @@ class _SummaryDetailScreenState extends State<SummaryDetailScreen>
               return Column(
                 children: [
                   _buildHeader(context),
+                  _buildSourceSelector(context),
                   Expanded(
                     child: _SummaryDetailNotice(
                       message: error ?? 'AI 요약이 아직 준비되지 않았어요.',
@@ -103,6 +114,7 @@ class _SummaryDetailScreenState extends State<SummaryDetailScreen>
             return Column(
               children: [
                 _buildHeader(context),
+                _buildSourceSelector(context),
                 _buildTabBar(context),
                 Expanded(
                   child: TabBarView(
@@ -212,6 +224,50 @@ class _SummaryDetailScreenState extends State<SummaryDetailScreen>
       ),
     );
   }
+
+  Widget _buildSourceSelector(BuildContext context) {
+    final pad = context.isTablet ? 28.0 : 20.0;
+    return Container(
+      margin: EdgeInsets.fromLTRB(pad, 12, pad, 0),
+      decoration: BoxDecoration(
+        color: AppColors.chip,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+      ),
+      child: Row(
+        children: _SummarySource.values
+            .map(
+              (source) => Expanded(
+                child: TextButton(
+                  onPressed: () => _selectSource(source),
+                  style: TextButton.styleFrom(
+                    backgroundColor: _source == source
+                        ? AppColors.tealSoft
+                        : Colors.transparent,
+                    foregroundColor: _source == source
+                        ? AppColors.tealDark
+                        : AppColors.ink60,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppRadius.sm),
+                    ),
+                  ),
+                  child: Text(source.label),
+                ),
+              ),
+            )
+            .toList(growable: false),
+      ),
+    );
+  }
+}
+
+enum _SummarySource {
+  preview('preview', '예습'),
+  review('review', '복습');
+
+  final String apiValue;
+  final String label;
+
+  const _SummarySource(this.apiValue, this.label);
 }
 
 class _SummaryDetailNotice extends StatelessWidget {

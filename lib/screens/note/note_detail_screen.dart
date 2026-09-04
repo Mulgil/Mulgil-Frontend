@@ -16,6 +16,7 @@ import 'widgets/note_page_sidebar.dart';
 import 'widgets/note_review.dart';
 import 'widgets/note_toolbar.dart';
 import 'widgets/note_typed_widgets.dart';
+import 'widgets/session_materials_sheet.dart';
 
 class NoteDetailScreen extends StatefulWidget {
   const NoteDetailScreen({super.key});
@@ -222,7 +223,14 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
           LearningDomainStore.instance.courseById(lecture.courseId)?.name ?? '',
       hasPendingReview: _pendingReview.isNotEmpty,
       onOpenReview: _openReviewSheet,
+      onOpenMaterials: _openMaterialsSheet,
     );
+  }
+
+  void _openMaterialsSheet() {
+    final lecture = _lecture;
+    if (lecture == null) return;
+    unawaited(showSessionMaterialsSheet(context, lecture: lecture));
   }
 
   void _openReviewSheet() {

@@ -14,6 +14,18 @@ import '../../widgets/common_widgets.dart';
 
 enum _Stage { pickSession, pickPhase, pickFile, uploading, done }
 
+class PdfUploadOutcome {
+  final Lecture lecture;
+  final String fileName;
+  final MaterialUploadResult uploadResult;
+
+  const PdfUploadOutcome({
+    required this.lecture,
+    required this.fileName,
+    required this.uploadResult,
+  });
+}
+
 class PdfUploadScreen extends StatefulWidget {
   final LearningDomainStore? store;
   final ResourceUploadApi? api;
@@ -32,6 +44,7 @@ class _PdfUploadScreenState extends State<PdfUploadScreen> {
   MaterialSourcePhase? _sourcePhase;
   String? _fileName;
   String? _errorMessage;
+  PdfUploadOutcome? _uploadOutcome;
 
   @override
   void initState() {
@@ -64,13 +77,20 @@ class _PdfUploadScreenState extends State<PdfUploadScreen> {
         _errorMessage = null;
         _stage = _Stage.uploading;
       });
-      await _api.uploadSessionMaterial(
+      final result = await _api.uploadSessionMaterial(
         sessionId: session.lecture.id,
         file: file,
         sourcePhase: sourcePhase,
       );
       if (!mounted) return;
-      setState(() => _stage = _Stage.done);
+      setState(() {
+        _uploadOutcome = PdfUploadOutcome(
+          lecture: session.lecture,
+          fileName: file.filename,
+          uploadResult: result,
+        );
+        _stage = _Stage.done;
+      });
     } on Exception catch (error) {
       if (!mounted) return;
       setState(() {
@@ -165,7 +185,8 @@ class _PdfUploadScreenState extends State<PdfUploadScreen> {
       case _Stage.done:
         return _DoneStage(
           fileName: _fileName!,
-          onClose: () => Navigator.pop(context, true),
+          onViewMaterials: () => Navigator.pop(context, _uploadOutcome),
+          onClose: () => Navigator.pop(context),
         );
     }
   }
@@ -448,9 +469,14 @@ class _UploadingStage extends StatelessWidget {
 
 class _DoneStage extends StatelessWidget {
   final String fileName;
+  final VoidCallback onViewMaterials;
   final VoidCallback onClose;
 
-  const _DoneStage({required this.fileName, required this.onClose});
+  const _DoneStage({
+    required this.fileName,
+    required this.onViewMaterials,
+    required this.onClose,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -470,11 +496,13 @@ class _DoneStage extends StatelessWidget {
         ),
         const SizedBox(height: 4),
         const Text(
-          'AI가 텍스트를 분석하면 알림으로 알려드려요',
+          '차시 자료에서 처리 상태와 PDF를 확인할 수 있어요',
           style: TextStyle(fontSize: 12, color: AppColors.ink60),
         ),
         const SizedBox(height: 24),
-        MulgilButton(label: '확인', onTap: onClose),
+        MulgilButton(label: '첨부 자료 확인', onTap: onViewMaterials),
+        const SizedBox(height: 8),
+        TextButton(onPressed: onClose, child: const Text('닫기')),
       ],
     );
   }

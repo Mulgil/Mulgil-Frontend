@@ -13,6 +13,97 @@ enum MaterialSourcePhase {
   final String wireName;
 
   const MaterialSourcePhase(this.wireName);
+
+  static MaterialSourcePhase fromWireName(String value) {
+    return MaterialSourcePhase.values.firstWhere(
+      (phase) => phase.wireName == value,
+      orElse: () => throw FormatException('Unknown material source phase: $value'),
+    );
+  }
+}
+
+enum ProcessingJobStatus {
+  queued,
+  running,
+  succeeded,
+  failed,
+  outdated,
+  cancelled,
+  unknown;
+
+  static ProcessingJobStatus fromWireName(String value) {
+    return ProcessingJobStatus.values.firstWhere(
+      (status) => status.name == value,
+      orElse: () => ProcessingJobStatus.unknown,
+    );
+  }
+
+  bool get isActive => this == queued || this == running;
+  bool get isTerminal => !isActive && this != unknown;
+}
+
+class SessionMaterial {
+  final String id;
+  final String sessionId;
+  final String filename;
+  final String mimeType;
+  final int byteSize;
+  final int? pageCount;
+  final MaterialSourcePhase sourcePhase;
+  final int version;
+  final String status;
+
+  const SessionMaterial({
+    required this.id,
+    required this.sessionId,
+    required this.filename,
+    required this.mimeType,
+    required this.byteSize,
+    required this.pageCount,
+    required this.sourcePhase,
+    required this.version,
+    required this.status,
+  });
+
+  bool get isDownloadable => status != 'created' && status != 'cancelled';
+}
+
+class MaterialDownloadUrl {
+  final Uri downloadUrl;
+  final DateTime expiresAt;
+
+  const MaterialDownloadUrl({
+    required this.downloadUrl,
+    required this.expiresAt,
+  });
+}
+
+class SessionProcessingJob {
+  final String id;
+  final String type;
+  final ProcessingJobStatus status;
+  final int inputVersion;
+  final int attemptCount;
+  final int maxAttempts;
+  final String? errorCode;
+  final DateTime createdAt;
+  final DateTime? finishedAt;
+  final String? materialId;
+
+  const SessionProcessingJob({
+    required this.id,
+    required this.type,
+    required this.status,
+    required this.inputVersion,
+    required this.attemptCount,
+    required this.maxAttempts,
+    required this.errorCode,
+    required this.createdAt,
+    required this.finishedAt,
+    this.materialId,
+  });
+
+  bool get canRetry => status == ProcessingJobStatus.failed;
 }
 
 class UploadFile {
@@ -161,6 +252,50 @@ class ResourceUploadApi {
     );
   }
 
+  Future<List<SessionMaterial>> listSessionMaterials(String sessionId) async {
+    final body = await _client.getJson(
+      '/api/v1/sessions/$sessionId/materials',
+    );
+    return _list(
+      body,
+      'GET /api/v1/sessions/{sessionId}/materials',
+    ).map(_sessionMaterialFromJson).toList(growable: false);
+  }
+
+  Future<MaterialDownloadUrl> issueMaterialDownloadUrl(
+    String materialId,
+  ) async {
+    final body = await _client.getJson(
+      '/api/v1/materials/$materialId/download-url',
+    );
+    final json = _map(
+      body,
+      'GET /api/v1/materials/{materialId}/download-url',
+    );
+    return MaterialDownloadUrl(
+      downloadUrl: Uri.parse(_string(json, 'downloadUrl')),
+      expiresAt: DateTime.parse(_string(json, 'expiresAt')),
+    );
+  }
+
+  Future<List<SessionProcessingJob>> listSessionJobs(String sessionId) async {
+    final body = await _client.getJson('/api/v1/sessions/$sessionId/jobs');
+    return _list(
+      body,
+      'GET /api/v1/sessions/{sessionId}/jobs',
+    ).map(_sessionProcessingJobFromJson).toList(growable: false);
+  }
+
+  Future<SessionProcessingJob> getJob(String jobId) async {
+    final body = await _client.getJson('/api/v1/jobs/$jobId');
+    return _sessionProcessingJobFromJson(body);
+  }
+
+  Future<SessionProcessingJob> retryJob(String jobId) async {
+    final body = await _client.postJson('/api/v1/jobs/$jobId/retry');
+    return _sessionProcessingJobFromJson(body);
+  }
+
   Future<UploadUrl> issueRecordingUploadUrl({
     required UploadFile file,
     required DateTime startedAt,
@@ -269,6 +404,43 @@ class ResourceUploadApi {
     );
   }
 
+  SessionMaterial _sessionMaterialFromJson(Object? value) {
+    final json = _map(value, 'material');
+    try {
+      return SessionMaterial(
+        id: _string(json, 'id'),
+        sessionId: _string(json, 'sessionId'),
+        filename: _string(json, 'filename'),
+        mimeType: _string(json, 'mimeType'),
+        byteSize: _int(json, 'byteSize'),
+        pageCount: _optionalInt(json, 'pageCount'),
+        sourcePhase: MaterialSourcePhase.fromWireName(
+          _string(json, 'sourcePhase'),
+        ),
+        version: _int(json, 'version'),
+        status: _string(json, 'status'),
+      );
+    } on FormatException catch (error) {
+      throw _shapeError('material', error.message, json);
+    }
+  }
+
+  SessionProcessingJob _sessionProcessingJobFromJson(Object? value) {
+    final json = _map(value, 'AI job');
+    return SessionProcessingJob(
+      id: _string(json, 'id'),
+      type: _string(json, 'type'),
+      status: ProcessingJobStatus.fromWireName(_string(json, 'status')),
+      inputVersion: _int(json, 'inputVersion'),
+      attemptCount: _int(json, 'attemptCount'),
+      maxAttempts: _int(json, 'maxAttempts'),
+      errorCode: _optionalString(json, 'errorCode'),
+      createdAt: DateTime.parse(_string(json, 'createdAt')),
+      finishedAt: _optionalDateTime(json, 'finishedAt'),
+      materialId: _optionalString(json, 'materialId'),
+    );
+  }
+
   List<Object?> _list(Object? value, String source) {
     if (value is List) return value;
     throw _shapeError(source, 'Expected a list field.', value);
@@ -300,6 +472,26 @@ class ResourceUploadApi {
     if (value is num) return value.toInt();
     if (value is String) return int.parse(value);
     throw _shapeError(key, 'Expected an integer field.', json);
+  }
+
+  int? _optionalInt(Map<String, Object?> json, String key) {
+    final value = json[key];
+    if (value == null) return null;
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    if (value is String) return int.parse(value);
+    throw _shapeError(key, 'Expected an integer field.', json);
+  }
+
+  String? _optionalString(Map<String, Object?> json, String key) {
+    final value = json[key];
+    if (value == null) return null;
+    return value.toString();
+  }
+
+  DateTime? _optionalDateTime(Map<String, Object?> json, String key) {
+    final value = _optionalString(json, key);
+    return value == null ? null : DateTime.parse(value);
   }
 
   double _double(Map<String, Object?> json, String key) {

@@ -13,6 +13,7 @@ import '../../constants/routes.dart';
 import '../recording/recording_upload_screen.dart';
 import 'pdf_upload_screen.dart';
 import 'widgets/lecture_card.dart';
+import 'widgets/session_materials_sheet.dart';
 
 class NoteListScreen extends StatefulWidget {
   final String? initialCourse;
@@ -270,11 +271,16 @@ class _NoteListScreenState extends State<NoteListScreen> {
               ),
               title: const Text('PDF 자료 업로드'),
               subtitle: const Text('강의자료·기출 PDF를 올려요 (최대 50MB, 150페이지)'),
-              onTap: () {
+              onTap: () async {
                 Navigator.pop(sheetCtx);
-                showMulgilModalScreen(
+                final outcome = await showMulgilModalScreen<PdfUploadOutcome>(
                   context,
                   builder: (_) => const PdfUploadScreen(),
+                );
+                if (!context.mounted || outcome == null) return;
+                await showSessionMaterialsSheet(
+                  context,
+                  lecture: outcome.lecture,
                 );
               },
             ),
