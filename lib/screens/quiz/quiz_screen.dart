@@ -7,12 +7,14 @@ import '../../widgets/common_widgets.dart';
 import '../../data/learning_domain_store.dart';
 import '../../models/course.dart';
 import '../../models/lecture.dart';
-import '../../utils/academic_calendar.dart';
+import '../../widgets/session_week_list.dart';
 import 'quiz_session_screen.dart';
 
 class QuizScreen extends StatefulWidget {
   final String? initialCourse;
-  const QuizScreen({super.key, this.initialCourse});
+  final LearningDomainStore? store;
+
+  const QuizScreen({super.key, this.initialCourse, this.store});
 
   @override
   State<QuizScreen> createState() => _QuizScreenState();
@@ -20,11 +22,12 @@ class QuizScreen extends StatefulWidget {
 
 class _QuizScreenState extends State<QuizScreen> {
   String? _courseName;
-  final _learningStore = LearningDomainStore.instance;
+  late final LearningDomainStore _learningStore;
 
   @override
   void initState() {
     super.initState();
+    _learningStore = widget.store ?? LearningDomainStore.instance;
     _courseName = widget.initialCourse;
     unawaited(_learningStore.load());
   }
@@ -112,23 +115,19 @@ class _QuizScreenState extends State<QuizScreen> {
         ),
       );
     }
-    return ListView.separated(
-      itemCount: lectures.length,
-      separatorBuilder: (_, _) => const SizedBox(height: 10),
-      itemBuilder: (_, i) {
-        final lecture = lectures[i];
-        return _QuizWeekCard(
-          lecture: lecture,
-          onTap: () => Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (_) => QuizSessionScreen(
-                course: selectedCourse.name,
-                lecture: lecture,
-              ),
+    return SessionWeekList(
+      sessions: lectures,
+      itemBuilder: (_, lecture) => _QuizWeekCard(
+        lecture: lecture,
+        onTap: () => Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => QuizSessionScreen(
+              course: selectedCourse.name,
+              lecture: lecture,
             ),
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 }
@@ -149,25 +148,14 @@ class _QuizWeekCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        '${lecture.week} - ${lecture.title}',
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.ink,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    if (lecture.week ==
-                        AcademicCalendar.currentWeekLabel()) ...[
-                      const SizedBox(width: 6),
-                      const CurrentWeekBadge(),
-                    ],
-                  ],
+                Text(
+                  lecture.title,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.ink,
+                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 2),
                 const Text(
