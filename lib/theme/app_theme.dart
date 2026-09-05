@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -51,7 +52,9 @@ class AppColors {
 }
 
 class AppTextStyles {
-  static TextStyle get _base => GoogleFonts.notoSansKr(color: AppColors.ink);
+  static TextStyle get _base => kIsWeb
+      ? const TextStyle(color: AppColors.ink)
+      : GoogleFonts.notoSansKr(color: AppColors.ink);
 
   static TextStyle get h1 => _base.copyWith(
     fontSize: 24,
@@ -84,14 +87,23 @@ class AppTextStyles {
     letterSpacing: -0.2,
   );
 
-  static TextStyle get logoStyle => GoogleFonts.nunito(
-    fontSize: 48,
-    fontWeight: FontWeight.w900,
-    color: Colors.white,
-  );
+  static TextStyle get logoStyle => kIsWeb
+      ? const TextStyle(
+          fontSize: 48,
+          fontWeight: FontWeight.w900,
+          color: Colors.white,
+        )
+      : GoogleFonts.nunito(
+          fontSize: 48,
+          fontWeight: FontWeight.w900,
+          color: Colors.white,
+        );
 }
 
 ThemeData buildAppTheme() {
+  final textTheme = kIsWeb
+      ? ThemeData.light().textTheme
+      : GoogleFonts.notoSansKrTextTheme();
   return ThemeData(
     useMaterial3: true,
     colorScheme: ColorScheme.fromSeed(
@@ -102,7 +114,7 @@ ThemeData buildAppTheme() {
       surfaceContainerHighest: AppColors.surfaceAlt,
     ),
     scaffoldBackgroundColor: AppColors.bg,
-    textTheme: GoogleFonts.notoSansKrTextTheme().apply(
+    textTheme: textTheme.apply(
       bodyColor: AppColors.ink,
       displayColor: AppColors.ink,
     ),

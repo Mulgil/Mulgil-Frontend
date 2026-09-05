@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../data/api_client.dart';
 import '../../data/app_services.dart';
+import '../../data/learning_domain_api.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/common_widgets.dart';
 import '../../models/lecture.dart';
@@ -15,10 +16,13 @@ import 'widgets/quiz_tablet_hint.dart';
 class QuizSessionScreen extends StatefulWidget {
   final String course;
   final Lecture lecture;
+  final LearningDomainApi? api;
+
   const QuizSessionScreen({
     super.key,
     required this.course,
     required this.lecture,
+    this.api,
   });
 
   @override
@@ -26,6 +30,7 @@ class QuizSessionScreen extends StatefulWidget {
 }
 
 class _QuizSessionScreenState extends State<QuizSessionScreen> {
+  late final LearningDomainApi _api;
   late Future<void> _questionsLoad;
   final List<QuizQuestion> _questions = [];
   int _current = 0;
@@ -39,22 +44,23 @@ class _QuizSessionScreenState extends State<QuizSessionScreen> {
   @override
   void initState() {
     super.initState();
+    _api = widget.api ?? AppServices.learningDomain;
     _questionsLoad = _loadQuestions();
   }
 
   Future<void> _loadQuestions() async {
     try {
-      final questions = await AppServices.learningDomain.listSessionQuiz(
-        widget.lecture.id,
-      );
+      final questions = await _api.listSessionQuiz(widget.lecture.id);
       _questions
         ..clear()
         ..addAll(questions);
       _loadError = questions.isEmpty ? '퀴즈가 아직 준비되지 않았어요.' : null;
     } on ApiException catch (error) {
-      _loadError = error.statusCode == 409
+      _loadError = error.code == 'EMBEDDING_NOT_READY'
+          ? 'AI 콘텐츠를 준비하고 있어요.'
+          : error.statusCode == 409
           ? '퀴즈가 아직 준비되지 않았어요.'
-          : error.message;
+          : '퀴즈를 불러오지 못했어요.';
     } on Exception {
       _loadError = '퀴즈를 불러오지 못했어요.';
     }

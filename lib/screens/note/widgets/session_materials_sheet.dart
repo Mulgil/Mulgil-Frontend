@@ -103,7 +103,7 @@ class _SessionMaterialsSheetState extends State<SessionMaterialsSheet> {
 
   void _schedulePolling() {
     _pollTimer?.cancel();
-    if (_jobs.any((job) => job.status.isActive)) {
+    if (_jobs.any((job) => job.isMaterialPreparation && job.status.isActive)) {
       _pollTimer = Timer(const Duration(seconds: 3), _load);
     }
   }
@@ -221,10 +221,14 @@ class _SessionMaterialsSheetState extends State<SessionMaterialsSheet> {
       child: ListView(
         physics: const AlwaysScrollableScrollPhysics(),
         children: [
-          if (_jobs.isNotEmpty) ...[
-            _ProcessingStatusCard(jobs: _jobs),
-            const SizedBox(height: 16),
-          ],
+          _DocumentAnalysisStatusCard(
+            jobs: _jobs.where((job) => job.isDocumentAnalysis),
+          ),
+          const SizedBox(height: 10),
+          _ContentIndexingStatusCard(
+            jobs: _jobs.where((job) => job.isContentIndexing),
+          ),
+          const SizedBox(height: 16),
           Text(
             'PDF 자료 ${_materials.length}개',
             style: const TextStyle(
@@ -260,7 +264,7 @@ class _SessionMaterialsSheetState extends State<SessionMaterialsSheet> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('PDF 삭제'),
-        content: Text('${material.filename}를 첨부 자료에서 삭제할까요?'),
+        content: const Text('이 PDF를 삭제할까요?\n첨부 자료에서 영구 삭제돼요.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
@@ -283,45 +287,83 @@ Future<bool> _launchExternalUrl(Uri url) {
   return launchUrl(url, webOnlyWindowName: '_blank');
 }
 
-class _ProcessingStatusCard extends StatelessWidget {
-  final List<SessionProcessingJob> jobs;
+class _DocumentAnalysisStatusCard extends StatelessWidget {
+  final Iterable<SessionProcessingJob> jobs;
 
-  const _ProcessingStatusCard({required this.jobs});
+  const _DocumentAnalysisStatusCard({required this.jobs});
 
   @override
   Widget build(BuildContext context) {
-    final hasActiveJobs = jobs.any((job) => job.status.isActive);
-    final hasFailedJobs = jobs.any(
-      (job) => job.status == ProcessingJobStatus.failed,
+    final status = _JobGroupStatus.from(jobs);
+    return _JobStatusCard(
+      title: 'PDF 분석 상태',
+      status: status,
+      message: status.isActive
+          ? 'PDF 분석 중이에요.'
+          : status.hasFailed
+          ? 'PDF 분석에 실패했어요. 업로드한 PDF는 열어볼 수 있어요.'
+          : status.succeeded > 0
+          ? 'PDF 분석이 완료됐어요.'
+          : 'PDF 분석 상태를 확인하고 있어요.',
     );
-    final title = hasActiveJobs
-        ? 'PDF 분석 중'
-        : hasFailedJobs
-        ? 'PDF 분석 실패'
-        : 'PDF 분석 완료';
-    final icon = hasActiveJobs
+  }
+}
+
+class _ContentIndexingStatusCard extends StatelessWidget {
+  final Iterable<SessionProcessingJob> jobs;
+
+  const _ContentIndexingStatusCard({required this.jobs});
+
+  @override
+  Widget build(BuildContext context) {
+    final status = _JobGroupStatus.from(jobs);
+    return _JobStatusCard(
+      title: 'AI 콘텐츠 준비 상태',
+      status: status,
+      message: status.isActive
+          ? 'AI 콘텐츠를 준비하고 있어요.'
+          : status.hasFailed
+          ? 'AI 콘텐츠 준비에 실패했어요.'
+          : status.succeeded > 0
+          ? 'AI 콘텐츠 준비가 완료됐어요.'
+          : 'AI 콘텐츠 준비 상태를 확인하고 있어요.',
+      detail:
+          '대기 ${status.queued}개 · 진행 ${status.running}개 · 완료 ${status.succeeded}개 · 실패 ${status.failed}개',
+      footer: '요약, 마인드맵, 연습 문제, 기출 문제 생성에만 반영돼요.',
+    );
+  }
+}
+
+class _JobStatusCard extends StatelessWidget {
+  final String title;
+  final _JobGroupStatus status;
+  final String message;
+  final String? detail;
+  final String? footer;
+
+  const _JobStatusCard({
+    required this.title,
+    required this.status,
+    required this.message,
+    this.detail,
+    this.footer,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final icon = status.isActive
         ? Icons.hourglass_top_outlined
-        : hasFailedJobs
+        : status.hasFailed
         ? Icons.error_outline
         : Icons.check_circle_outline;
-    final color = hasActiveJobs
+    final color = status.isActive
         ? AppColors.tealDark
-        : hasFailedJobs
+        : status.hasFailed
         ? AppColors.coral
         : AppColors.teal;
-    final message = hasActiveJobs
-        ? 'AI가 PDF 내용을 읽고 있어요. 분석이 끝나면 요약/퀴즈에 자동으로 반영돼요.'
-        : hasFailedJobs
-        ? 'PDF는 업로드됐지만, 요약/퀴즈에는 아직 사용할 수 없어요.'
-        : '요약/퀴즈에 사용할 준비가 끝났어요.';
-
-    return Container(
+    return MulgilCard(
+      color: AppColors.surfaceAlt,
       padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceAlt,
-        borderRadius: BorderRadius.circular(AppRadius.md),
-        border: Border.all(color: AppColors.border),
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -344,10 +386,70 @@ class _ProcessingStatusCard extends StatelessWidget {
             message,
             style: const TextStyle(fontSize: 12, color: AppColors.ink60),
           ),
+          if (detail != null) ...[
+            const SizedBox(height: 4),
+            Text(
+              detail!,
+              style: const TextStyle(fontSize: 12, color: AppColors.ink60),
+            ),
+          ],
+          if (footer != null) ...[
+            const SizedBox(height: 4),
+            Text(
+              footer!,
+              style: const TextStyle(fontSize: 12, color: AppColors.ink60),
+            ),
+          ],
         ],
       ),
     );
   }
+}
+
+class _JobGroupStatus {
+  final int queued;
+  final int running;
+  final int succeeded;
+  final int failed;
+
+  const _JobGroupStatus({
+    required this.queued,
+    required this.running,
+    required this.succeeded,
+    required this.failed,
+  });
+
+  factory _JobGroupStatus.from(Iterable<SessionProcessingJob> jobs) {
+    var queued = 0;
+    var running = 0;
+    var succeeded = 0;
+    var failed = 0;
+    for (final job in jobs) {
+      switch (job.status) {
+        case ProcessingJobStatus.queued:
+          queued++;
+        case ProcessingJobStatus.running:
+          running++;
+        case ProcessingJobStatus.succeeded:
+          succeeded++;
+        case ProcessingJobStatus.failed:
+          failed++;
+        case ProcessingJobStatus.outdated:
+        case ProcessingJobStatus.cancelled:
+        case ProcessingJobStatus.unknown:
+          break;
+      }
+    }
+    return _JobGroupStatus(
+      queued: queued,
+      running: running,
+      succeeded: succeeded,
+      failed: failed,
+    );
+  }
+
+  bool get isActive => queued > 0 || running > 0;
+  bool get hasFailed => failed > 0;
 }
 
 class _MaterialTile extends StatelessWidget {

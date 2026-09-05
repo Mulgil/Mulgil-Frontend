@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_theme.dart';
@@ -61,12 +62,19 @@ class MulgilWordmark extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scale = fontSize / _refSize;
-    final textStyle = GoogleFonts.nunito(
-      fontSize: fontSize,
-      fontWeight: FontWeight.w900,
-      color: color,
-      height: 1,
-    );
+    final textStyle = kIsWeb
+        ? TextStyle(
+            fontSize: fontSize,
+            fontWeight: FontWeight.w900,
+            color: color,
+            height: 1,
+          )
+        : GoogleFonts.nunito(
+            fontSize: fontSize,
+            fontWeight: FontWeight.w900,
+            color: color,
+            height: 1,
+          );
     return Row(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.end,

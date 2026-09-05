@@ -130,6 +130,10 @@ class SessionProcessingJob {
     required this.finishedAt,
     this.materialId,
   });
+
+  bool get isDocumentAnalysis => type == 'pdf_extract' || type == 'pdf_ocr';
+  bool get isContentIndexing => type == 'chunk_embed';
+  bool get isMaterialPreparation => isDocumentAnalysis || isContentIndexing;
 }
 
 class UploadFile {
