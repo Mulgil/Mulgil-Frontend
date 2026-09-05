@@ -174,6 +174,30 @@ class LearningDomainStore extends ChangeNotifier {
     await refresh(requireSuccess: true);
   }
 
+  Future<void> createExam({
+    required Course course,
+    required String title,
+    required DateTime examAt,
+    required List<Lecture> sessions,
+  }) async {
+    _ensureAuthenticated();
+    if (sessions.isEmpty ||
+        sessions.any((session) => session.courseId != course.id)) {
+      throw ArgumentError.value(
+        sessions,
+        'sessions',
+        '시험 범위는 선택한 과목의 차시여야 해요.',
+      );
+    }
+    await _api.createExam(
+      course: course,
+      title: title,
+      examAt: examAt,
+      sessions: sessions,
+    );
+    await refresh(requireSuccess: true);
+  }
+
   Future<List<Lecture>> _ensureScheduledSessions(
     Course course,
     List<TimetableSlot> slots,

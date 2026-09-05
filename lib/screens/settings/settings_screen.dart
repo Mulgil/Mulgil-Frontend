@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/common_widgets.dart';
 import '../../widgets/course_form_sheet.dart';
+import '../../widgets/exam_form_sheet.dart';
 import '../../data/auth_store.dart';
 import '../../data/learning_domain_store.dart';
 import '../../models/exam.dart';
@@ -55,9 +56,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  void _openAddExamSheet() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('시험 등록은 차시 선택 연결 후 서버에 저장할 수 있어요.')),
+  Future<void> _openAddExamSheet() async {
+    if (!AuthStore.hasAccessToken) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Google 로그인 연결 후 서버에 저장할 수 있어요.')),
+      );
+      return;
+    }
+    if (_learningStore.courses.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('시험 일정을 등록하려면 과목을 먼저 추가해주세요.')),
+      );
+      return;
+    }
+    await showMulgilSheet<void>(
+      context,
+      isScrollControlled: true,
+      builder: (_) => ExamFormSheet(
+        courses: _learningStore.courses,
+        sessions: _learningStore.sessions,
+        onCreate: _learningStore.createExam,
+      ),
     );
   }
 

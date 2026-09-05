@@ -1,11 +1,13 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+
 import '../../../data/auth_store.dart';
 import '../../../data/learning_domain_store.dart';
 import '../../../theme/app_theme.dart';
 import '../../../widgets/common_widgets.dart';
 import '../../../widgets/course_form_sheet.dart';
+import '../../../widgets/exam_form_sheet.dart';
 import '../../../widgets/weekly_timetable.dart';
 import '../../../models/course.dart';
 import '../../../models/exam.dart';
@@ -52,13 +54,29 @@ class _ScheduleStepState extends State<ScheduleStep> {
   // Pass `existing` to edit that exam in place; omit it to add a new one —
   // a course can have zero, one, or several exams (중간/기말/퀴즈 등), so this
   // is called once per exam row rather than once per course.
-  Future<void> _openExamSheet(Course _, {Exam? existing}) async {
-    final message = existing == null
-        ? '시험 등록은 차시 선택 연결 후 서버에 저장할 수 있어요.'
-        : '시험 수정 API가 아직 없어 화면 저장을 비워뒀어요.';
-    ScaffoldMessenger.of(
+  Future<void> _openExamSheet(Course course, {Exam? existing}) async {
+    if (existing != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('시험 수정 API가 아직 없어 화면 저장을 비워뒀어요.')),
+      );
+      return;
+    }
+    if (!AuthStore.hasAccessToken) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Google 로그인 연결 후 서버에 저장할 수 있어요.')),
+      );
+      return;
+    }
+    await showMulgilSheet<void>(
       context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+      isScrollControlled: true,
+      builder: (_) => ExamFormSheet(
+        initialCourse: course,
+        courses: _learningStore.courses,
+        sessions: _learningStore.sessions,
+        onCreate: _learningStore.createExam,
+      ),
+    );
   }
 
   void _deleteExam(Exam _) {
