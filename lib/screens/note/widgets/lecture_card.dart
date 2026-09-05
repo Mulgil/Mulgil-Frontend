@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../data/notes_store.dart';
 import '../../../models/lecture.dart';
 import '../../../theme/app_theme.dart';
 import '../../../utils/academic_calendar.dart';
@@ -18,11 +19,12 @@ class LectureCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final hasNotes = NotesStore.instance.hasNotes(lecture);
     return MulgilCard(
       onTap: onTap,
       padding: const EdgeInsets.all(12),
       child: Opacity(
-        opacity: lecture.done ? 1.0 : 0.5,
+        opacity: hasNotes ? 1.0 : 0.5,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -46,13 +48,13 @@ class LectureCard extends StatelessWidget {
               ],
             ),
             Padding(
-              padding: EdgeInsets.only(top: 2, bottom: lecture.done ? 8 : 0),
+              padding: EdgeInsets.only(top: 2, bottom: hasNotes ? 8 : 0),
               child: Text(
-                lecture.done ? '${lecture.date} · 필기 완료' : '필기 없음',
+                hasNotes ? '${lecture.date} · 필기 완료' : '필기 없음',
                 style: const TextStyle(fontSize: 11, color: AppColors.ink40),
               ),
             ),
-            if (lecture.done)
+            if (hasNotes)
               Row(
                 children: [
                   if (lecture.quiz != null) ...[

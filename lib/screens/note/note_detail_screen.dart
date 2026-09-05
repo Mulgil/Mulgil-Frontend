@@ -7,6 +7,7 @@ import '../../data/learning_domain_store.dart';
 import '../../data/notes_store.dart';
 import '../../models/lecture.dart';
 import '../../models/draw_stroke.dart';
+import '../../models/prof_mention.dart';
 import '../../utils/stroke_eraser.dart';
 import 'widgets/note_canvas.dart';
 import 'widgets/note_drawing_footer.dart';
@@ -30,6 +31,7 @@ enum _NoteMode { drawing, typed }
 class _NoteDetailScreenState extends State<NoteDetailScreen> {
   _NoteMode _mode = _NoteMode.drawing;
   int _tool = 0;
+  static const _mentionTool = 4;
   final _typedCtrl = TextEditingController();
   bool _contentLoaded = false;
   Lecture? _lecture;
@@ -42,12 +44,25 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
   List<DrawStroke> _eraseBeforeSnapshot = [];
   bool _eraseChanged = false;
   DrawStroke? _currentStroke;
+  final Map<int, List<ProfMention>> _pageMentions = {};
+  Offset? _mentionStart;
+  Offset? _mentionCurrent;
+  DateTime? _mentionStartTime;
+  double _penWidth = 2.5;
+  double _highlighterWidth = 16;
+  int _lastEraserTool = 2;
 
   List<DrawStroke> get _strokes => _pageStrokes.putIfAbsent(_currentPage, () {
     final lecture = _lecture;
     if (lecture == null) return [];
     return List.of(NotesStore.instance.pageStrokes(lecture, _currentPage));
   });
+  List<ProfMention> get _mentions =>
+      _pageMentions.putIfAbsent(_currentPage, () {
+        final lecture = _lecture;
+        if (lecture == null) return [];
+        return List.of(NotesStore.instance.pageMentions(lecture, _currentPage));
+      });
   List<_DrawAction> get _history =>
       _pageHistory.putIfAbsent(_currentPage, () => []);
   List<_DrawAction> get _redoHistory =>
@@ -99,6 +114,12 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
   }
 
   void _startStroke(Offset pos) {
+    if (_tool == _mentionTool) {
+      _mentionStart = pos;
+      _mentionStartTime = DateTime.now();
+      setState(() => _mentionCurrent = pos);
+      return;
+    }
     if (_currentTool == DrawTool.eraser ||
         _currentTool == DrawTool.strokeEraser) {
       _eraseBeforeSnapshot = List.of(_strokes);
@@ -116,13 +137,19 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
         color: _currentTool == DrawTool.highlighter
             ? AppColors.yellow.withValues(alpha: 0.45)
             : AppColors.navy,
-        width: _currentTool == DrawTool.highlighter ? 16 : 2.5,
+        width: _currentTool == DrawTool.highlighter
+            ? _highlighterWidth
+            : _penWidth,
         points: [pos],
       );
     });
   }
 
   void _extendStroke(Offset pos) {
+    if (_tool == _mentionTool) {
+      setState(() => _mentionCurrent = pos);
+      return;
+    }
     if (_currentTool == DrawTool.eraser) {
       _eraseAt(pos);
       return;
@@ -136,6 +163,10 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
   }
 
   void _endStroke() {
+    if (_tool == _mentionTool) {
+      _endMention();
+      return;
+    }
     if (_currentTool == DrawTool.eraser ||
         _currentTool == DrawTool.strokeEraser) {
       if (_eraseChanged) {
@@ -186,8 +217,116 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
   void _persistCurrentPage() =>
       NotesStore.instance.updatePageStrokes(_lecture!, _currentPage, _strokes);
 
+  // First drag on a spot draws a new border. A later short tap inside an
+  // existing border bumps its frequency; a long-press there lowers it again.
+  // Threshold is generous (not a tight tap slop) because a real long-press
+  // hold accumulates more drift than a quick tap before release.
+  static const _mentionTapThreshold = 20.0;
+  static const _mentionLongPressDuration = Duration(milliseconds: 500);
+
+  void _endMention() {
+    final start = _mentionStart;
+    final current = _mentionCurrent;
+    final startTime = _mentionStartTime;
+    _mentionStart = null;
+    _mentionStartTime = null;
+    setState(() => _mentionCurrent = null);
+    if (start == null || current == null) return;
+
+    if ((current - start).distance < _mentionTapThreshold) {
+      final isLongPress =
+          startTime != null &&
+          DateTime.now().difference(startTime) >= _mentionLongPressDuration;
+      _adjustMentionFrequency(current, decrement: isLongPress);
+      return;
+    }
+
+    // Dragging over an existing border again (e.g. by mistake) shouldn't
+    // stack a duplicate box — treat it as another mention of that region.
+    final dragRect = Rect.fromPoints(start, current);
+    ProfMention? overlapping;
+    for (final m in _mentions) {
+      if (m.rect.overlaps(dragRect)) overlapping = m;
+    }
+    if (overlapping != null) {
+      _incrementMention(overlapping);
+      return;
+    }
+
+    setState(() => _mentions.add(ProfMention(start: start, end: current)));
+    _persistCurrentPageMentions();
+  }
+
+  void _incrementMentionAt(Offset position) {
+    _adjustMentionFrequency(position, decrement: false);
+  }
+
+  void _decrementMentionAt(Offset position) {
+    _adjustMentionFrequency(position, decrement: true);
+  }
+
+  void _adjustMentionFrequency(Offset position, {required bool decrement}) {
+    ProfMention? hit;
+    for (final mention in _mentions.reversed) {
+      if (mention.rect.contains(position)) {
+        hit = mention;
+        break;
+      }
+    }
+    if (hit == null) return;
+    if (decrement) {
+      _decrementMention(hit);
+    } else {
+      _incrementMention(hit);
+    }
+  }
+
+  void _incrementMention(ProfMention mention) {
+    if (mention.frequency >= 3) return;
+    setState(() => mention.frequency += 1);
+    _persistCurrentPageMentions();
+    _showMentionToast('언급 빈도 +1 · ${'⭐' * mention.frequency}');
+  }
+
+  void _decrementMention(ProfMention mention) {
+    if (mention.frequency <= 1) {
+      setState(() => _mentions.remove(mention));
+      _persistCurrentPageMentions();
+      _showMentionToast('표시가 삭제됐어요');
+      return;
+    }
+    setState(() => mention.frequency -= 1);
+    _persistCurrentPageMentions();
+    _showMentionToast('언급 빈도 -1 · ${'⭐' * mention.frequency}');
+  }
+
+  void _persistCurrentPageMentions() => NotesStore.instance.updatePageMentions(
+    _lecture!,
+    _currentPage,
+    _mentions,
+  );
+
+  void _showMentionToast(String message) {
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.clearSnackBars();
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(message),
+        duration: const Duration(seconds: 2),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
   bool get _canUndo => _history.isNotEmpty;
   bool get _canRedo => _redoHistory.isNotEmpty;
+
+  void _selectTool(int tool) {
+    setState(() {
+      _tool = tool;
+      if (tool == 2 || tool == 3) _lastEraserTool = tool;
+    });
+  }
 
   void _undo() {
     if (_history.isEmpty) return;
@@ -271,11 +410,17 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
           if (isDrawing) ...[
             NoteToolbar(
               selectedTool: _tool,
-              onToolSelected: (i) => setState(() => _tool = i),
+              onToolSelected: _selectTool,
               canUndo: _canUndo,
               canRedo: _canRedo,
               onUndo: _undo,
               onRedo: _redo,
+              penWidth: _penWidth,
+              onPenWidthSelected: (w) => setState(() => _penWidth = w),
+              highlighterWidth: _highlighterWidth,
+              onHighlighterWidthSelected: (w) =>
+                  setState(() => _highlighterWidth = w),
+              lastEraserTool: _lastEraserTool,
             ),
             if (_pendingReview.isNotEmpty)
               NoteReviewBanner(
@@ -315,9 +460,15 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
     return NoteCanvas(
       strokes: _strokes,
       currentStroke: _currentStroke,
-      onPanStart: (d) => _startStroke(d.localPosition),
-      onPanUpdate: (d) => _extendStroke(d.localPosition),
-      onPanEnd: (_) => _endStroke(),
+      mentions: _mentions,
+      mentionPreviewRect: _mentionStart != null && _mentionCurrent != null
+          ? Rect.fromPoints(_mentionStart!, _mentionCurrent!)
+          : null,
+      onDrawStart: _startStroke,
+      onDrawUpdate: _extendStroke,
+      onDrawEnd: _endStroke,
+      onMentionTap: _tool == _mentionTool ? _incrementMentionAt : null,
+      onMentionLongPress: _tool == _mentionTool ? _decrementMentionAt : null,
     );
   }
 

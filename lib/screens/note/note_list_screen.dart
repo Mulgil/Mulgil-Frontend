@@ -28,7 +28,7 @@ class _NoteListScreenState extends State<NoteListScreen> {
   String? _courseName;
   final _learningStore = LearningDomainStore.instance;
 
-  static const _filters = ['전체', '필기있음', '퀴즈완료'];
+  static const _filters = ['전체', '필기있음', '퀴즈완료', '메모'];
 
   @override
   void initState() {
@@ -187,9 +187,15 @@ class _NoteListScreenState extends State<NoteListScreen> {
   List<Lecture> _filteredLectures(List<Lecture> courseLectures) {
     switch (_filter) {
       case 1:
-        return courseLectures.where((l) => l.done).toList();
+        return courseLectures
+            .where((l) => NotesStore.instance.hasNotes(l))
+            .toList();
       case 2:
         return courseLectures.where((l) => l.quiz != null).toList();
+      case 3:
+        return courseLectures
+            .where((l) => NotesStore.instance.isMemo(l))
+            .toList();
       default:
         return courseLectures;
     }

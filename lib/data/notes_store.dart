@@ -2,11 +2,13 @@ import 'package:flutter/foundation.dart';
 
 import '../models/lecture.dart';
 import '../models/draw_stroke.dart';
+import '../models/prof_mention.dart';
 
 class NoteContent {
   String typedText;
   final List<List<DrawStroke>> pagesStrokes;
-  NoteContent({this.typedText = ''}) : pagesStrokes = [];
+  final List<List<ProfMention>> pagesMentions;
+  NoteContent({this.typedText = ''}) : pagesStrokes = [], pagesMentions = [];
 }
 
 // In-memory store for notes drafted during the current app session.
@@ -17,19 +19,30 @@ class NotesStore extends ChangeNotifier {
 
   final List<Lecture> _lectures = [];
   final Map<String, NoteContent> _contents = {};
-  int _newNoteCount = 0;
+
+  static const memoWeekLabel = '메모';
 
   List<Lecture> get lectures => List.unmodifiable(_lectures);
 
   NoteContent contentFor(Lecture lecture) =>
       _contents.putIfAbsent(lecture.id, () => NoteContent());
 
+  bool isMemo(Lecture lecture) => lecture.id.startsWith('note-');
+
+  bool hasContent(Lecture lecture) {
+    final content = _contents[lecture.id];
+    if (content == null) return false;
+    return content.pagesStrokes.any((page) => page.isNotEmpty) ||
+        content.typedText.trim().isNotEmpty;
+  }
+
+  bool hasNotes(Lecture lecture) => lecture.done || hasContent(lecture);
+
   Lecture createNote({required String title, required String courseId}) {
-    _newNoteCount++;
     final lecture = Lecture(
       id: 'note-${DateTime.now().microsecondsSinceEpoch}',
       courseId: courseId,
-      week: '메모 $_newNoteCount',
+      week: memoWeekLabel,
       title: title,
       date: _todayLabel(),
       done: true,
@@ -43,6 +56,7 @@ class NotesStore extends ChangeNotifier {
 
   void updateTypedText(Lecture lecture, String text) {
     contentFor(lecture).typedText = text;
+    notifyListeners();
   }
 
   List<DrawStroke> pageStrokes(Lecture lecture, int page) {
@@ -56,6 +70,24 @@ class NotesStore extends ChangeNotifier {
       pages.add([]);
     }
     pages[page] = strokes;
+    notifyListeners();
+  }
+
+  List<ProfMention> pageMentions(Lecture lecture, int page) {
+    final pages = contentFor(lecture).pagesMentions;
+    return page < pages.length ? pages[page] : const [];
+  }
+
+  void updatePageMentions(
+    Lecture lecture,
+    int page,
+    List<ProfMention> mentions,
+  ) {
+    final pages = contentFor(lecture).pagesMentions;
+    while (pages.length <= page) {
+      pages.add([]);
+    }
+    pages[page] = mentions;
   }
 
   String _todayLabel() {
