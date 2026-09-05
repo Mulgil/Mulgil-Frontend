@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'theme/app_theme.dart';
 import 'constants/routes.dart';
 import 'app_routes_map.dart';
+import 'data/auth_store.dart';
 
 void main() {
+  AuthStore.saveDevTokensFromEnvironment();
   runApp(const MulgilApp());
 }
 

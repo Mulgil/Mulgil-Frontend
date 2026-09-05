@@ -141,7 +141,7 @@ class _LoginScreenState extends State<LoginScreen> {
     return 'Google 로그인에 실패했어요. 잠시 후 다시 시도해주세요.';
   }
 
-  Widget _buildGoogleSignInEntry(BuildContext context) {
+  Widget _buildGoogleSignInEntry(BuildContext context, double width) {
     return FutureBuilder<void>(
       future: _googleInitialization,
       builder: (context, snapshot) {
@@ -149,7 +149,7 @@ class _LoginScreenState extends State<LoginScreen> {
             snapshot.connectionState == ConnectionState.done &&
             !snapshot.hasError;
         if (kIsWeb && isReady) {
-          return _GoogleSignInWebButton(loading: _loading);
+          return _GoogleSignInWebButton(loading: _loading, width: width);
         }
         return _GoogleSignInButton(
           loading: _loading || (!isReady && !snapshot.hasError),
@@ -168,26 +168,42 @@ class _LoginScreenState extends State<LoginScreen> {
     return Scaffold(
       backgroundColor: AppColors.navy,
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 40),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const MulgilWordmark(fontSize: 56),
-              const SizedBox(height: 12),
-              const Text(
-                '흐르듯 공부하다',
-                style: TextStyle(color: Color(0xFFc9d8e0), fontSize: 16),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 440),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final contentWidth = constraints.maxWidth;
+                  return Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const MulgilWordmark(fontSize: 56),
+                      const SizedBox(height: 12),
+                      const Text(
+                        '흐르듯 공부하다',
+                        style: TextStyle(
+                          color: Color(0xFFc9d8e0),
+                          fontSize: 16,
+                        ),
+                      ),
+                      const SizedBox(height: 56),
+                      _buildGoogleSignInEntry(context, contentWidth),
+                      const SizedBox(height: 12),
+                      const Text(
+                        '계속 진행하면 이용약관과 개인정보처리방침에 동의하는 것으로 간주됩니다',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Color(0xFF7f96a4),
+                          fontSize: 11,
+                        ),
+                      ),
+                    ],
+                  );
+                },
               ),
-              const SizedBox(height: 56),
-              _buildGoogleSignInEntry(context),
-              const SizedBox(height: 12),
-              const Text(
-                '계속 진행하면 이용약관과 개인정보처리방침에 동의하는 것으로 간주됩니다',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: Color(0xFF7f96a4), fontSize: 11),
-              ),
-            ],
+            ),
           ),
         ),
       ),
@@ -197,22 +213,21 @@ class _LoginScreenState extends State<LoginScreen> {
 
 class _GoogleSignInWebButton extends StatelessWidget {
   final bool loading;
+  final double width;
 
-  const _GoogleSignInWebButton({required this.loading});
+  const _GoogleSignInWebButton({required this.loading, required this.width});
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.sizeOf(context).width;
-    final buttonWidth = math.min(400.0, math.max(240.0, screenWidth - 80));
     return SizedBox(
-      width: buttonWidth,
+      width: width,
       height: 44,
       child: Stack(
         alignment: Alignment.center,
         children: [
           AbsorbPointer(
             absorbing: loading,
-            child: googleSignInSdkButton(minimumWidth: buttonWidth),
+            child: googleSignInSdkButton(minimumWidth: width),
           ),
           if (loading)
             const Positioned.fill(
