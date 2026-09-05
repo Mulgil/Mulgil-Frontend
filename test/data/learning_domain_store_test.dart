@@ -9,6 +9,7 @@ import 'package:mulgil/data/auth_store.dart';
 import 'package:mulgil/data/learning_domain_api.dart';
 import 'package:mulgil/data/learning_domain_store.dart';
 import 'package:mulgil/models/course.dart';
+import 'package:mulgil/models/lecture.dart';
 import 'package:mulgil/models/timetable_slot.dart';
 
 void main() {
@@ -107,6 +108,83 @@ void main() {
       expect(store.timetableSlots.single.courseId, 'course-1');
       expect(store.sessionsFor('course-1').single.id, 'session-1');
       expect(store.exams.single.sessionTitles, ['1주차']);
+    });
+
+    test('creates an exam and refreshes the server state', () async {
+      AuthStore.saveTokens(
+        accessToken: 'access-token',
+        refreshToken: 'refresh',
+      );
+      const course = Course(id: 'course-1', name: '운영체제');
+      const sessions = [
+        Lecture(
+          id: 'session-1',
+          courseId: 'course-1',
+          week: '1주차',
+          title: '1차시',
+          done: false,
+          stars: 0,
+        ),
+      ];
+      final requests = <String>[];
+      final store = LearningDomainStore(
+        _api((request) async {
+          final key = '${request.method} ${request.url.path}';
+          requests.add(key);
+          switch (key) {
+            case 'POST /api/v1/courses/course-1/exams':
+              expect(jsonDecode(request.body), {
+                'title': '중간고사',
+                'examAt': '2026-10-19T15:00:00.000Z',
+                'sessionIds': ['session-1'],
+              });
+              return _jsonResponse(
+                _examJson(
+                  id: 'exam-1',
+                  courseId: 'course-1',
+                  sessionIds: ['session-1'],
+                ),
+                201,
+              );
+            case 'GET /api/v1/courses':
+              return _jsonResponse([
+                _courseJson(id: 'course-1', name: '운영체제'),
+              ], 200);
+            case 'GET /api/v1/timetable/slots':
+              return _jsonResponse([], 200);
+            case 'GET /api/v1/courses/course-1/sessions':
+              return _jsonResponse([
+                _sessionJson(id: 'session-1', courseId: 'course-1'),
+              ], 200);
+            case 'GET /api/v1/courses/course-1/exams':
+              return _jsonResponse([
+                _examJson(
+                  id: 'exam-1',
+                  courseId: 'course-1',
+                  sessionIds: ['session-1'],
+                ),
+              ], 200);
+          }
+          fail('Unexpected request: ${request.method} ${request.url}');
+        }),
+      );
+
+      await store.createExam(
+        course: course,
+        title: '중간고사',
+        examAt: DateTime(2026, 10, 20),
+        sessions: sessions,
+      );
+
+      expect(requests, [
+        'POST /api/v1/courses/course-1/exams',
+        'GET /api/v1/courses',
+        'GET /api/v1/timetable/slots',
+        'GET /api/v1/courses/course-1/sessions',
+        'GET /api/v1/courses/course-1/exams',
+      ]);
+      expect(store.exams.single.id, 'exam-1');
+      expect(store.exams.single.sessionIds, ['session-1']);
     });
 
     test('creates slots with the course id returned by the server', () async {
