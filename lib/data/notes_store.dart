@@ -56,6 +56,7 @@ class NotesStore extends ChangeNotifier {
 
   void updateTypedText(Lecture lecture, String text) {
     contentFor(lecture).typedText = text;
+    notifyListeners();
   }
 
   List<DrawStroke> pageStrokes(Lecture lecture, int page) {

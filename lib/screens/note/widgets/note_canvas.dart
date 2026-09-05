@@ -13,6 +13,8 @@ class NoteCanvas extends StatelessWidget {
   final ValueChanged<Offset> onDrawStart;
   final ValueChanged<Offset> onDrawUpdate;
   final VoidCallback onDrawEnd;
+  final ValueChanged<Offset>? onMentionTap;
+  final ValueChanged<Offset>? onMentionLongPress;
 
   const NoteCanvas({
     super.key,
@@ -23,6 +25,8 @@ class NoteCanvas extends StatelessWidget {
     required this.onDrawStart,
     required this.onDrawUpdate,
     required this.onDrawEnd,
+    this.onMentionTap,
+    this.onMentionLongPress,
   });
 
   @override
@@ -31,13 +35,19 @@ class NoteCanvas extends StatelessWidget {
       builder: (context, constraints) {
         final bounds = Offset.zero & constraints.biggest;
         Offset clamp(Offset o) => Offset(
-          o.dx.clamp(bounds.left, bounds.right),
-          o.dy.clamp(bounds.top, bounds.bottom),
+          o.dx.clamp(bounds.left, bounds.right).toDouble(),
+          o.dy.clamp(bounds.top, bounds.bottom).toDouble(),
         );
         return GestureDetector(
           onPanStart: (d) => onDrawStart(clamp(d.localPosition)),
           onPanUpdate: (d) => onDrawUpdate(clamp(d.localPosition)),
           onPanEnd: (_) => onDrawEnd(),
+          onTapUp: onMentionTap == null
+              ? null
+              : (d) => onMentionTap!(clamp(d.localPosition)),
+          onLongPressStart: onMentionLongPress == null
+              ? null
+              : (d) => onMentionLongPress!(clamp(d.localPosition)),
           child: ClipRect(child: _buildStack()),
         );
       },

@@ -234,19 +234,10 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
     if (start == null || current == null) return;
 
     if ((current - start).distance < _mentionTapThreshold) {
-      ProfMention? hit;
-      for (final m in _mentions) {
-        if (m.rect.contains(current)) hit = m;
-      }
-      if (hit == null) return;
       final isLongPress =
           startTime != null &&
           DateTime.now().difference(startTime) >= _mentionLongPressDuration;
-      if (isLongPress) {
-        _decrementMention(hit);
-      } else {
-        _incrementMention(hit);
-      }
+      _adjustMentionFrequency(current, decrement: isLongPress);
       return;
     }
 
@@ -264,6 +255,30 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
 
     setState(() => _mentions.add(ProfMention(start: start, end: current)));
     _persistCurrentPageMentions();
+  }
+
+  void _incrementMentionAt(Offset position) {
+    _adjustMentionFrequency(position, decrement: false);
+  }
+
+  void _decrementMentionAt(Offset position) {
+    _adjustMentionFrequency(position, decrement: true);
+  }
+
+  void _adjustMentionFrequency(Offset position, {required bool decrement}) {
+    ProfMention? hit;
+    for (final mention in _mentions.reversed) {
+      if (mention.rect.contains(position)) {
+        hit = mention;
+        break;
+      }
+    }
+    if (hit == null) return;
+    if (decrement) {
+      _decrementMention(hit);
+    } else {
+      _incrementMention(hit);
+    }
   }
 
   void _incrementMention(ProfMention mention) {
@@ -452,6 +467,8 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
       onDrawStart: _startStroke,
       onDrawUpdate: _extendStroke,
       onDrawEnd: _endStroke,
+      onMentionTap: _tool == _mentionTool ? _incrementMentionAt : null,
+      onMentionLongPress: _tool == _mentionTool ? _decrementMentionAt : null,
     );
   }
 
