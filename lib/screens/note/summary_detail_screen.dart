@@ -16,10 +16,13 @@ import 'widgets/ai_original_tab.dart';
 class SummaryDetailScreen extends StatefulWidget {
   final String course;
   final Lecture lecture;
+  final LearningDomainApi? api;
+
   const SummaryDetailScreen({
     super.key,
     required this.course,
     required this.lecture,
+    this.api,
   });
 
   @override
@@ -29,6 +32,7 @@ class SummaryDetailScreen extends StatefulWidget {
 class _SummaryDetailScreenState extends State<SummaryDetailScreen>
     with SingleTickerProviderStateMixin {
   late final TabController _tab;
+  late final LearningDomainApi _api;
   late Future<SessionSummary?> _summaryLoad;
   String? _loadError;
   _SummarySource _source = _SummarySource.review;
@@ -37,6 +41,7 @@ class _SummaryDetailScreenState extends State<SummaryDetailScreen>
   void initState() {
     super.initState();
     _tab = TabController(length: 3, vsync: this);
+    _api = widget.api ?? AppServices.learningDomain;
     _summaryLoad = _loadSummary();
   }
 
@@ -49,14 +54,16 @@ class _SummaryDetailScreenState extends State<SummaryDetailScreen>
   Future<SessionSummary?> _loadSummary() async {
     try {
       _loadError = null;
-      return await AppServices.learningDomain.getSessionSummary(
+      return await _api.getSessionSummary(
         widget.lecture.id,
         type: _source.apiValue,
       );
     } on ApiException catch (error) {
-      _loadError = error.statusCode == 404 || error.statusCode == 409
+      _loadError = error.code == 'EMBEDDING_NOT_READY'
+          ? 'AI 콘텐츠를 준비하고 있어요.'
+          : error.statusCode == 404 || error.statusCode == 409
           ? 'AI 요약이 아직 준비되지 않았어요.'
-          : error.message;
+          : 'AI 요약을 불러오지 못했어요.';
     } on Exception {
       _loadError = 'AI 요약을 불러오지 못했어요.';
     }
