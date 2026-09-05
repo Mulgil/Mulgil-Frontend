@@ -19,12 +19,13 @@ Future<void> confirmDeleteExam(
   );
 }
 
-typedef ExamCreateCallback = Future<void> Function({
-  required Course course,
-  required String title,
-  required DateTime examAt,
-  required List<Lecture> sessions,
-});
+typedef ExamCreateCallback =
+    Future<void> Function({
+      required Course course,
+      required String title,
+      required DateTime examAt,
+      required List<Lecture> sessions,
+    });
 
 class ExamFormSheet extends StatefulWidget {
   final Course? initialCourse;
@@ -123,8 +124,9 @@ class _ExamFormSheetState extends State<ExamFormSheet> {
       Navigator.pop(context);
     } on ApiException catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(error.message)));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.message)));
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
