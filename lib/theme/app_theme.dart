@@ -87,11 +87,17 @@ class AppTextStyles {
     letterSpacing: -0.2,
   );
 
-  static TextStyle get logoStyle => GoogleFonts.nunito(
-    fontSize: 48,
-    fontWeight: FontWeight.w900,
-    color: Colors.white,
-  );
+  static TextStyle get logoStyle => kIsWeb
+      ? const TextStyle(
+          fontSize: 48,
+          fontWeight: FontWeight.w900,
+          color: Colors.white,
+        )
+      : GoogleFonts.nunito(
+          fontSize: 48,
+          fontWeight: FontWeight.w900,
+          color: Colors.white,
+        );
 }
 
 ThemeData buildAppTheme() {
