@@ -271,6 +271,56 @@ void main() {
       },
     );
 
+    test(
+      'does not refresh a replacement session from a stale snapshot',
+      () async {
+        String? accessToken = 'account-a-token';
+        var tokenReads = 0;
+        var refreshes = 0;
+        var requests = 0;
+        final client = ApiClient(
+          baseUri: Uri.parse('https://api.example.com'),
+          accessTokenProvider: () {
+            tokenReads++;
+            if (tokenReads == 2) {
+              scheduleMicrotask(() => accessToken = 'account-b-token');
+            }
+            return accessToken;
+          },
+          onUnauthorized: () {
+            refreshes++;
+            accessToken = '$accessToken-refreshed';
+            return accessToken;
+          },
+          httpClient: MockClient((request) async {
+            requests++;
+            if (requests == 1) {
+              return http.Response(
+                jsonEncode({
+                  'code': 'UNAUTHENTICATED',
+                  'message': 'Authentication failed.',
+                }),
+                401,
+                headers: {'content-type': 'application/json'},
+              );
+            }
+            return http.Response('{}', 200);
+          }),
+        );
+
+        await expectLater(
+          client.postJson(
+            '/api/v1/courses',
+            body: {'name': 'account-a-course'},
+          ),
+          throwsA(isA<ApiException>()),
+        );
+        expect(requests, 1);
+        expect(refreshes, 1);
+        expect(accessToken, 'account-b-token');
+      },
+    );
+
     test('shares one refresh across concurrent 401 responses', () async {
       String? accessToken = 'expired-token';
       final refreshStarted = Completer<void>();

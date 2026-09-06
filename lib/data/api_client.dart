@@ -7,7 +7,7 @@ import 'signed_upload_transport.dart';
 
 part 'api_client_response.dart';
 
-typedef AccessTokenProvider = FutureOr<String?> Function();
+typedef AccessTokenProvider = String? Function();
 typedef UnauthorizedHandler = FutureOr<String?> Function();
 typedef AuthenticationFailureHandler = FutureOr<void> Function();
 
@@ -157,7 +157,7 @@ class ApiClient {
     String? expectedAuthorization,
   }) async {
     final request = http.Request(method, _uri(path, queryParameters));
-    final requestHeaders = await _requestHeaders(
+    final requestHeaders = _requestHeaders(
       hasBody: body != null,
       headers: headers,
       authenticated: authenticated,
@@ -179,7 +179,7 @@ class ApiClient {
     final response = await http.Response.fromStream(streamed);
     if (response.statusCode == 401 && authenticated) {
       final failedAuthorization = request.headers['Authorization'];
-      final currentToken = (await _accessTokenProvider?.call())?.trim();
+      final currentToken = _accessTokenProvider?.call()?.trim();
       final currentAuthorization = _authorization(currentToken);
       final isCurrentSession = failedAuthorization == currentAuthorization;
       final onUnauthorized = _onUnauthorized;
@@ -234,13 +234,13 @@ class ApiClient {
     return token == null || token.isEmpty ? null : 'Bearer $token';
   }
 
-  Future<Map<String, String>> _requestHeaders({
+  Map<String, String> _requestHeaders({
     required bool hasBody,
     required Map<String, String> headers,
     required bool authenticated,
-  }) async {
+  }) {
     final accessToken = authenticated
-        ? (await _accessTokenProvider?.call())?.trim()
+        ? _accessTokenProvider?.call()?.trim()
         : null;
     return {
       'Accept': 'application/json',
