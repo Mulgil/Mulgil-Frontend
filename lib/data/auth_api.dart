@@ -26,7 +26,7 @@ class AuthApi {
     return tokens;
   }
 
-  Future<void> refreshAccessToken() async {
+  Future<String> refreshAccessToken() async {
     final refreshToken = AuthStore.refreshToken;
     if (refreshToken == null || refreshToken.isEmpty) {
       AuthStore.clearTokens();
@@ -56,6 +56,7 @@ class AuthApi {
         refreshToken: tokens.refreshToken,
         user: tokens.user ?? AuthStore.user,
       );
+      return tokens.accessToken;
     } on ApiException catch (error) {
       if (error.statusCode == 401 && AuthStore.refreshToken == refreshToken) {
         AuthStore.clearTokens();

@@ -8,7 +8,7 @@ import 'signed_upload_transport.dart';
 part 'api_client_response.dart';
 
 typedef AccessTokenProvider = FutureOr<String?> Function();
-typedef UnauthorizedHandler = FutureOr<void> Function();
+typedef UnauthorizedHandler = FutureOr<String?> Function();
 typedef AuthenticationFailureHandler = FutureOr<void> Function();
 
 abstract final class ApiConfig {
@@ -28,7 +28,9 @@ class ApiClient {
   final UnauthorizedHandler? _onUnauthorized;
   final AuthenticationFailureHandler? _onAuthenticationFailed;
   final bool _ownsHttpClient;
-  Future<void>? _activeRefresh;
+  Future<String?>? _activeRefresh;
+  String? _lastFailedAuthorization;
+  String? _lastRefreshedAuthorization;
 
   // Keep the public parameter name stable for callers.
   ApiClient({
@@ -152,15 +154,23 @@ class ApiClient {
     Map<String, String> headers = const {},
     bool authenticated = true,
     bool canRefresh = true,
+    String? expectedAuthorization,
   }) async {
     final request = http.Request(method, _uri(path, queryParameters));
-    request.headers.addAll(
-      await _requestHeaders(
-        hasBody: body != null,
-        headers: headers,
-        authenticated: authenticated,
-      ),
+    final requestHeaders = await _requestHeaders(
+      hasBody: body != null,
+      headers: headers,
+      authenticated: authenticated,
     );
+    if (expectedAuthorization != null &&
+        requestHeaders['Authorization'] != expectedAuthorization) {
+      throw const ApiException(
+        statusCode: 401,
+        code: 'UNAUTHENTICATED',
+        message: 'Authentication state changed.',
+      );
+    }
+    request.headers.addAll(requestHeaders);
     if (body != null) {
       request.body = jsonEncode(body);
     }
@@ -170,31 +180,58 @@ class ApiClient {
     if (response.statusCode == 401 && authenticated) {
       final failedAuthorization = request.headers['Authorization'];
       final currentToken = (await _accessTokenProvider?.call())?.trim();
-      final isCurrentSession = failedAuthorization == 'Bearer $currentToken';
+      final currentAuthorization = _authorization(currentToken);
+      final isCurrentSession = failedAuthorization == currentAuthorization;
       final onUnauthorized = _onUnauthorized;
       if (canRefresh && onUnauthorized != null) {
-        if (isCurrentSession) await _refreshAccessToken(onUnauthorized);
-        return _sendJson(
-          method,
-          path,
-          body: body,
-          queryParameters: queryParameters,
-          headers: headers,
-          authenticated: authenticated,
-          canRefresh: false,
-        );
+        String? retryAuthorization;
+        if (isCurrentSession) {
+          retryAuthorization = _authorization(
+            await _refreshAccessToken(onUnauthorized, failedAuthorization),
+          );
+        } else if (failedAuthorization == _lastFailedAuthorization &&
+            currentAuthorization == _lastRefreshedAuthorization) {
+          retryAuthorization = currentAuthorization;
+        }
+        if (retryAuthorization != null) {
+          return _sendJson(
+            method,
+            path,
+            body: body,
+            queryParameters: queryParameters,
+            headers: headers,
+            authenticated: authenticated,
+            canRefresh: false,
+            expectedAuthorization: retryAuthorization,
+          );
+        }
       }
       if (isCurrentSession) await _onAuthenticationFailed?.call();
     }
     return _handleResponse(response);
   }
 
-  Future<void> _refreshAccessToken(UnauthorizedHandler onUnauthorized) {
+  Future<String?> _refreshAccessToken(
+    UnauthorizedHandler onUnauthorized,
+    String? failedAuthorization,
+  ) {
     final activeRefresh = _activeRefresh;
     if (activeRefresh != null) return activeRefresh;
-    final refresh = Future.sync(onUnauthorized);
+    final refresh = Future.sync(onUnauthorized).then((accessToken) {
+      final refreshedAuthorization = _authorization(accessToken);
+      if (refreshedAuthorization != null) {
+        _lastFailedAuthorization = failedAuthorization;
+        _lastRefreshedAuthorization = refreshedAuthorization;
+      }
+      return accessToken;
+    });
     _activeRefresh = refresh;
     return refresh.whenComplete(() => _activeRefresh = null);
+  }
+
+  static String? _authorization(String? accessToken) {
+    final token = accessToken?.trim();
+    return token == null || token.isEmpty ? null : 'Bearer $token';
   }
 
   Future<Map<String, String>> _requestHeaders({
