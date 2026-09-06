@@ -9,6 +9,7 @@ part 'api_client_response.dart';
 
 typedef AccessTokenProvider = FutureOr<String?> Function();
 typedef UnauthorizedHandler = FutureOr<void> Function();
+typedef AuthenticationFailureHandler = FutureOr<void> Function();
 
 abstract final class ApiConfig {
   static const defaultBaseUrl = 'https://api.mulgil.app';
@@ -25,6 +26,7 @@ class ApiClient {
   final http.Client _http;
   final AccessTokenProvider? _accessTokenProvider;
   final UnauthorizedHandler? _onUnauthorized;
+  final AuthenticationFailureHandler? _onAuthenticationFailed;
   final bool _ownsHttpClient;
   Future<void>? _activeRefresh;
 
@@ -34,12 +36,15 @@ class ApiClient {
     http.Client? httpClient,
     AccessTokenProvider? accessTokenProvider,
     UnauthorizedHandler? onUnauthorized,
+    AuthenticationFailureHandler? onAuthenticationFailed,
   }) : baseUri = _normalizeBaseUri(baseUri ?? ApiConfig.baseUri),
        _http = httpClient ?? http.Client(),
        // ignore: prefer_initializing_formals
        _accessTokenProvider = accessTokenProvider,
        // ignore: prefer_initializing_formals
        _onUnauthorized = onUnauthorized,
+       // ignore: prefer_initializing_formals
+       _onAuthenticationFailed = onAuthenticationFailed,
        _ownsHttpClient = httpClient == null;
 
   Future<Object?> getJson(
@@ -162,25 +167,24 @@ class ApiClient {
 
     final streamed = await _http.send(request);
     final response = await http.Response.fromStream(streamed);
-    final onUnauthorized = _onUnauthorized;
-    if (response.statusCode == 401 &&
-        authenticated &&
-        canRefresh &&
-        onUnauthorized != null) {
+    if (response.statusCode == 401 && authenticated) {
       final failedAuthorization = request.headers['Authorization'];
       final currentToken = (await _accessTokenProvider?.call())?.trim();
-      if (failedAuthorization == 'Bearer $currentToken') {
-        await _refreshAccessToken(onUnauthorized);
+      final isCurrentSession = failedAuthorization == 'Bearer $currentToken';
+      final onUnauthorized = _onUnauthorized;
+      if (canRefresh && onUnauthorized != null) {
+        if (isCurrentSession) await _refreshAccessToken(onUnauthorized);
+        return _sendJson(
+          method,
+          path,
+          body: body,
+          queryParameters: queryParameters,
+          headers: headers,
+          authenticated: authenticated,
+          canRefresh: false,
+        );
       }
-      return _sendJson(
-        method,
-        path,
-        body: body,
-        queryParameters: queryParameters,
-        headers: headers,
-        authenticated: authenticated,
-        canRefresh: false,
-      );
+      if (isCurrentSession) await _onAuthenticationFailed?.call();
     }
     return _handleResponse(response);
   }

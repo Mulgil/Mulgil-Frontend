@@ -146,6 +146,83 @@ void main() {
     });
 
     test(
+      'clears the current session after the retried request returns 401',
+      () async {
+        String? accessToken = 'expired-token';
+        var refreshes = 0;
+        var clears = 0;
+        var requests = 0;
+        final client = ApiClient(
+          baseUri: Uri.parse('https://api.example.com'),
+          accessTokenProvider: () => accessToken,
+          onUnauthorized: () {
+            refreshes++;
+            accessToken = 'fresh-token';
+          },
+          onAuthenticationFailed: () {
+            clears++;
+            accessToken = null;
+          },
+          httpClient: MockClient((request) async {
+            requests++;
+            return http.Response(
+              jsonEncode({
+                'code': 'UNAUTHENTICATED',
+                'message': 'Authentication failed.',
+              }),
+              401,
+              headers: {'content-type': 'application/json'},
+            );
+          }),
+        );
+
+        await expectLater(
+          client.getJson('/api/v1/jobs/job-1'),
+          throwsA(isA<ApiException>()),
+        );
+        expect(requests, 2);
+        expect(refreshes, 1);
+        expect(clears, 1);
+        expect(accessToken, isNull);
+      },
+    );
+
+    test('preserves a replacement session after a stale retried 401', () async {
+      String? accessToken = 'expired-token';
+      var clears = 0;
+      var requests = 0;
+      final client = ApiClient(
+        baseUri: Uri.parse('https://api.example.com'),
+        accessTokenProvider: () => accessToken,
+        onUnauthorized: () => accessToken = 'fresh-token',
+        onAuthenticationFailed: () {
+          clears++;
+          accessToken = null;
+        },
+        httpClient: MockClient((request) async {
+          requests++;
+          if (requests == 2) accessToken = 'replacement-token';
+          return http.Response(
+            jsonEncode({
+              'code': 'UNAUTHENTICATED',
+              'message': 'Authentication failed.',
+            }),
+            401,
+            headers: {'content-type': 'application/json'},
+          );
+        }),
+      );
+
+      await expectLater(
+        client.getJson('/api/v1/jobs/job-1'),
+        throwsA(isA<ApiException>()),
+      );
+      expect(requests, 2);
+      expect(clears, 0);
+      expect(accessToken, 'replacement-token');
+    });
+
+    test(
       'uploads raw bytes to absolute signed URLs without bearer auth',
       () async {
         final client = ApiClient(

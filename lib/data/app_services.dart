@@ -9,6 +9,7 @@ abstract final class AppServices {
   static final ApiClient apiClient = ApiClient(
     accessTokenProvider: AuthStore.accessTokenProvider,
     onUnauthorized: () => auth.refreshAccessToken(),
+    onAuthenticationFailed: AuthStore.clearTokens,
   );
 
   static final learningDomain = LearningDomainApi(apiClient);

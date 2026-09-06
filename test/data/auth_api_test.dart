@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -68,6 +69,93 @@ void main() {
       expect(AuthStore.accessToken, 'fresh-access-token');
       expect(AuthStore.refreshToken, 'rotated-refresh-token');
     });
+
+    test('does not restore a session after logout during refresh', () async {
+      AuthStore.saveTokens(
+        accessToken: 'old-access-token',
+        refreshToken: 'old-refresh-token',
+      );
+      final requested = Completer<void>();
+      final refreshResponse = Completer<http.Response>();
+      final api = AuthApi(
+        ApiClient(
+          baseUri: Uri.parse('https://api.example.com'),
+          httpClient: MockClient((request) {
+            requested.complete();
+            return refreshResponse.future;
+          }),
+        ),
+      );
+
+      final refresh = api.refreshAccessToken();
+      await requested.future;
+      AuthStore.clearTokens();
+      refreshResponse.complete(
+        http.Response(
+          jsonEncode({
+            'accessToken': 'stale-access-token',
+            'refreshToken': 'stale-refresh-token',
+          }),
+          200,
+          headers: {'content-type': 'application/json'},
+        ),
+      );
+
+      await expectLater(
+        refresh,
+        throwsA(
+          isA<ApiException>().having(
+            (error) => error.code,
+            'code',
+            'UNAUTHENTICATED',
+          ),
+        ),
+      );
+      expect(AuthStore.accessToken, isNull);
+      expect(AuthStore.refreshToken, isNull);
+    });
+
+    test(
+      'does not clear a replacement session after stale refresh 401',
+      () async {
+        AuthStore.saveTokens(
+          accessToken: 'old-access-token',
+          refreshToken: 'old-refresh-token',
+        );
+        final requested = Completer<void>();
+        final refreshResponse = Completer<http.Response>();
+        final api = AuthApi(
+          ApiClient(
+            baseUri: Uri.parse('https://api.example.com'),
+            httpClient: MockClient((request) {
+              requested.complete();
+              return refreshResponse.future;
+            }),
+          ),
+        );
+
+        final refresh = api.refreshAccessToken();
+        await requested.future;
+        AuthStore.saveTokens(
+          accessToken: 'new-access-token',
+          refreshToken: 'new-refresh-token',
+        );
+        refreshResponse.complete(
+          http.Response(
+            jsonEncode({
+              'code': 'UNAUTHENTICATED',
+              'message': 'Authentication failed.',
+            }),
+            401,
+            headers: {'content-type': 'application/json'},
+          ),
+        );
+
+        await expectLater(refresh, throwsA(isA<ApiException>()));
+        expect(AuthStore.accessToken, 'new-access-token');
+        expect(AuthStore.refreshToken, 'new-refresh-token');
+      },
+    );
 
     test('posts Google ID token and stores backend tokens', () async {
       final api = AuthApi(

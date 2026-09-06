@@ -44,13 +44,22 @@ class AuthApi {
         authenticated: false,
       );
       final tokens = AuthTokens.fromJson(_asMap(response));
+      if (AuthStore.refreshToken != refreshToken) {
+        throw const ApiException(
+          statusCode: 401,
+          code: 'UNAUTHENTICATED',
+          message: 'Authentication state changed.',
+        );
+      }
       AuthStore.saveTokens(
         accessToken: tokens.accessToken,
         refreshToken: tokens.refreshToken,
         user: tokens.user ?? AuthStore.user,
       );
     } on ApiException catch (error) {
-      if (error.statusCode == 401) AuthStore.clearTokens();
+      if (error.statusCode == 401 && AuthStore.refreshToken == refreshToken) {
+        AuthStore.clearTokens();
+      }
       rethrow;
     }
   }
