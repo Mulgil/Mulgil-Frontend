@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -11,6 +12,151 @@ void main() {
   tearDown(AuthStore.clear);
 
   group('AuthApi', () {
+    test('refreshes an expired access token and retries job polling', () async {
+      AuthStore.saveTokens(
+        accessToken: 'expired-access-token',
+        refreshToken: 'refresh-token',
+      );
+      late final AuthApi auth;
+      var jobRequests = 0;
+      final client = ApiClient(
+        baseUri: Uri.parse('https://api.example.com'),
+        accessTokenProvider: AuthStore.accessTokenProvider,
+        onUnauthorized: () => auth.refreshAccessToken(),
+        httpClient: MockClient((request) async {
+          if (request.url.path == '/api/v1/auth/refresh') {
+            expect(_header(request, 'authorization'), isNull);
+            expect(jsonDecode(request.body), {'refreshToken': 'refresh-token'});
+            return http.Response(
+              jsonEncode({
+                'accessToken': 'fresh-access-token',
+                'refreshToken': 'rotated-refresh-token',
+                'tokenType': 'Bearer',
+                'accessExpiresAt': '2026-09-03T12:00:00Z',
+              }),
+              200,
+              headers: {'content-type': 'application/json'},
+            );
+          }
+
+          jobRequests++;
+          final authorization = _header(request, 'authorization');
+          if (authorization == 'Bearer expired-access-token') {
+            return http.Response(
+              jsonEncode({
+                'code': 'UNAUTHENTICATED',
+                'message': 'Authentication failed.',
+                'details': <String, Object?>{},
+              }),
+              401,
+              headers: {'content-type': 'application/json'},
+            );
+          }
+          expect(authorization, 'Bearer fresh-access-token');
+          return http.Response(
+            jsonEncode({'id': 'job-1', 'status': 'running'}),
+            200,
+            headers: {'content-type': 'application/json'},
+          );
+        }),
+      );
+      auth = AuthApi(client);
+
+      final result = await client.getJson('/api/v1/jobs/job-1');
+
+      expect(result, {'id': 'job-1', 'status': 'running'});
+      expect(jobRequests, 2);
+      expect(AuthStore.accessToken, 'fresh-access-token');
+      expect(AuthStore.refreshToken, 'rotated-refresh-token');
+    });
+
+    test('does not restore a session after logout during refresh', () async {
+      AuthStore.saveTokens(
+        accessToken: 'old-access-token',
+        refreshToken: 'old-refresh-token',
+      );
+      final requested = Completer<void>();
+      final refreshResponse = Completer<http.Response>();
+      final api = AuthApi(
+        ApiClient(
+          baseUri: Uri.parse('https://api.example.com'),
+          httpClient: MockClient((request) {
+            requested.complete();
+            return refreshResponse.future;
+          }),
+        ),
+      );
+
+      final refresh = api.refreshAccessToken();
+      await requested.future;
+      AuthStore.clearTokens();
+      refreshResponse.complete(
+        http.Response(
+          jsonEncode({
+            'accessToken': 'stale-access-token',
+            'refreshToken': 'stale-refresh-token',
+          }),
+          200,
+          headers: {'content-type': 'application/json'},
+        ),
+      );
+
+      await expectLater(
+        refresh,
+        throwsA(
+          isA<ApiException>().having(
+            (error) => error.code,
+            'code',
+            'UNAUTHENTICATED',
+          ),
+        ),
+      );
+      expect(AuthStore.accessToken, isNull);
+      expect(AuthStore.refreshToken, isNull);
+    });
+
+    test(
+      'does not clear a replacement session after stale refresh 401',
+      () async {
+        AuthStore.saveTokens(
+          accessToken: 'old-access-token',
+          refreshToken: 'old-refresh-token',
+        );
+        final requested = Completer<void>();
+        final refreshResponse = Completer<http.Response>();
+        final api = AuthApi(
+          ApiClient(
+            baseUri: Uri.parse('https://api.example.com'),
+            httpClient: MockClient((request) {
+              requested.complete();
+              return refreshResponse.future;
+            }),
+          ),
+        );
+
+        final refresh = api.refreshAccessToken();
+        await requested.future;
+        AuthStore.saveTokens(
+          accessToken: 'new-access-token',
+          refreshToken: 'new-refresh-token',
+        );
+        refreshResponse.complete(
+          http.Response(
+            jsonEncode({
+              'code': 'UNAUTHENTICATED',
+              'message': 'Authentication failed.',
+            }),
+            401,
+            headers: {'content-type': 'application/json'},
+          ),
+        );
+
+        await expectLater(refresh, throwsA(isA<ApiException>()));
+        expect(AuthStore.accessToken, 'new-access-token');
+        expect(AuthStore.refreshToken, 'new-refresh-token');
+      },
+    );
+
     test('posts Google ID token and stores backend tokens', () async {
       final api = AuthApi(
         ApiClient(
@@ -80,4 +226,13 @@ void main() {
       expect(AuthStore.isLoggedIn, isFalse);
     });
   });
+}
+
+String? _header(http.BaseRequest request, String name) {
+  for (final entry in request.headers.entries) {
+    if (entry.key.toLowerCase() == name.toLowerCase()) {
+      return entry.value;
+    }
+  }
+  return null;
 }

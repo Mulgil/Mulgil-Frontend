@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -143,6 +144,230 @@ void main() {
               ),
         ),
       );
+    });
+
+    test(
+      'clears the current session after the retried request returns 401',
+      () async {
+        String? accessToken = 'expired-token';
+        var refreshes = 0;
+        var clears = 0;
+        var requests = 0;
+        final client = ApiClient(
+          baseUri: Uri.parse('https://api.example.com'),
+          accessTokenProvider: () => accessToken,
+          onUnauthorized: () {
+            refreshes++;
+            accessToken = 'fresh-token';
+            return accessToken;
+          },
+          onAuthenticationFailed: () {
+            clears++;
+            accessToken = null;
+          },
+          httpClient: MockClient((request) async {
+            requests++;
+            return http.Response(
+              jsonEncode({
+                'code': 'UNAUTHENTICATED',
+                'message': 'Authentication failed.',
+              }),
+              401,
+              headers: {'content-type': 'application/json'},
+            );
+          }),
+        );
+
+        await expectLater(
+          client.getJson('/api/v1/jobs/job-1'),
+          throwsA(isA<ApiException>()),
+        );
+        expect(requests, 2);
+        expect(refreshes, 1);
+        expect(clears, 1);
+        expect(accessToken, isNull);
+      },
+    );
+
+    test('preserves a replacement session after a stale retried 401', () async {
+      String? accessToken = 'expired-token';
+      var clears = 0;
+      var requests = 0;
+      final client = ApiClient(
+        baseUri: Uri.parse('https://api.example.com'),
+        accessTokenProvider: () => accessToken,
+        onUnauthorized: () => accessToken = 'fresh-token',
+        onAuthenticationFailed: () {
+          clears++;
+          accessToken = null;
+        },
+        httpClient: MockClient((request) async {
+          requests++;
+          if (requests == 2) accessToken = 'replacement-token';
+          return http.Response(
+            jsonEncode({
+              'code': 'UNAUTHENTICATED',
+              'message': 'Authentication failed.',
+            }),
+            401,
+            headers: {'content-type': 'application/json'},
+          );
+        }),
+      );
+
+      await expectLater(
+        client.getJson('/api/v1/jobs/job-1'),
+        throwsA(isA<ApiException>()),
+      );
+      expect(requests, 2);
+      expect(clears, 0);
+      expect(accessToken, 'replacement-token');
+    });
+
+    test(
+      'does not replay a stale request under a replacement session',
+      () async {
+        String? accessToken = 'account-a-token';
+        var refreshes = 0;
+        var clears = 0;
+        var requests = 0;
+        final client = ApiClient(
+          baseUri: Uri.parse('https://api.example.com'),
+          accessTokenProvider: () => accessToken,
+          onUnauthorized: () {
+            refreshes++;
+            accessToken = 'refreshed-token';
+            return accessToken;
+          },
+          onAuthenticationFailed: () {
+            clears++;
+            accessToken = null;
+          },
+          httpClient: MockClient((request) async {
+            requests++;
+            accessToken = 'account-b-token';
+            return http.Response(
+              jsonEncode({
+                'code': 'UNAUTHENTICATED',
+                'message': 'Authentication failed.',
+              }),
+              401,
+              headers: {'content-type': 'application/json'},
+            );
+          }),
+        );
+
+        await expectLater(
+          client.postJson(
+            '/api/v1/courses',
+            body: {'name': 'account-a-course'},
+          ),
+          throwsA(isA<ApiException>()),
+        );
+        expect(requests, 1);
+        expect(refreshes, 0);
+        expect(clears, 0);
+        expect(accessToken, 'account-b-token');
+      },
+    );
+
+    test(
+      'does not refresh a replacement session from a stale snapshot',
+      () async {
+        String? accessToken = 'account-a-token';
+        var tokenReads = 0;
+        var refreshes = 0;
+        var requests = 0;
+        final client = ApiClient(
+          baseUri: Uri.parse('https://api.example.com'),
+          accessTokenProvider: () {
+            tokenReads++;
+            if (tokenReads == 2) {
+              scheduleMicrotask(() => accessToken = 'account-b-token');
+            }
+            return accessToken;
+          },
+          onUnauthorized: () {
+            refreshes++;
+            accessToken = '$accessToken-refreshed';
+            return accessToken;
+          },
+          httpClient: MockClient((request) async {
+            requests++;
+            if (requests == 1) {
+              return http.Response(
+                jsonEncode({
+                  'code': 'UNAUTHENTICATED',
+                  'message': 'Authentication failed.',
+                }),
+                401,
+                headers: {'content-type': 'application/json'},
+              );
+            }
+            return http.Response('{}', 200);
+          }),
+        );
+
+        await expectLater(
+          client.postJson(
+            '/api/v1/courses',
+            body: {'name': 'account-a-course'},
+          ),
+          throwsA(isA<ApiException>()),
+        );
+        expect(requests, 1);
+        expect(refreshes, 1);
+        expect(accessToken, 'account-b-token');
+      },
+    );
+
+    test('shares one refresh across concurrent 401 responses', () async {
+      String? accessToken = 'expired-token';
+      final refreshStarted = Completer<void>();
+      final releaseRefresh = Completer<void>();
+      var refreshes = 0;
+      var requests = 0;
+      final client = ApiClient(
+        baseUri: Uri.parse('https://api.example.com'),
+        accessTokenProvider: () => accessToken,
+        onUnauthorized: () async {
+          refreshes++;
+          refreshStarted.complete();
+          await releaseRefresh.future;
+          accessToken = 'fresh-token';
+          return accessToken;
+        },
+        httpClient: MockClient((request) async {
+          requests++;
+          if (_header(request, 'authorization') == 'Bearer expired-token') {
+            return http.Response(
+              jsonEncode({
+                'code': 'UNAUTHENTICATED',
+                'message': 'Authentication failed.',
+              }),
+              401,
+              headers: {'content-type': 'application/json'},
+            );
+          }
+          return http.Response(
+            jsonEncode({'status': 'running'}),
+            200,
+            headers: {'content-type': 'application/json'},
+          );
+        }),
+      );
+
+      final responses = [
+        client.getJson('/api/v1/jobs/job-1'),
+        client.getJson('/api/v1/jobs/job-2'),
+      ];
+      await refreshStarted.future;
+      releaseRefresh.complete();
+
+      await Future.wait(responses);
+      expect(requests, 4);
+      expect(refreshes, 1);
+      expect(accessToken, 'fresh-token');
     });
 
     test(

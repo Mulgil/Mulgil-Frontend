@@ -1,5 +1,3 @@
-import 'dart:async';
-
 // In-memory stand-in for a persisted session. Secure storage should replace
 // this once Google Sign-In is wired up.
 abstract final class AuthStore {
@@ -25,7 +23,7 @@ abstract final class AuthStore {
     }
   }
 
-  static FutureOr<String?> accessTokenProvider() => accessToken;
+  static String? accessTokenProvider() => accessToken;
 
   static bool saveDevTokensFromEnvironment() {
     if (!_hasToken(_devAccessToken)) return false;

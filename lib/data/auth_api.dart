@@ -15,6 +15,7 @@ class AuthApi {
     final response = await _apiClient.postJson(
       '/api/v1/auth/oauth/google',
       body: {'idToken': trimmedIdToken},
+      authenticated: false,
     );
     final tokens = AuthTokens.fromJson(_asMap(response));
     AuthStore.saveTokens(
@@ -23,6 +24,45 @@ class AuthApi {
       user: tokens.user,
     );
     return tokens;
+  }
+
+  Future<String> refreshAccessToken() async {
+    final refreshToken = AuthStore.refreshToken;
+    if (refreshToken == null || refreshToken.isEmpty) {
+      AuthStore.clearTokens();
+      throw const ApiException(
+        statusCode: 401,
+        code: 'UNAUTHENTICATED',
+        message: 'Refresh token is unavailable.',
+      );
+    }
+
+    try {
+      final response = await _apiClient.postJson(
+        '/api/v1/auth/refresh',
+        body: {'refreshToken': refreshToken},
+        authenticated: false,
+      );
+      final tokens = AuthTokens.fromJson(_asMap(response));
+      if (AuthStore.refreshToken != refreshToken) {
+        throw const ApiException(
+          statusCode: 401,
+          code: 'UNAUTHENTICATED',
+          message: 'Authentication state changed.',
+        );
+      }
+      AuthStore.saveTokens(
+        accessToken: tokens.accessToken,
+        refreshToken: tokens.refreshToken,
+        user: tokens.user ?? AuthStore.user,
+      );
+      return tokens.accessToken;
+    } on ApiException catch (error) {
+      if (error.statusCode == 401 && AuthStore.refreshToken == refreshToken) {
+        AuthStore.clearTokens();
+      }
+      rethrow;
+    }
   }
 
   static Map<String, Object?> _asMap(Object? value) {
