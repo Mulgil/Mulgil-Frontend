@@ -67,6 +67,21 @@ enum ProcessingJobStatus {
   bool get isTerminal => !isActive && this != unknown;
 }
 
+enum GenerationProgressStage {
+  preparing,
+  generating,
+  validating,
+  publishing,
+  unknown;
+
+  static GenerationProgressStage fromWireName(String value) {
+    return GenerationProgressStage.values.firstWhere(
+      (stage) => stage.name == value,
+      orElse: () => GenerationProgressStage.unknown,
+    );
+  }
+}
+
 class SessionMaterial {
   final String id;
   final String sessionId;
@@ -116,6 +131,8 @@ class SessionProcessingJob {
   final DateTime createdAt;
   final DateTime? finishedAt;
   final String? materialId;
+  final GenerationProgressStage? progressStage;
+  final DateTime? progressUpdatedAt;
 
   const SessionProcessingJob({
     required this.id,
@@ -129,11 +146,29 @@ class SessionProcessingJob {
     required this.createdAt,
     required this.finishedAt,
     this.materialId,
+    this.progressStage,
+    this.progressUpdatedAt,
   });
 
   bool get isDocumentAnalysis => type == 'pdf_extract' || type == 'pdf_ocr';
   bool get isContentIndexing => type == 'chunk_embed';
   bool get isMaterialPreparation => isDocumentAnalysis || isContentIndexing;
+  bool get isMindmapGeneration =>
+      type == 'preview_mindmap_generate' || type == 'review_mindmap_generate';
+  bool get isQuizGeneration =>
+      type == 'preview_quiz_generate' || type == 'review_quiz_generate';
+  bool get isSessionGeneration =>
+      type == 'preview_generate' ||
+      type == 'review_generate' ||
+      isMindmapGeneration ||
+      isQuizGeneration;
+  String get safeProgressMessage => switch (progressStage) {
+    GenerationProgressStage.preparing => '자료를 준비하고 있어요.',
+    GenerationProgressStage.generating => '내용을 만들고 있어요.',
+    GenerationProgressStage.validating => '생성 내용을 확인하고 있어요.',
+    GenerationProgressStage.publishing => '결과를 저장하고 있어요.',
+    GenerationProgressStage.unknown || null => '생성 작업을 진행하고 있어요.',
+  };
 }
 
 class UploadFile {
@@ -452,6 +487,7 @@ class ResourceUploadApi {
 
   SessionProcessingJob _sessionProcessingJobFromJson(Object? value) {
     final json = _map(value, 'AI job');
+    final progressStage = _optionalString(json, 'progressStage');
     return SessionProcessingJob(
       id: _string(json, 'id'),
       type: _string(json, 'type'),
@@ -464,6 +500,10 @@ class ResourceUploadApi {
       createdAt: DateTime.parse(_string(json, 'createdAt')),
       finishedAt: _optionalDateTime(json, 'finishedAt'),
       materialId: _optionalString(json, 'materialId'),
+      progressStage: progressStage == null
+          ? null
+          : GenerationProgressStage.fromWireName(progressStage),
+      progressUpdatedAt: _optionalDateTime(json, 'progressUpdatedAt'),
     );
   }
 

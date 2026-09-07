@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../../data/api_client.dart';
 import '../../data/app_services.dart';
 import '../../data/learning_domain_api.dart';
+import '../../data/resource_upload_api.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/common_widgets.dart';
 import '../../models/lecture.dart';
@@ -17,12 +20,16 @@ class QuizSessionScreen extends StatefulWidget {
   final String course;
   final Lecture lecture;
   final LearningDomainApi? api;
+  final ResourceUploadApi? jobsApi;
+  final String summaryType;
 
   const QuizSessionScreen({
     super.key,
     required this.course,
     required this.lecture,
     this.api,
+    this.jobsApi,
+    this.summaryType = 'review',
   });
 
   @override
@@ -31,7 +38,10 @@ class QuizSessionScreen extends StatefulWidget {
 
 class _QuizSessionScreenState extends State<QuizSessionScreen> {
   late final LearningDomainApi _api;
+  late final ResourceUploadApi _jobsApi;
   late Future<void> _questionsLoad;
+  Timer? _pollTimer;
+  int _loadRequestId = 0;
   final List<QuizQuestion> _questions = [];
   int _current = 0;
   bool _showResult = false;
@@ -40,33 +50,105 @@ class _QuizSessionScreenState extends State<QuizSessionScreen> {
   int? _correctIndex;
   String _explanation = '';
   String? _loadError;
+  SessionProcessingJob? _generationJob;
 
   @override
   void initState() {
     super.initState();
     _api = widget.api ?? AppServices.learningDomain;
+    _jobsApi = widget.jobsApi ?? AppServices.resourceUpload;
     _questionsLoad = _loadQuestions();
   }
 
+  @override
+  void dispose() {
+    _pollTimer?.cancel();
+    super.dispose();
+  }
+
   Future<void> _loadQuestions() async {
+    final requestId = ++_loadRequestId;
+    List<QuizQuestion> questions = const [];
+    String? loadError;
     try {
-      final questions = await _api.listSessionQuiz(widget.lecture.id);
-      _questions
-        ..clear()
-        ..addAll(questions);
-      _loadError = questions.isEmpty ? '퀴즈가 아직 준비되지 않았어요.' : null;
+      questions = await _api.listSessionQuiz(widget.lecture.id);
+      loadError = questions.isEmpty ? '퀴즈가 아직 준비되지 않았어요.' : null;
     } on ApiException catch (error) {
-      _loadError = error.code == 'EMBEDDING_NOT_READY'
+      loadError = error.code == 'EMBEDDING_NOT_READY'
           ? 'AI 콘텐츠를 준비하고 있어요.'
           : error.statusCode == 409
           ? '퀴즈가 아직 준비되지 않았어요.'
           : '퀴즈를 불러오지 못했어요.';
     } on Exception {
-      _loadError = '퀴즈를 불러오지 못했어요.';
+      loadError = '퀴즈를 불러오지 못했어요.';
+    }
+
+    SessionProcessingJob? generationJob;
+    if (questions.isEmpty) {
+      try {
+        final jobs = await _jobsApi.listSessionJobs(widget.lecture.id);
+        generationJob = _quizJob(jobs);
+      } on Exception {
+        // Job progress is supplementary to the safe quiz readiness message.
+      }
+    }
+    if (!mounted || requestId != _loadRequestId) return;
+    final previousGenerationJob = _generationJob;
+    final shouldReloadQuestions =
+        questions.isEmpty &&
+        previousGenerationJob?.id == generationJob?.id &&
+        previousGenerationJob?.status.isActive == true &&
+        generationJob?.status == ProcessingJobStatus.succeeded;
+    _questions
+      ..clear()
+      ..addAll(questions);
+    _generationJob = generationJob;
+    _loadError = _generationMessage(generationJob) ?? loadError;
+    if (shouldReloadQuestions) {
+      final questionsLoad = _loadQuestions();
+      setState(() {
+        _questionsLoad = questionsLoad;
+      });
+    }
+    _schedulePolling();
+  }
+
+  SessionProcessingJob? _quizJob(List<SessionProcessingJob> jobs) {
+    final type = '${widget.summaryType}_quiz_generate';
+    SessionProcessingJob? latest;
+    for (final job in jobs) {
+      if (job.type != type) continue;
+      if (latest == null || job.createdAt.isAfter(latest.createdAt)) {
+        latest = job;
+      }
+    }
+    return latest;
+  }
+
+  String? _generationMessage(SessionProcessingJob? job) {
+    if (job?.status.isActive == true) {
+      return '퀴즈 생성 중 · ${job!.safeProgressMessage}';
+    }
+    if (job?.status == ProcessingJobStatus.failed) {
+      return job!.retryable ? '퀴즈 생성에 실패했어요. 다시 시도해 주세요.' : '퀴즈 생성에 실패했어요.';
+    }
+    return null;
+  }
+
+  void _schedulePolling() {
+    _pollTimer?.cancel();
+    if (_generationJob?.status.isActive == true) {
+      _pollTimer = Timer(const Duration(seconds: 3), () {
+        if (!mounted) return;
+        setState(() {
+          _questionsLoad = _loadQuestions();
+        });
+      });
     }
   }
 
   void _retry() {
+    _pollTimer?.cancel();
     setState(() {
       _current = 0;
       _showResult = false;
@@ -86,7 +168,8 @@ class _QuizSessionScreenState extends State<QuizSessionScreen> {
           child: FutureBuilder<void>(
             future: _questionsLoad,
             builder: (context, snapshot) {
-              if (snapshot.connectionState != ConnectionState.done) {
+              if (snapshot.connectionState != ConnectionState.done &&
+                  _loadError == null) {
                 return const Center(child: CircularProgressIndicator());
               }
               final error = _loadError;
@@ -341,8 +424,8 @@ class _QuizSessionScreenState extends State<QuizSessionScreen> {
         _showResult = false;
         _correctIndex = null;
       });
-    } on ApiException catch (error) {
-      _showSubmitError(error.message);
+    } on ApiException {
+      _showSubmitError('답안을 제출하지 못했어요. 다시 시도해 주세요.');
     } on Exception {
       _showSubmitError('답안을 제출하지 못했어요.');
     } finally {

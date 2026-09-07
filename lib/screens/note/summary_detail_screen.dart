@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../../data/api_client.dart';
 import '../../data/app_services.dart';
 import '../../data/learning_domain_api.dart';
 import '../../data/notes_store.dart';
+import '../../data/resource_upload_api.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/common_widgets.dart';
 import '../../models/lecture.dart';
@@ -17,12 +20,14 @@ class SummaryDetailScreen extends StatefulWidget {
   final String course;
   final Lecture lecture;
   final LearningDomainApi? api;
+  final ResourceUploadApi? jobsApi;
 
   const SummaryDetailScreen({
     super.key,
     required this.course,
     required this.lecture,
     this.api,
+    this.jobsApi,
   });
 
   @override
@@ -33,8 +38,11 @@ class _SummaryDetailScreenState extends State<SummaryDetailScreen>
     with SingleTickerProviderStateMixin {
   late final TabController _tab;
   late final LearningDomainApi _api;
-  late Future<SessionSummary?> _summaryLoad;
-  String? _loadError;
+  late final ResourceUploadApi _jobsApi;
+  late Future<_SummaryLoadResult> _summaryLoad;
+  Timer? _pollTimer;
+  List<SessionProcessingJob> _jobs = const [];
+  int _jobsRequestId = 0;
   _SummarySource _source = _SummarySource.review;
 
   @override
@@ -42,51 +50,89 @@ class _SummaryDetailScreenState extends State<SummaryDetailScreen>
     super.initState();
     _tab = TabController(length: 3, vsync: this);
     _api = widget.api ?? AppServices.learningDomain;
-    _summaryLoad = _loadSummary();
+    _jobsApi = widget.jobsApi ?? AppServices.resourceUpload;
+    _summaryLoad = _loadSummary(_source);
+    unawaited(_loadJobs());
   }
 
   @override
   void dispose() {
     _tab.dispose();
+    _pollTimer?.cancel();
     super.dispose();
   }
 
-  Future<SessionSummary?> _loadSummary() async {
+  Future<_SummaryLoadResult> _loadSummary(_SummarySource source) async {
     try {
-      _loadError = null;
-      return await _api.getSessionSummary(
+      final summary = await _api.getSessionSummary(
         widget.lecture.id,
-        type: _source.apiValue,
+        type: source.apiValue,
       );
+      return _SummaryLoadResult(summary: summary);
     } on ApiException catch (error) {
-      _loadError = error.code == 'EMBEDDING_NOT_READY'
-          ? 'AI 콘텐츠를 준비하고 있어요.'
-          : error.statusCode == 404 || error.statusCode == 409
-          ? 'AI 요약이 아직 준비되지 않았어요.'
-          : 'AI 요약을 불러오지 못했어요.';
+      return _SummaryLoadResult(
+        error: error.code == 'EMBEDDING_NOT_READY'
+            ? 'AI 콘텐츠를 준비하고 있어요.'
+            : error.statusCode == 404 || error.statusCode == 409
+            ? 'AI 요약이 아직 준비되지 않았어요.'
+            : 'AI 요약을 불러오지 못했어요.',
+      );
     } on Exception {
-      _loadError = 'AI 요약을 불러오지 못했어요.';
+      return const _SummaryLoadResult(error: 'AI 요약을 불러오지 못했어요.');
     }
-    return null;
+  }
+
+  Future<void> _loadJobs() async {
+    final requestId = ++_jobsRequestId;
+    try {
+      final jobs = await _jobsApi.listSessionJobs(widget.lecture.id);
+      if (!mounted || requestId != _jobsRequestId) return;
+      final previousMindmapJob = _artifactJob('mindmap');
+      final mindmapJob = _artifactJob('mindmap', jobs);
+      final shouldReloadSummary =
+          previousMindmapJob?.id == mindmapJob?.id &&
+          previousMindmapJob?.status.isActive == true &&
+          mindmapJob?.status == ProcessingJobStatus.succeeded;
+      setState(() {
+        _jobs = jobs;
+        if (shouldReloadSummary) _summaryLoad = _loadSummary(_source);
+      });
+    } on Exception {
+      // Artifact status is supplementary; summary content remains readable.
+    } finally {
+      if (mounted && requestId == _jobsRequestId) _schedulePolling();
+    }
+  }
+
+  void _schedulePolling() {
+    _pollTimer?.cancel();
+    if (_jobs.any((job) => job.isSessionGeneration && job.status.isActive)) {
+      _pollTimer = Timer(const Duration(seconds: 3), _loadJobs);
+    }
   }
 
   void _retry() {
-    setState(() => _summaryLoad = _loadSummary());
+    setState(() => _summaryLoad = _loadSummary(_source));
+    unawaited(_loadJobs());
   }
 
   void _selectSource(_SummarySource source) {
     if (_source == source) return;
     setState(() {
       _source = source;
-      _summaryLoad = _loadSummary();
+      _summaryLoad = _loadSummary(source);
     });
+    unawaited(_loadJobs());
   }
 
   void _openQuiz() {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) =>
-            QuizSessionScreen(course: widget.course, lecture: widget.lecture),
+        builder: (_) => QuizSessionScreen(
+          course: widget.course,
+          lecture: widget.lecture,
+          summaryType: _source.apiValue,
+        ),
       ),
     );
   }
@@ -96,14 +142,15 @@ class _SummaryDetailScreenState extends State<SummaryDetailScreen>
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
-        child: FutureBuilder<SessionSummary?>(
+        child: FutureBuilder<_SummaryLoadResult>(
           future: _summaryLoad,
           builder: (context, snapshot) {
             if (snapshot.connectionState != ConnectionState.done) {
               return const Center(child: CircularProgressIndicator());
             }
-            final summary = snapshot.data;
-            final error = _loadError;
+            final result = snapshot.data;
+            final summary = result?.summary;
+            final error = result?.error;
             if (summary == null || error != null) {
               return Column(
                 children: [
@@ -131,10 +178,12 @@ class _SummaryDetailScreenState extends State<SummaryDetailScreen>
                         isTablet: context.isTablet,
                         items: summary.items,
                         onTakeQuiz: _openQuiz,
+                        generationJob: _artifactJob('quiz'),
                       ),
                       MindmapTab(
                         centerLabel: widget.lecture.title,
                         nodeLabels: summary.mindmapNodeLabels,
+                        generationJob: _artifactJob('mindmap'),
                       ),
                       OriginalTab(paragraphs: _originalParagraphs()),
                     ],
@@ -151,6 +200,21 @@ class _SummaryDetailScreenState extends State<SummaryDetailScreen>
         ),
       ),
     );
+  }
+
+  SessionProcessingJob? _artifactJob(
+    String artifact, [
+    List<SessionProcessingJob>? jobs,
+  ]) {
+    final type = '${_source.apiValue}_${artifact}_generate';
+    SessionProcessingJob? latest;
+    for (final job in jobs ?? _jobs) {
+      if (job.type != type) continue;
+      if (latest == null || job.createdAt.isAfter(latest.createdAt)) {
+        latest = job;
+      }
+    }
+    return latest;
   }
 
   List<String> _originalParagraphs() {
@@ -265,6 +329,13 @@ class _SummaryDetailScreenState extends State<SummaryDetailScreen>
       ),
     );
   }
+}
+
+class _SummaryLoadResult {
+  final SessionSummary? summary;
+  final String? error;
+
+  const _SummaryLoadResult({this.summary, this.error});
 }
 
 enum _SummarySource {

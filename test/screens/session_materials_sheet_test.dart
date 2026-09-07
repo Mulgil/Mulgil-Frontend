@@ -89,6 +89,7 @@ void main() {
     expect(find.text('AI 콘텐츠 준비가 완료됐어요.'), findsOneWidget);
     expect(find.text('대기 0개 · 진행 0개 · 완료 1개 · 실패 0개'), findsOneWidget);
     expect(find.text('요약, 마인드맵, 연습 문제, 기출 문제 생성에만 반영돼요.'), findsOneWidget);
+    expect(find.text('PDF 열기'), findsOneWidget);
 
     await tester.tap(find.byIcon(Icons.open_in_new));
     await tester.pumpAndSettle();
@@ -297,10 +298,10 @@ void main() {
           ),
           findsOneWidget,
         );
-        final openButton = tester.widget<IconButton>(
+        final openButton = tester.widget<TextButton>(
           find.ancestor(
             of: find.byIcon(Icons.open_in_new),
-            matching: find.byType(IconButton),
+            matching: find.byType(TextButton),
           ),
         );
         expect(openButton.onPressed, isNotNull);
@@ -314,9 +315,10 @@ void main() {
   );
 
   testWidgets(
-    'does not poll for generated output jobs after relevant jobs complete',
+    'polls active generated output jobs while keeping uploaded PDFs openable',
     (tester) async {
       var jobsRequests = 0;
+      Uri? openedUrl;
       final api = ResourceUploadApi(
         ApiClient(
           baseUri: Uri.parse('https://api.example.com'),
@@ -334,21 +336,53 @@ void main() {
                   ),
                   _jobJson(
                     id: 'generated-job',
-                    type: 'summary_generate',
+                    type: 'review_mindmap_generate',
                     status: 'running',
                   ),
+                  _jobJson(
+                    id: 'quiz-failed',
+                    type: 'review_quiz_generate',
+                    status: 'failed',
+                    errorCode: 'PROVIDER_FAILED',
+                    retryable: true,
+                    finishedAt: '2026-09-01T00:02:00Z',
+                  ),
                 ]);
+              case 'GET https://api.example.com/api/v1/materials/material-1/download-url':
+                return _jsonResponse({
+                  'downloadUrl': 'https://storage.example.com/material-1',
+                  'expiresAt': '2026-09-01T00:10:00Z',
+                });
             }
             fail('Unexpected request: ${request.method} ${request.url}');
           }),
         ),
       );
 
-      await tester.pumpWidget(_sheet(api));
+      await tester.pumpWidget(
+        _sheet(
+          api,
+          openUrl: (url) async {
+            openedUrl = url;
+            return true;
+          },
+        ),
+      );
       await tester.pumpAndSettle();
-      await tester.pump(const Duration(seconds: 4));
+      expect(find.text('마인드맵 생성 중이에요.'), findsOneWidget);
+      expect(find.text('퀴즈 생성에 실패했어요. 다시 시도해 주세요.'), findsOneWidget);
+      expect(find.textContaining('PROVIDER_FAILED'), findsNothing);
 
-      expect(jobsRequests, 1);
+      await tester.ensureVisible(find.text('PDF 열기'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('PDF 열기'));
+      await tester.pumpAndSettle();
+      expect(openedUrl, Uri.parse('https://storage.example.com/material-1'));
+
+      await tester.pump(const Duration(seconds: 4));
+      await tester.pump();
+
+      expect(jobsRequests, 2);
     },
   );
 
