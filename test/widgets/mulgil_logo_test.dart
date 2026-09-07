@@ -4,9 +4,7 @@ import 'package:mulgil/theme/app_theme.dart';
 import 'package:mulgil/widgets/mulgil_logo.dart';
 
 void main() {
-  testWidgets('uses the bundled Nunito font on every platform', (
-    tester,
-  ) async {
+  testWidgets('uses the bundled Nunito font on every platform', (tester) async {
     await tester.pumpWidget(
       MaterialApp(
         home: Scaffold(
