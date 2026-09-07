@@ -2,26 +2,67 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../../../data/resource_upload_api.dart';
 import '../../../theme/app_theme.dart';
 
 class MindmapTab extends StatelessWidget {
   final String centerLabel;
   final List<String> nodeLabels;
+  final SessionProcessingJob? generationJob;
 
   const MindmapTab({
     super.key,
     required this.centerLabel,
     required this.nodeLabels,
+    this.generationJob,
   });
 
   @override
   Widget build(BuildContext context) {
     final visibleLabels = nodeLabels.take(4).toList();
     if (visibleLabels.length < 4) {
-      return const Center(
-        child: Text(
-          '마인드맵이 아직 없어요',
-          style: TextStyle(color: AppColors.textMuted),
+      final job = generationJob;
+      final title = job?.status.isActive == true
+          ? '마인드맵 생성 중'
+          : job?.status == ProcessingJobStatus.failed
+          ? '마인드맵 생성에 실패했어요.'
+          : '마인드맵이 아직 없어요';
+      final detail = job?.status.isActive == true
+          ? job!.safeProgressMessage
+          : job?.status == ProcessingJobStatus.failed && job?.retryable == true
+          ? '다시 시도해 주세요.'
+          : null;
+      return SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: AppColors.surfaceAlt,
+            border: Border.all(color: AppColors.border),
+            borderRadius: BorderRadius.circular(AppRadius.md),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (job?.status.isActive == true)
+                const Padding(
+                  padding: EdgeInsets.only(bottom: 12),
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              Text(title, style: AppTextStyles.h3, textAlign: TextAlign.center),
+              if (detail != null) ...[
+                const SizedBox(height: 8),
+                Text(
+                  detail,
+                  style: AppTextStyles.bodySmall.copyWith(
+                    color: AppColors.textMuted,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ],
+          ),
         ),
       );
     }

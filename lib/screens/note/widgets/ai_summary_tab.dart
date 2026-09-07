@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../data/resource_upload_api.dart';
 import '../../../theme/app_theme.dart';
 import '../../../widgets/common_widgets.dart';
 import '../../../models/summary_item.dart';
@@ -8,11 +9,13 @@ class SummaryTab extends StatelessWidget {
   final bool isTablet;
   final List<SummaryItem> items;
   final VoidCallback onTakeQuiz;
+  final SessionProcessingJob? generationJob;
   const SummaryTab({
     super.key,
     required this.isTablet,
     required this.items,
     required this.onTakeQuiz,
+    this.generationJob,
   });
 
   @override
@@ -30,6 +33,10 @@ class SummaryTab extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        if (generationJob != null) ...[
+          _QuizGenerationStatus(job: generationJob!),
+          const SizedBox(height: 12),
+        ],
         const SizedBox(height: 12),
         ...items.map((item) => SummaryItemCard(item: item)),
       ],
@@ -51,9 +58,52 @@ class SummaryTab extends StatelessWidget {
         const SizedBox(width: 24),
         Expanded(
           flex: 2,
-          child: MulgilButton(label: '퀴즈 풀기', onTap: onTakeQuiz),
+          child: Column(
+            children: [
+              if (generationJob != null) ...[
+                _QuizGenerationStatus(job: generationJob!),
+                const SizedBox(height: 12),
+              ],
+              MulgilButton(label: '퀴즈 풀기', onTap: onTakeQuiz),
+            ],
+          ),
         ),
       ],
+    );
+  }
+}
+
+class _QuizGenerationStatus extends StatelessWidget {
+  final SessionProcessingJob job;
+
+  const _QuizGenerationStatus({required this.job});
+
+  @override
+  Widget build(BuildContext context) {
+    final active = job.status.isActive;
+    final failed = job.status == ProcessingJobStatus.failed;
+    if (!active && !failed) return const SizedBox.shrink();
+    return MulgilCard(
+      color: AppColors.surfaceAlt,
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            active ? '퀴즈 생성 중' : '퀴즈 생성에 실패했어요.',
+            style: AppTextStyles.label,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            active
+                ? job.safeProgressMessage
+                : job.retryable
+                ? '다시 시도해 주세요.'
+                : '잠시 후 다시 확인해주세요.',
+            style: AppTextStyles.bodySmall,
+          ),
+        ],
+      ),
     );
   }
 }
@@ -61,6 +111,40 @@ class SummaryTab extends StatelessWidget {
 class SummaryItemCard extends StatelessWidget {
   final SummaryItem item;
   const SummaryItemCard({super.key, required this.item});
+
+  static final RegExp _trailingKoreanPhrase = RegExp(
+    r'([\uAC00-\uD7A3]{2,6}[.!?]?)$',
+  );
+
+  Widget _buildBody() {
+    const style = TextStyle(
+      fontSize: 12.5,
+      color: AppColors.ink80,
+      height: 1.6,
+    );
+    final match = _trailingKoreanPhrase.firstMatch(item.body);
+    if (match == null || match.start == 0) {
+      return Text(item.body, style: style);
+    }
+
+    return Semantics(
+      label: item.body,
+      excludeSemantics: true,
+      child: Text.rich(
+        TextSpan(
+          style: style,
+          children: [
+            TextSpan(text: item.body.substring(0, match.start)),
+            WidgetSpan(
+              alignment: PlaceholderAlignment.baseline,
+              baseline: TextBaseline.alphabetic,
+              child: Text(match.group(0)!, style: style),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -111,14 +195,7 @@ class SummaryItemCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 6),
-          Text(
-            item.body,
-            style: const TextStyle(
-              fontSize: 12.5,
-              color: AppColors.ink80,
-              height: 1.6,
-            ),
-          ),
+          _buildBody(),
         ],
       ),
     );

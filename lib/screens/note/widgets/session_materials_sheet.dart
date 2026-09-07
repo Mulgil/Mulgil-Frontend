@@ -52,6 +52,7 @@ class _SessionMaterialsSheetState extends State<SessionMaterialsSheet> {
   String? _deletingMaterialId;
   List<SessionMaterial> _materials = const [];
   List<SessionProcessingJob> _jobs = const [];
+  int _loadRequestId = 0;
 
   @override
   void initState() {
@@ -68,6 +69,7 @@ class _SessionMaterialsSheetState extends State<SessionMaterialsSheet> {
   }
 
   Future<void> _load({bool showLoading = false}) async {
+    final requestId = ++_loadRequestId;
     if (showLoading && mounted) {
       setState(() {
         _isLoading = true;
@@ -79,7 +81,7 @@ class _SessionMaterialsSheetState extends State<SessionMaterialsSheet> {
         _api.listSessionMaterials(widget.lecture.id),
         _api.listSessionJobs(widget.lecture.id),
       ]);
-      if (!mounted) return;
+      if (!mounted || requestId != _loadRequestId) return;
       setState(() {
         _materials = (response[0] as List<SessionMaterial>)
             .where((material) => material.isVisible)
@@ -87,14 +89,14 @@ class _SessionMaterialsSheetState extends State<SessionMaterialsSheet> {
         _jobs = response[1] as List<SessionProcessingJob>;
         _errorMessage = null;
       });
-    } on ApiException catch (error) {
-      if (!mounted) return;
-      setState(() => _errorMessage = error.message);
+    } on ApiException {
+      if (!mounted || requestId != _loadRequestId) return;
+      setState(() => _errorMessage = '자료 상태를 불러오지 못했어요.');
     } on Exception {
-      if (!mounted) return;
+      if (!mounted || requestId != _loadRequestId) return;
       setState(() => _errorMessage = '자료 상태를 불러오지 못했어요.');
     } finally {
-      if (mounted) {
+      if (mounted && requestId == _loadRequestId) {
         setState(() => _isLoading = false);
         _schedulePolling();
       }
@@ -103,7 +105,11 @@ class _SessionMaterialsSheetState extends State<SessionMaterialsSheet> {
 
   void _schedulePolling() {
     _pollTimer?.cancel();
-    if (_jobs.any((job) => job.isMaterialPreparation && job.status.isActive)) {
+    if (_jobs.any(
+      (job) =>
+          (job.isMaterialPreparation || job.isSessionGeneration) &&
+          job.status.isActive,
+    )) {
       _pollTimer = Timer(const Duration(seconds: 3), _load);
     }
   }
@@ -120,19 +126,19 @@ class _SessionMaterialsSheetState extends State<SessionMaterialsSheet> {
       final opened = await _openUrl(download.downloadUrl);
       if (!opened && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('PDF를 열 수 없어요. 다시 시도해주세요.')),
+          const SnackBar(content: Text('PDF를 열 수 없어요. 다시 시도해 주세요.')),
         );
       }
-    } on ApiException catch (error) {
+    } on ApiException {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(error.message)));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('PDF를 열지 못했어요. 다시 시도해 주세요.')),
+        );
       }
     } on Exception {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('PDF를 열지 못했어요. 다시 시도해주세요.')),
+          const SnackBar(content: Text('PDF를 열지 못했어요. 다시 시도해 주세요.')),
         );
       }
     } finally {
@@ -146,11 +152,11 @@ class _SessionMaterialsSheetState extends State<SessionMaterialsSheet> {
     try {
       await _api.deleteMaterial(material.id);
       await _load();
-    } on ApiException catch (error) {
+    } on ApiException {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text(error.message)));
+        ).showSnackBar(const SnackBar(content: Text('PDF를 삭제하지 못했어요.')));
       }
     } on Exception {
       if (mounted) {
@@ -216,6 +222,12 @@ class _SessionMaterialsSheetState extends State<SessionMaterialsSheet> {
         onRetry: () => _load(showLoading: true),
       );
     }
+    final mindmapJobs = _jobs
+        .where((job) => job.isMindmapGeneration)
+        .toList(growable: false);
+    final quizJobs = _jobs
+        .where((job) => job.isQuizGeneration)
+        .toList(growable: false);
     return RefreshIndicator(
       onRefresh: _load,
       child: ListView(
@@ -228,6 +240,14 @@ class _SessionMaterialsSheetState extends State<SessionMaterialsSheet> {
           _ContentIndexingStatusCard(
             jobs: _jobs.where((job) => job.isContentIndexing),
           ),
+          if (mindmapJobs.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            _GenerationArtifactStatusCard(label: '마인드맵', jobs: mindmapJobs),
+          ],
+          if (quizJobs.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            _GenerationArtifactStatusCard(label: '퀴즈', jobs: quizJobs),
+          ],
           const SizedBox(height: 16),
           Text(
             'PDF 자료 ${_materials.length}개',
@@ -330,6 +350,48 @@ class _ContentIndexingStatusCard extends StatelessWidget {
       detail:
           '대기 ${status.queued}개 · 진행 ${status.running}개 · 완료 ${status.succeeded}개 · 실패 ${status.failed}개',
       footer: '요약, 마인드맵, 연습 문제, 기출 문제 생성에만 반영돼요.',
+    );
+  }
+}
+
+class _GenerationArtifactStatusCard extends StatelessWidget {
+  final String label;
+  final Iterable<SessionProcessingJob> jobs;
+
+  const _GenerationArtifactStatusCard({
+    required this.label,
+    required this.jobs,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final latestByType = <String, SessionProcessingJob>{};
+    for (final job in jobs) {
+      final current = latestByType[job.type];
+      if (current == null || job.createdAt.isAfter(current.createdAt)) {
+        latestByType[job.type] = job;
+      }
+    }
+    final jobList = latestByType.values.toList(growable: false);
+    final status = _JobGroupStatus.from(jobList);
+    final canRetry = jobList.any(
+      (job) => job.status == ProcessingJobStatus.failed && job.retryable,
+    );
+    final activeJobs = jobList.where((job) => job.status.isActive);
+    final activeJob = activeJobs.isEmpty ? null : activeJobs.first;
+    return _JobStatusCard(
+      title: '$label 생성 상태',
+      status: status,
+      message: status.isActive
+          ? '$label 생성 중이에요.'
+          : status.hasFailed
+          ? canRetry
+                ? '$label 생성에 실패했어요. 다시 시도해 주세요.'
+                : '$label 생성에 실패했어요.'
+          : status.succeeded > 0
+          ? '$label 생성이 완료됐어요.'
+          : '$label 생성 상태를 확인하고 있어요.',
+      detail: activeJob?.safeProgressMessage,
     );
   }
 }
@@ -478,59 +540,70 @@ class _MaterialTile extends StatelessWidget {
     return MulgilCard(
       padding: const EdgeInsets.fromLTRB(14, 12, 8, 12),
       onTap: material.isDownloadable && !isDeleting ? onOpen : null,
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(
-            Icons.picture_as_pdf_outlined,
-            color: AppColors.coral,
-            size: 24,
+          Row(
+            children: [
+              const Icon(
+                Icons.picture_as_pdf_outlined,
+                color: AppColors.coral,
+                size: 24,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      material.filename,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.ink,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      metadata.join(' · '),
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: AppColors.ink60,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              IconButton(
+                tooltip: '첨부 자료에서 삭제',
+                onPressed: isDeleting || isOpening ? null : onDelete,
+                icon: isDeleting
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.close, size: 20),
+              ),
+            ],
           ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  material.filename,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.ink,
-                  ),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  metadata.join(' · '),
-                  style: const TextStyle(fontSize: 11, color: AppColors.ink60),
-                ),
-              ],
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton.icon(
+              onPressed: material.isDownloadable && !isOpening && !isDeleting
+                  ? onOpen
+                  : null,
+              icon: isOpening
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.open_in_new, size: 20),
+              label: const Text('PDF 열기'),
             ),
-          ),
-          IconButton(
-            tooltip: material.isDownloadable ? 'PDF 열기' : '업로드 완료 전 자료',
-            onPressed: material.isDownloadable && !isOpening && !isDeleting
-                ? onOpen
-                : null,
-            icon: isOpening
-                ? const SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(Icons.open_in_new, size: 20),
-          ),
-          IconButton(
-            tooltip: '첨부 자료에서 삭제',
-            onPressed: isDeleting || isOpening ? null : onDelete,
-            icon: isDeleting
-                ? const SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(Icons.close, size: 20),
           ),
         ],
       ),
