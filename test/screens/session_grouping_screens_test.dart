@@ -52,8 +52,8 @@ void main() {
 
   for (final screen in <String, Widget Function(LearningDomainStore)>{
     'AI summary': (store) =>
-        AiSummaryScreen(store: store, initialCourseId: 'course-2'),
-    'quiz': (store) => QuizScreen(store: store, initialCourseId: 'course-2'),
+        AiSummaryScreen(store: store, initialCourseId: 'course-3'),
+    'quiz': (store) => QuizScreen(store: store, initialCourseId: 'course-3'),
   }.entries) {
     testWidgets('${screen.key} uses initialCourseId instead of first course', (
       tester,
@@ -62,15 +62,16 @@ void main() {
         accessToken: 'access-token',
         refreshToken: 'refresh-token',
       );
-      final store = LearningDomainStore(_twoCourseLearningApi());
+      final store = LearningDomainStore(_multiCourseLearningApi());
       await store.load();
 
       await tester.pumpWidget(MaterialApp(home: screen.value(store)));
       await tester.pumpAndSettle();
 
-      expect(find.text('자료구조'), findsOneWidget);
-      expect(find.text('자료구조 차시'), findsOneWidget);
+      expect(find.text('생명정보과학의이해'), findsOneWidget);
+      expect(find.text('생명정보과학 차시'), findsOneWidget);
       expect(find.text('운영체제 차시'), findsNothing);
+      expect(find.text('자료구조 차시'), findsNothing);
     });
   }
 
@@ -87,7 +88,7 @@ void main() {
         accessToken: 'access-token',
         refreshToken: 'refresh-token',
       );
-      final store = LearningDomainStore(_twoCourseLearningApi());
+      final store = LearningDomainStore(_multiCourseLearningApi());
       await store.load();
 
       await tester.pumpWidget(MaterialApp(home: screen.value(store)));
@@ -146,7 +147,7 @@ LearningDomainApi _learningApi() {
   );
 }
 
-LearningDomainApi _twoCourseLearningApi() {
+LearningDomainApi _multiCourseLearningApi() {
   return LearningDomainApi(
     ApiClient(
       baseUri: Uri.parse('https://api.example.com'),
@@ -167,10 +168,17 @@ LearningDomainApi _twoCourseLearningApi() {
                 'instructor': null,
                 'term': '2026-2',
               },
+              {
+                'id': 'course-3',
+                'name': '생명정보과학의이해',
+                'instructor': null,
+                'term': '2026-2',
+              },
             ]);
           case 'GET /api/v1/timetable/slots':
           case 'GET /api/v1/courses/course-1/exams':
           case 'GET /api/v1/courses/course-2/exams':
+          case 'GET /api/v1/courses/course-3/exams':
             return _jsonResponse([]);
           case 'GET /api/v1/courses/course-1/sessions':
             return _jsonResponse([
@@ -189,6 +197,16 @@ LearningDomainApi _twoCourseLearningApi() {
                 courseId: 'course-2',
                 sessionNumber: 1,
                 title: '자료구조 차시',
+                sessionDate: '2026-09-01',
+              ),
+            ]);
+          case 'GET /api/v1/courses/course-3/sessions':
+            return _jsonResponse([
+              _sessionJson(
+                id: 'session-bio',
+                courseId: 'course-3',
+                sessionNumber: 1,
+                title: '생명정보과학 차시',
                 sessionDate: '2026-09-01',
               ),
             ]);
