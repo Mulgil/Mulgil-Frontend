@@ -18,12 +18,16 @@ enum _Stage { pick, uploading, mapping, done }
 class RecordingUploadScreen extends StatefulWidget {
   final ResourceUploadApi? api;
   final LearningDomainStore? store;
+  final String? initialCourseId;
+  final DateTime? initialStartedAt;
   final Future<UploadFile?> Function()? pickRecordingFile;
 
   const RecordingUploadScreen({
     super.key,
     this.api,
     this.store,
+    this.initialCourseId,
+    this.initialStartedAt,
     this.pickRecordingFile,
   });
 
@@ -36,12 +40,14 @@ class _RecordingUploadScreenState extends State<RecordingUploadScreen> {
   late final LearningDomainStore _learningStore;
   late final Future<UploadFile?> Function() _pickRecordingFile;
   _Stage _stage = _Stage.pick;
-  DateTime _startedAt = DateTime.now();
+  late DateTime _startedAt;
   String? _fileName;
   String? _recordingId;
   String? _selectedSessionId;
+  String? _recommendedSessionId;
   String? _errorMessage;
   bool _isConfirming = false;
+  bool _showAllCourses = false;
   List<RecordingCandidate> _candidates = const [];
 
   @override
@@ -49,6 +55,7 @@ class _RecordingUploadScreenState extends State<RecordingUploadScreen> {
     super.initState();
     _api = widget.api ?? AppServices.resourceUpload;
     _learningStore = widget.store ?? LearningDomainStore.instance;
+    _startedAt = widget.initialStartedAt ?? DateTime.now();
     _pickRecordingFile =
         widget.pickRecordingFile ?? UploadFilePicker.pickRecording;
     unawaited(_learningStore.load());
@@ -77,13 +84,20 @@ class _RecordingUploadScreenState extends State<RecordingUploadScreen> {
         file: file,
         startedAt: _startedAt,
       );
+      if (widget.initialCourseId != null && !_learningStore.hasLoaded) {
+        await _learningStore.load();
+      }
       if (!mounted) return;
+      final recommendedSessionId = _recommendedSessionIdFor(result);
       setState(() {
         _recordingId = result.recordingId;
         _candidates = result.candidateSessions;
-        _selectedSessionId = result.candidateSessions.isEmpty
-            ? null
-            : result.candidateSessions.first.id;
+        _recommendedSessionId = recommendedSessionId;
+        _selectedSessionId = _initialSelectedSessionId(
+          result,
+          recommendedSessionId,
+        );
+        _showAllCourses = false;
         _stage = _Stage.mapping;
       });
     } on Exception catch (error) {
@@ -137,6 +151,50 @@ class _RecordingUploadScreenState extends State<RecordingUploadScreen> {
         _startedAt.minute,
       );
     });
+  }
+
+  String? _initialSelectedSessionId(
+    RecordingUploadResult result,
+    String? recommendedSessionId,
+  ) {
+    if (recommendedSessionId != null) return recommendedSessionId;
+    if (widget.initialCourseId != null) return null;
+    return result.candidateSessions.isEmpty
+        ? null
+        : result.candidateSessions.first.id;
+  }
+
+  String? _recommendedSessionIdFor(RecordingUploadResult result) {
+    final courseId = widget.initialCourseId;
+    if (courseId == null) return null;
+
+    final startedAt = _startedAt.toUtc();
+    final timedMatches =
+        _sessions
+            .where(
+              (session) =>
+                  session.lecture.courseId == courseId &&
+                  session.contains(startedAt),
+            )
+            .toList()
+          ..sort(_compareSessions);
+    if (timedMatches.isNotEmpty) return timedMatches.first.id;
+
+    final sessionById = {for (final session in _sessions) session.id: session};
+    for (final candidate in result.candidateSessions) {
+      if (sessionById[candidate.id]?.lecture.courseId == courseId) {
+        return candidate.id;
+      }
+    }
+    return null;
+  }
+
+  int _compareSessions(_RecordingSession a, _RecordingSession b) {
+    final aNumber = a.lecture.sessionNumber ?? 999;
+    final bNumber = b.lecture.sessionNumber ?? 999;
+    final numberOrder = aNumber.compareTo(bNumber);
+    if (numberOrder != 0) return numberOrder;
+    return a.id.compareTo(b.id);
   }
 
   Future<void> _pickTime() async {
@@ -212,6 +270,9 @@ class _RecordingUploadScreenState extends State<RecordingUploadScreen> {
           builder: (context, _) => _MappingStage(
             candidates: _candidates,
             sessions: _sessions,
+            initialCourseId: widget.initialCourseId,
+            recommendedId: _recommendedSessionId,
+            showAllCourses: _showAllCourses,
             isLoadingSessions:
                 _learningStore.isLoading && !_learningStore.hasLoaded,
             sessionErrorMessage: _learningStore.errorMessage,
@@ -220,6 +281,7 @@ class _RecordingUploadScreenState extends State<RecordingUploadScreen> {
             isConfirming: _isConfirming,
             onRetrySessions: _learningStore.refresh,
             onSelect: (id) => setState(() => _selectedSessionId = id),
+            onShowAllCourses: () => setState(() => _showAllCourses = true),
             onConfirm: _confirmMapping,
           ),
         );
@@ -237,6 +299,13 @@ class _RecordingSession {
 
   String get id => lecture.id;
   String get label => '${course.name} · ${lecture.week} ${lecture.title}';
+
+  bool contains(DateTime startedAt) {
+    final startsAt = lecture.startsAt?.toUtc();
+    final endsAt = lecture.endsAt?.toUtc();
+    if (startsAt == null || endsAt == null) return false;
+    return !startedAt.isBefore(startsAt) && startedAt.isBefore(endsAt);
+  }
 }
 
 class _PickStage extends StatelessWidget {
@@ -363,6 +432,9 @@ class _UploadingStage extends StatelessWidget {
 class _MappingStage extends StatelessWidget {
   final List<RecordingCandidate> candidates;
   final List<_RecordingSession> sessions;
+  final String? initialCourseId;
+  final String? recommendedId;
+  final bool showAllCourses;
   final bool isLoadingSessions;
   final String? sessionErrorMessage;
   final String? selectedId;
@@ -370,11 +442,15 @@ class _MappingStage extends StatelessWidget {
   final bool isConfirming;
   final VoidCallback onRetrySessions;
   final ValueChanged<String> onSelect;
+  final VoidCallback onShowAllCourses;
   final VoidCallback onConfirm;
 
   const _MappingStage({
     required this.candidates,
     required this.sessions,
+    required this.initialCourseId,
+    required this.recommendedId,
+    required this.showAllCourses,
     required this.isLoadingSessions,
     required this.sessionErrorMessage,
     required this.selectedId,
@@ -382,17 +458,21 @@ class _MappingStage extends StatelessWidget {
     required this.isConfirming,
     required this.onRetrySessions,
     required this.onSelect,
+    required this.onShowAllCourses,
     required this.onConfirm,
   });
 
   @override
   Widget build(BuildContext context) {
-    final hasCandidates = candidates.isNotEmpty;
+    final hasRecommendation = recommendedId != null;
+    final useLocalSessions =
+        sessions.isNotEmpty && (initialCourseId != null || candidates.isEmpty);
+    final canConfirm = selectedId != null && !isConfirming;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          hasCandidates ? '어느 차시 녹음인가요?' : '차시를 직접 선택해주세요',
+          hasRecommendation ? '추천 차시가 맞나요?' : '차시를 직접 선택해주세요',
           style: const TextStyle(
             fontSize: 15,
             fontWeight: FontWeight.w700,
@@ -401,22 +481,25 @@ class _MappingStage extends StatelessWidget {
         ),
         const SizedBox(height: 4),
         Text(
-          hasCandidates ? '겹치는 시간대를 기준으로 추천했어요' : '겹치는 차시를 찾지 못했어요',
+          hasRecommendation
+              ? '현재 선택한 과목에서 녹음 시작 시각이 겹치는 차시를 기본 선택했어요'
+              : '겹치는 차시를 찾지 못했어요',
           style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
         ),
+        if (hasRecommendation) ...[
+          const SizedBox(height: 10),
+          const _MappingHint(
+            message: '파일 시각이 실제 녹음 시각과 다르거나 같은 과목 안 차시 시간이 겹치면 추천이 다를 수 있어요.',
+          ),
+        ],
         const SizedBox(height: 16),
         Expanded(
           child: ListView(
             children: [
-              if (hasCandidates)
-                ...candidates.map(
-                  (candidate) => _MappingOption(
-                    title: candidate.title,
-                    trailing: '${(candidate.overlapScore * 100).round()}% 일치',
-                    selected: selectedId == candidate.id,
-                    onTap: () => onSelect(candidate.id),
-                  ),
-                )
+              if (useLocalSessions)
+                ..._localSessionWidgets()
+              else if (candidates.isNotEmpty)
+                ..._candidateWidgets()
               else
                 ..._manualSessionWidgets(),
               if (errorMessage != null) _InlineError(message: errorMessage!),
@@ -426,10 +509,96 @@ class _MappingStage extends StatelessWidget {
         const SizedBox(height: 12),
         MulgilButton(
           label: isConfirming ? '확정 중...' : '차시 확정',
-          onTap: selectedId == null || isConfirming ? null : onConfirm,
+          onTap: canConfirm ? onConfirm : null,
+          fillColor: canConfirm ? null : AppColors.border,
+          textColor: canConfirm ? null : AppColors.textMuted,
         ),
       ],
     );
+  }
+
+  List<Widget> _localSessionWidgets() {
+    final currentCourseId = initialCourseId;
+    final currentCourseSessions = currentCourseId == null
+        ? sessions
+        : sessions
+              .where((session) => session.lecture.courseId == currentCourseId)
+              .toList();
+    final otherCourseSessions = currentCourseId == null
+        ? const <_RecordingSession>[]
+        : sessions
+              .where((session) => session.lecture.courseId != currentCourseId)
+              .toList();
+    final visibleSessions = showAllCourses || currentCourseId == null
+        ? sessions
+        : currentCourseSessions;
+    final ordered = _recommendedFirst(visibleSessions);
+
+    if (ordered.isEmpty) {
+      return [
+        const Center(
+          child: Padding(
+            padding: EdgeInsets.only(top: 32),
+            child: Text(
+              '현재 과목에 연결할 차시가 없어요',
+              style: TextStyle(fontSize: 13, color: AppColors.textMuted),
+            ),
+          ),
+        ),
+        if (otherCourseSessions.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          TextButton(
+            onPressed: onShowAllCourses,
+            child: const Text('다른 과목에서 찾기'),
+          ),
+        ],
+      ];
+    }
+
+    return [
+      ...ordered.map(
+        (session) => _MappingOption(
+          title: session.label,
+          trailing: session.id == recommendedId ? '추천' : '직접 선택',
+          selected: selectedId == session.id,
+          onTap: () => onSelect(session.id),
+        ),
+      ),
+      if (!showAllCourses && otherCourseSessions.isNotEmpty) ...[
+        const SizedBox(height: 2),
+        TextButton(
+          onPressed: onShowAllCourses,
+          child: const Text('다른 과목에서 찾기'),
+        ),
+      ],
+    ];
+  }
+
+  List<_RecordingSession> _recommendedFirst(List<_RecordingSession> source) {
+    final ordered = source.toList()
+      ..sort((a, b) {
+        if (a.id == recommendedId) return -1;
+        if (b.id == recommendedId) return 1;
+        final aNumber = a.lecture.sessionNumber ?? 999;
+        final bNumber = b.lecture.sessionNumber ?? 999;
+        final numberOrder = aNumber.compareTo(bNumber);
+        if (numberOrder != 0) return numberOrder;
+        return a.id.compareTo(b.id);
+      });
+    return ordered;
+  }
+
+  List<Widget> _candidateWidgets() {
+    return candidates
+        .map(
+          (candidate) => _MappingOption(
+            title: candidate.title,
+            trailing: '${(candidate.overlapScore * 100).round()}% 일치',
+            selected: selectedId == candidate.id,
+            onTap: () => onSelect(candidate.id),
+          ),
+        )
+        .toList();
   }
 
   List<Widget> _manualSessionWidgets() {
@@ -527,6 +696,29 @@ class _MappingOption extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _MappingHint extends StatelessWidget {
+  final String message;
+
+  const _MappingHint({required this.message});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceAlt,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Text(
+        message,
+        style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
       ),
     );
   }

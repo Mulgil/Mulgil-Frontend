@@ -6,6 +6,8 @@ class Lecture {
   final String week;
   final String title;
   final String? date;
+  final DateTime? startsAt;
+  final DateTime? endsAt;
   final bool done;
   final String? quiz;
   final int stars;
@@ -18,6 +20,8 @@ class Lecture {
     required this.week,
     required this.title,
     this.date,
+    this.startsAt,
+    this.endsAt,
     required this.done,
     this.quiz,
     required this.stars,

@@ -249,6 +249,8 @@ class LearningDomainApi {
       week: '$weekNumber주차',
       title: _string(json, 'title'),
       date: '${sessionDate.month}/${sessionDate.day}',
+      startsAt: _optionalDateTime(json, 'startsAt'),
+      endsAt: _optionalDateTime(json, 'endsAt'),
       done: false,
       stars: 0,
     );
@@ -405,6 +407,11 @@ class LearningDomainApi {
     if (value == null) return null;
     final text = value.toString();
     return text.isEmpty ? null : text;
+  }
+
+  DateTime? _optionalDateTime(Map<String, Object?> json, String key) {
+    final value = _optionalString(json, key);
+    return value == null ? null : DateTime.parse(value);
   }
 
   int _int(Map<String, Object?> json, String key) {

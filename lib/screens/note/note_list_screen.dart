@@ -243,7 +243,8 @@ class _NoteListScreenState extends State<NoteListScreen> {
                 Navigator.pop(sheetCtx);
                 showMulgilModalScreen(
                   context,
-                  builder: (_) => const RecordingUploadScreen(),
+                  builder: (_) =>
+                      RecordingUploadScreen(initialCourseId: selectedCourse.id),
                 );
               },
             ),

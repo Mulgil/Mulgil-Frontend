@@ -151,8 +151,8 @@ void main() {
             'sessionNumber': 3,
             'title': '스레드와 동기화',
             'sessionDate': '2026-09-15',
-            'startsAt': null,
-            'endsAt': null,
+            'startsAt': '2026-09-15T01:30:00Z',
+            'endsAt': '2026-09-15T02:45:00Z',
             'createdAt': '2026-09-01T00:00:00Z',
             'updatedAt': '2026-09-01T00:00:00Z',
           },
@@ -166,6 +166,8 @@ void main() {
       expect(sessions.single.weekNumber, 3);
       expect(sessions.single.week, '3주차');
       expect(sessions.single.date, '9/15');
+      expect(sessions.single.startsAt, DateTime.utc(2026, 9, 15, 1, 30));
+      expect(sessions.single.endsAt, DateTime.utc(2026, 9, 15, 2, 45));
     });
 
     test(
