@@ -87,7 +87,16 @@ class _SummaryDetailScreenState extends State<SummaryDetailScreen>
     try {
       final jobs = await _jobsApi.listSessionJobs(widget.lecture.id);
       if (!mounted || requestId != _jobsRequestId) return;
-      setState(() => _jobs = jobs);
+      final previousMindmapJob = _artifactJob('mindmap');
+      final mindmapJob = _artifactJob('mindmap', jobs);
+      final shouldReloadSummary =
+          previousMindmapJob?.id == mindmapJob?.id &&
+          previousMindmapJob?.status.isActive == true &&
+          mindmapJob?.status == ProcessingJobStatus.succeeded;
+      setState(() {
+        _jobs = jobs;
+        if (shouldReloadSummary) _summaryLoad = _loadSummary(_source);
+      });
     } on Exception {
       // Artifact status is supplementary; summary content remains readable.
     } finally {
@@ -193,10 +202,13 @@ class _SummaryDetailScreenState extends State<SummaryDetailScreen>
     );
   }
 
-  SessionProcessingJob? _artifactJob(String artifact) {
+  SessionProcessingJob? _artifactJob(
+    String artifact, [
+    List<SessionProcessingJob>? jobs,
+  ]) {
     final type = '${_source.apiValue}_${artifact}_generate';
     SessionProcessingJob? latest;
-    for (final job in _jobs) {
+    for (final job in jobs ?? _jobs) {
       if (job.type != type) continue;
       if (latest == null || job.createdAt.isAfter(latest.createdAt)) {
         latest = job;

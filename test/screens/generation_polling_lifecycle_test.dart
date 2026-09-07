@@ -39,6 +39,53 @@ void main() {
       expect(jobRequests, 2);
     });
 
+    testWidgets('reloads the mindmap once after its job succeeds', (
+      tester,
+    ) async {
+      var summaryRequests = 0;
+      var jobRequests = 0;
+      final jobsApi = _jobsApi((request) async {
+        jobRequests++;
+        return _jsonResponse([
+          _job(
+            id: 'mindmap-1',
+            type: 'review_mindmap_generate',
+            status: jobRequests == 1 ? 'running' : 'succeeded',
+          ),
+        ]);
+      });
+
+      await tester.pumpWidget(
+        _summaryScreen(
+          jobsApi: jobsApi,
+          api: _summaryApi((request) async {
+            summaryRequests++;
+            return _jsonResponse({
+              'summary': {
+                'items': [
+                  {'title': '핵심', 'body': '요약은 먼저 읽을 수 있어요.'},
+                ],
+              },
+              'mindmap': summaryRequests == 1
+                  ? null
+                  : {
+                      'nodes': ['프로세스', '스레드', '스케줄링', '동기화'],
+                    },
+            });
+          }),
+        ),
+      );
+      await _flush(tester);
+      await tester.tap(find.text('마인드맵'));
+      await _flush(tester);
+
+      await tester.pump(const Duration(seconds: 3));
+      await _flush(tester);
+
+      expect(summaryRequests, 2);
+      expect(find.text('마인드맵이 아직 없어요'), findsNothing);
+    });
+
     testWidgets('older job response cannot replace a newer source state', (
       tester,
     ) async {
@@ -158,6 +205,53 @@ void main() {
       expect(jobRequests, 2);
     });
 
+    testWidgets('reloads questions once after its job succeeds', (
+      tester,
+    ) async {
+      var questionRequests = 0;
+      var jobRequests = 0;
+      final jobsApi = _jobsApi((request) async {
+        jobRequests++;
+        return _jsonResponse([
+          _job(
+            id: 'quiz-1',
+            type: 'review_quiz_generate',
+            status: jobRequests == 1 ? 'running' : 'succeeded',
+          ),
+        ]);
+      });
+
+      await tester.pumpWidget(
+        _quizScreen(
+          jobsApi: jobsApi,
+          api: _quizApi((request) async {
+            questionRequests++;
+            return _jsonResponse(
+              questionRequests < 3
+                  ? []
+                  : [
+                      {
+                        'id': 'question-1',
+                        'type': 'multiple_choice',
+                        'prompt': '정답은 무엇인가요?',
+                        'options': ['A', 'B', 'C', 'D'],
+                        'sourceRefs': [],
+                      },
+                    ],
+            );
+          }),
+        ),
+      );
+      await _flush(tester);
+      expect(find.textContaining('퀴즈 생성 중'), findsWidgets);
+
+      await tester.pump(const Duration(seconds: 3));
+      await _flush(tester);
+
+      expect(questionRequests, 3);
+      expect(find.text('정답은 무엇인가요?'), findsOneWidget);
+    });
+
     testWidgets('older poll response cannot replace a newer retry state', (
       tester,
     ) async {
@@ -262,34 +356,43 @@ void main() {
   });
 }
 
-Widget _summaryScreen({required ResourceUploadApi jobsApi}) {
+Widget _summaryScreen({
+  required ResourceUploadApi jobsApi,
+  LearningDomainApi? api,
+}) {
   return MaterialApp(
     home: SummaryDetailScreen(
       course: '운영체제',
       lecture: _lecture,
-      api: _summaryApi(),
+      api: api ?? _summaryApi(),
       jobsApi: jobsApi,
     ),
   );
 }
 
-Widget _quizScreen({required ResourceUploadApi jobsApi}) {
+Widget _quizScreen({
+  required ResourceUploadApi jobsApi,
+  LearningDomainApi? api,
+}) {
   return MaterialApp(
     home: QuizSessionScreen(
       course: '운영체제',
       lecture: _lecture,
-      api: _quizApi(),
+      api: api ?? _quizApi(),
       jobsApi: jobsApi,
     ),
   );
 }
 
-LearningDomainApi _summaryApi() {
+LearningDomainApi _summaryApi([
+  Future<http.Response> Function(http.Request request)? handler,
+]) {
   return LearningDomainApi(
     ApiClient(
       baseUri: Uri.parse('https://api.example.com'),
       httpClient: MockClient((request) async {
         expect(request.url.path, '/api/v1/sessions/session-1/summaries');
+        if (handler != null) return handler(request);
         return _jsonResponse({
           'summary': {
             'items': [
@@ -303,13 +406,15 @@ LearningDomainApi _summaryApi() {
   );
 }
 
-LearningDomainApi _quizApi() {
+LearningDomainApi _quizApi([
+  Future<http.Response> Function(http.Request request)? handler,
+]) {
   return LearningDomainApi(
     ApiClient(
       baseUri: Uri.parse('https://api.example.com'),
       httpClient: MockClient((request) async {
         expect(request.url.path, '/api/v1/sessions/session-1/quiz');
-        return _jsonResponse([]);
+        return handler?.call(request) ?? _jsonResponse([]);
       }),
     ),
   );

@@ -93,11 +93,23 @@ class _QuizSessionScreenState extends State<QuizSessionScreen> {
       }
     }
     if (!mounted || requestId != _loadRequestId) return;
+    final previousGenerationJob = _generationJob;
+    final shouldReloadQuestions =
+        questions.isEmpty &&
+        previousGenerationJob?.id == generationJob?.id &&
+        previousGenerationJob?.status.isActive == true &&
+        generationJob?.status == ProcessingJobStatus.succeeded;
     _questions
       ..clear()
       ..addAll(questions);
     _generationJob = generationJob;
     _loadError = _generationMessage(generationJob) ?? loadError;
+    if (shouldReloadQuestions) {
+      final questionsLoad = _loadQuestions();
+      setState(() {
+        _questionsLoad = questionsLoad;
+      });
+    }
     _schedulePolling();
   }
 
