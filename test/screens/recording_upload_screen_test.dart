@@ -16,7 +16,7 @@ void main() {
   tearDown(AuthStore.clear);
 
   testWidgets(
-    'defaults to the time-overlapping session in the selected course',
+    'defaults to the time-overlapping session in a selected non-first course',
     (tester) async {
       AuthStore.saveTokens(
         accessToken: 'access-token',
@@ -88,7 +88,7 @@ void main() {
             body: RecordingUploadScreen(
               api: uploadApi,
               store: store,
-              initialCourseId: 'course-1',
+              initialCourseId: 'course-2',
               initialStartedAt: DateTime.utc(2026, 9, 7, 1, 30),
               pickRecordingFile: () async => UploadFile.memory(
                 filename: 'lecture.m4a',
@@ -105,20 +105,15 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('추천 차시가 맞나요?'), findsOneWidget);
-      expect(find.text('운영체제 · 1주차 3차시'), findsOneWidget);
-      expect(find.text('운영체제 · 2주차 4차시'), findsOneWidget);
-      expect(find.text('데이터베이스 · 1주차 3차시'), findsNothing);
-      expect(find.text('다른 과목에서 찾기'), findsOneWidget);
-
-      await tester.tap(find.text('다른 과목에서 찾기'));
-      await tester.pump();
-
       expect(find.text('데이터베이스 · 1주차 3차시'), findsOneWidget);
+      expect(find.text('운영체제 · 1주차 3차시'), findsNothing);
+      expect(find.text('운영체제 · 2주차 4차시'), findsNothing);
+      expect(find.text('다른 과목에서 찾기'), findsOneWidget);
 
       await tester.tap(find.text('차시 확정'));
       await tester.pumpAndSettle();
 
-      expect(uploadApi.confirmedSessionIds, ['session-3']);
+      expect(uploadApi.confirmedSessionIds, ['session-db']);
       expect(find.text('업로드가 완료됐어요'), findsOneWidget);
     },
   );

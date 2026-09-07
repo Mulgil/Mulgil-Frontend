@@ -30,8 +30,15 @@ class PdfUploadScreen extends StatefulWidget {
   final LearningDomainStore? store;
   final ResourceUploadApi? api;
   final Future<UploadFile?> Function()? pickPdfFile;
+  final String? initialCourseId;
 
-  const PdfUploadScreen({super.key, this.store, this.api, this.pickPdfFile});
+  const PdfUploadScreen({
+    super.key,
+    this.store,
+    this.api,
+    this.pickPdfFile,
+    this.initialCourseId,
+  });
 
   @override
   State<PdfUploadScreen> createState() => _PdfUploadScreenState();
@@ -58,13 +65,35 @@ class _PdfUploadScreenState extends State<PdfUploadScreen> {
   }
 
   List<_UploadSession> get _sessions {
+    final initialCourseId = widget.initialCourseId;
+    if (initialCourseId != null) {
+      final course = _learningStore.courseById(initialCourseId);
+      if (course == null) return const [];
+      return _sessionsFor(course);
+    }
+
     final sessions = <_UploadSession>[];
     for (final course in _learningStore.courses) {
-      for (final lecture in _learningStore.sessionsFor(course.id)) {
-        sessions.add(_UploadSession(course: course, lecture: lecture));
-      }
+      sessions.addAll(_sessionsFor(course));
     }
     return sessions;
+  }
+
+  List<_UploadSession> _sessionsFor(Course course) {
+    return _learningStore
+        .sessionsFor(course.id)
+        .map((lecture) => _UploadSession(course: course, lecture: lecture))
+        .toList();
+  }
+
+  String get _emptySessionMessage {
+    final initialCourseId = widget.initialCourseId;
+    if (initialCourseId == null) return '업로드할 차시가 없어요';
+    if (_learningStore.courses.isEmpty) return '업로드할 차시가 없어요';
+    if (_learningStore.courseById(initialCourseId) == null) {
+      return '선택한 과목을 찾을 수 없어요';
+    }
+    return '선택한 과목에 업로드할 차시가 없어요';
   }
 
   Future<void> _pickFile() async {
@@ -161,6 +190,7 @@ class _PdfUploadScreenState extends State<PdfUploadScreen> {
             }
             return _SessionStage(
               sessions: _sessions,
+              emptyMessage: _emptySessionMessage,
               onSelect: (session) => setState(() {
                 _session = session;
                 _stage = _Stage.pickPhase;
@@ -206,17 +236,22 @@ class _UploadSession {
 
 class _SessionStage extends StatelessWidget {
   final List<_UploadSession> sessions;
+  final String emptyMessage;
   final ValueChanged<_UploadSession> onSelect;
 
-  const _SessionStage({required this.sessions, required this.onSelect});
+  const _SessionStage({
+    required this.sessions,
+    required this.emptyMessage,
+    required this.onSelect,
+  });
 
   @override
   Widget build(BuildContext context) {
     if (sessions.isEmpty) {
-      return const Center(
+      return Center(
         child: Text(
-          '업로드할 차시가 없어요',
-          style: TextStyle(fontSize: 13, color: AppColors.ink60),
+          emptyMessage,
+          style: const TextStyle(fontSize: 13, color: AppColors.ink60),
         ),
       );
     }

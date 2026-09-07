@@ -238,7 +238,10 @@ class _NoteListScreenState extends State<NoteListScreen> {
                 Navigator.pop(sheetCtx);
                 final outcome = await showMulgilModalScreen<PdfUploadOutcome>(
                   context,
-                  builder: (_) => const PdfUploadScreen(),
+                  builder: (_) => PdfUploadScreen(
+                    store: _learningStore,
+                    initialCourseId: selectedCourse.id,
+                  ),
                 );
                 if (!context.mounted || outcome == null) return;
                 await showSessionMaterialsSheet(

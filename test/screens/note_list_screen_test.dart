@@ -35,6 +35,27 @@ void main() {
     expect(find.text('운영체제 차시'), findsNothing);
   });
 
+  testWidgets('uses another non-first course id', (tester) async {
+    AuthStore.saveTokens(
+      accessToken: 'access-token',
+      refreshToken: 'refresh-token',
+    );
+    final store = LearningDomainStore(_learningApi());
+    await store.load();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: NoteListScreen(store: store, initialCourseId: 'course-3'),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('생명정보과학의이해'), findsOneWidget);
+    expect(find.text('생명정보과학 차시'), findsOneWidget);
+    expect(find.text('운영체제 차시'), findsNothing);
+    expect(find.text('자료구조 차시'), findsNothing);
+  });
+
   testWidgets(
     'does not fall back to the first course for a missing course id',
     (tester) async {
@@ -56,6 +77,31 @@ void main() {
       expect(find.text('운영체제 차시'), findsNothing);
     },
   );
+
+  testWidgets('opens PDF upload with the selected course id', (tester) async {
+    AuthStore.saveTokens(
+      accessToken: 'access-token',
+      refreshToken: 'refresh-token',
+    );
+    final store = LearningDomainStore(_learningApi());
+    await store.load();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: NoteListScreen(store: store, initialCourseId: 'course-3'),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byType(FloatingActionButton));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('PDF 자료 업로드'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('생명정보과학의이해 · 1주차 생명정보과학 차시'), findsOneWidget);
+    expect(find.text('운영체제 · 1주차 운영체제 차시'), findsNothing);
+    expect(find.text('자료구조 · 1주차 자료구조 차시'), findsNothing);
+  });
 }
 
 LearningDomainApi _learningApi() {
@@ -79,10 +125,17 @@ LearningDomainApi _learningApi() {
                 'instructor': null,
                 'term': '2026-2',
               },
+              {
+                'id': 'course-3',
+                'name': '생명정보과학의이해',
+                'instructor': null,
+                'term': '2026-2',
+              },
             ]);
           case 'GET /api/v1/timetable/slots':
           case 'GET /api/v1/courses/course-1/exams':
           case 'GET /api/v1/courses/course-2/exams':
+          case 'GET /api/v1/courses/course-3/exams':
             return _jsonResponse([]);
           case 'GET /api/v1/courses/course-1/sessions':
             return _jsonResponse([
@@ -98,6 +151,14 @@ LearningDomainApi _learningApi() {
                 id: 'session-ds',
                 courseId: 'course-2',
                 title: '자료구조 차시',
+              ),
+            ]);
+          case 'GET /api/v1/courses/course-3/sessions':
+            return _jsonResponse([
+              _sessionJson(
+                id: 'session-bio',
+                courseId: 'course-3',
+                title: '생명정보과학 차시',
               ),
             ]);
         }

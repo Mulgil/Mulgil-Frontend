@@ -69,6 +69,125 @@ void main() {
     expect(find.text('어떤 용도의 자료인가요?'), findsOneWidget);
   });
 
+  testWidgets('shows only sessions for the initial course id', (tester) async {
+    AuthStore.saveTokens(accessToken: 'access-token', refreshToken: 'refresh');
+    final client = ApiClient(
+      baseUri: Uri.parse('https://api.example.com'),
+      accessTokenProvider: AuthStore.accessTokenProvider,
+      httpClient: MockClient((request) async {
+        switch ('${request.method} ${request.url.path}') {
+          case 'GET /api/v1/courses':
+            return _jsonResponse([
+              {
+                'id': 'course-1',
+                'name': '운영체제',
+                'instructor': null,
+                'term': '2026-2',
+              },
+              {
+                'id': 'course-2',
+                'name': '자료구조',
+                'instructor': null,
+                'term': '2026-2',
+              },
+              {
+                'id': 'course-3',
+                'name': '생명정보과학의이해',
+                'instructor': null,
+                'term': '2026-2',
+              },
+            ]);
+          case 'GET /api/v1/timetable/slots':
+          case 'GET /api/v1/courses/course-1/exams':
+          case 'GET /api/v1/courses/course-2/exams':
+          case 'GET /api/v1/courses/course-3/exams':
+            return _jsonResponse([]);
+          case 'GET /api/v1/courses/course-1/sessions':
+            return _jsonResponse([
+              _sessionJson(id: 'session-os', courseId: 'course-1'),
+            ]);
+          case 'GET /api/v1/courses/course-2/sessions':
+            return _jsonResponse([
+              _sessionJson(id: 'session-ds', courseId: 'course-2'),
+            ]);
+          case 'GET /api/v1/courses/course-3/sessions':
+            return _jsonResponse([
+              _sessionJson(id: 'session-bio', courseId: 'course-3'),
+            ]);
+        }
+        fail('Unexpected request: ${request.method} ${request.url}');
+      }),
+    );
+    final store = LearningDomainStore(LearningDomainApi(client));
+    await store.load();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: PdfUploadScreen(
+          store: store,
+          api: ResourceUploadApi(client),
+          initialCourseId: 'course-3',
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('생명정보과학의이해 · 1주차 컴퓨터 구조 개요'), findsOneWidget);
+    expect(find.text('운영체제 · 1주차 컴퓨터 구조 개요'), findsNothing);
+    expect(find.text('자료구조 · 1주차 컴퓨터 구조 개요'), findsNothing);
+  });
+
+  testWidgets(
+    'does not fall back to the first course for a missing course id',
+    (tester) async {
+      AuthStore.saveTokens(
+        accessToken: 'access-token',
+        refreshToken: 'refresh',
+      );
+      final client = ApiClient(
+        baseUri: Uri.parse('https://api.example.com'),
+        accessTokenProvider: AuthStore.accessTokenProvider,
+        httpClient: MockClient((request) async {
+          switch ('${request.method} ${request.url.path}') {
+            case 'GET /api/v1/courses':
+              return _jsonResponse([
+                {
+                  'id': 'course-1',
+                  'name': '운영체제',
+                  'instructor': null,
+                  'term': '2026-2',
+                },
+              ]);
+            case 'GET /api/v1/timetable/slots':
+            case 'GET /api/v1/courses/course-1/exams':
+              return _jsonResponse([]);
+            case 'GET /api/v1/courses/course-1/sessions':
+              return _jsonResponse([
+                _sessionJson(id: 'session-os', courseId: 'course-1'),
+              ]);
+          }
+          fail('Unexpected request: ${request.method} ${request.url}');
+        }),
+      );
+      final store = LearningDomainStore(LearningDomainApi(client));
+      await store.load();
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: PdfUploadScreen(
+            store: store,
+            api: ResourceUploadApi(client),
+            initialCourseId: 'missing-course',
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('선택한 과목을 찾을 수 없어요'), findsOneWidget);
+      expect(find.text('운영체제 · 1주차 컴퓨터 구조 개요'), findsNothing);
+    },
+  );
+
   testWidgets(
     'uploads a selected PDF after session and source phase selection',
     (tester) async {
