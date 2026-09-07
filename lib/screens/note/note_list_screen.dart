@@ -16,16 +16,10 @@ import 'widgets/lecture_card.dart';
 import 'widgets/session_materials_sheet.dart';
 
 class NoteListScreen extends StatefulWidget {
-  final String? initialCourse;
   final String? initialCourseId;
   final LearningDomainStore? store;
 
-  const NoteListScreen({
-    super.key,
-    this.initialCourse,
-    this.initialCourseId,
-    this.store,
-  });
+  const NoteListScreen({super.key, this.initialCourseId, this.store});
 
   @override
   State<NoteListScreen> createState() => _NoteListScreenState();
@@ -53,12 +47,6 @@ class _NoteListScreenState extends State<NoteListScreen> {
     if (selectedId != null) {
       for (final course in courses) {
         if (course.id == selectedId) return course;
-      }
-    }
-    final selectedName = widget.initialCourse;
-    if (selectedName != null) {
-      for (final course in courses) {
-        if (course.name == selectedName) return course;
       }
     }
     return courses.first;

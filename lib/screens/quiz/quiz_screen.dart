@@ -11,16 +11,10 @@ import '../../widgets/session_week_list.dart';
 import 'quiz_session_screen.dart';
 
 class QuizScreen extends StatefulWidget {
-  final String? initialCourse;
   final String? initialCourseId;
   final LearningDomainStore? store;
 
-  const QuizScreen({
-    super.key,
-    this.initialCourse,
-    this.initialCourseId,
-    this.store,
-  });
+  const QuizScreen({super.key, this.initialCourseId, this.store});
 
   @override
   State<QuizScreen> createState() => _QuizScreenState();
@@ -45,12 +39,6 @@ class _QuizScreenState extends State<QuizScreen> {
     if (selectedId != null) {
       for (final course in courses) {
         if (course.id == selectedId) return course;
-      }
-    }
-    final selectedName = widget.initialCourse;
-    if (selectedName != null) {
-      for (final course in courses) {
-        if (course.name == selectedName) return course;
       }
     }
     return courses.first;

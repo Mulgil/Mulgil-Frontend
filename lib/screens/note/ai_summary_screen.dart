@@ -11,16 +11,10 @@ import '../../widgets/session_week_list.dart';
 import 'summary_detail_screen.dart';
 
 class AiSummaryScreen extends StatefulWidget {
-  final String? initialCourse;
   final String? initialCourseId;
   final LearningDomainStore? store;
 
-  const AiSummaryScreen({
-    super.key,
-    this.initialCourse,
-    this.initialCourseId,
-    this.store,
-  });
+  const AiSummaryScreen({super.key, this.initialCourseId, this.store});
 
   @override
   State<AiSummaryScreen> createState() => _AiSummaryScreenState();
@@ -45,12 +39,6 @@ class _AiSummaryScreenState extends State<AiSummaryScreen> {
     if (selectedId != null) {
       for (final course in courses) {
         if (course.id == selectedId) return course;
-      }
-    }
-    final selectedName = widget.initialCourse;
-    if (selectedName != null) {
-      for (final course in courses) {
-        if (course.name == selectedName) return course;
       }
     }
     return courses.first;
