@@ -42,9 +42,6 @@ class LearningDomainStore extends ChangeNotifier {
   List<Lecture> get sessions => List<Lecture>.unmodifiable(
     _sessionsByCourseId.values.expand((sessions) => sessions),
   );
-  List<String> get courseNames =>
-      _courses.map((course) => course.name).toList();
-
   List<Lecture> sessionsFor(String courseId) {
     return List<Lecture>.unmodifiable(
       _sessionsByCourseId[courseId] ?? const [],
@@ -54,13 +51,6 @@ class LearningDomainStore extends ChangeNotifier {
   Course? courseById(String id) {
     for (final course in _courses) {
       if (course.id == id) return course;
-    }
-    return null;
-  }
-
-  Course? courseByName(String name) {
-    for (final course in _courses) {
-      if (course.name == name) return course;
     }
     return null;
   }

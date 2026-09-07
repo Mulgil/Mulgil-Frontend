@@ -49,6 +49,54 @@ void main() {
       expect(secondWeekY, lessThan(thirdSessionY));
     });
   }
+
+  for (final screen in <String, Widget Function(LearningDomainStore)>{
+    'AI summary': (store) =>
+        AiSummaryScreen(store: store, initialCourseId: 'course-2'),
+    'quiz': (store) => QuizScreen(store: store, initialCourseId: 'course-2'),
+  }.entries) {
+    testWidgets('${screen.key} uses initialCourseId instead of first course', (
+      tester,
+    ) async {
+      AuthStore.saveTokens(
+        accessToken: 'access-token',
+        refreshToken: 'refresh-token',
+      );
+      final store = LearningDomainStore(_twoCourseLearningApi());
+      await store.load();
+
+      await tester.pumpWidget(MaterialApp(home: screen.value(store)));
+      await tester.pumpAndSettle();
+
+      expect(find.text('자료구조'), findsOneWidget);
+      expect(find.text('자료구조 차시'), findsOneWidget);
+      expect(find.text('운영체제 차시'), findsNothing);
+    });
+  }
+
+  for (final screen in <String, Widget Function(LearningDomainStore)>{
+    'AI summary': (store) =>
+        AiSummaryScreen(store: store, initialCourseId: 'missing-course'),
+    'quiz': (store) =>
+        QuizScreen(store: store, initialCourseId: 'missing-course'),
+  }.entries) {
+    testWidgets('${screen.key} does not fall back to first course', (
+      tester,
+    ) async {
+      AuthStore.saveTokens(
+        accessToken: 'access-token',
+        refreshToken: 'refresh-token',
+      );
+      final store = LearningDomainStore(_twoCourseLearningApi());
+      await store.load();
+
+      await tester.pumpWidget(MaterialApp(home: screen.value(store)));
+      await tester.pumpAndSettle();
+
+      expect(find.text('선택한 과목을 찾을 수 없어요'), findsOneWidget);
+      expect(find.text('운영체제 차시'), findsNothing);
+    });
+  }
 }
 
 LearningDomainApi _learningApi() {
@@ -98,15 +146,69 @@ LearningDomainApi _learningApi() {
   );
 }
 
+LearningDomainApi _twoCourseLearningApi() {
+  return LearningDomainApi(
+    ApiClient(
+      baseUri: Uri.parse('https://api.example.com'),
+      accessTokenProvider: AuthStore.accessTokenProvider,
+      httpClient: MockClient((request) async {
+        switch ('${request.method} ${request.url.path}') {
+          case 'GET /api/v1/courses':
+            return _jsonResponse([
+              {
+                'id': 'course-1',
+                'name': '운영체제',
+                'instructor': null,
+                'term': '2026-2',
+              },
+              {
+                'id': 'course-2',
+                'name': '자료구조',
+                'instructor': null,
+                'term': '2026-2',
+              },
+            ]);
+          case 'GET /api/v1/timetable/slots':
+          case 'GET /api/v1/courses/course-1/exams':
+          case 'GET /api/v1/courses/course-2/exams':
+            return _jsonResponse([]);
+          case 'GET /api/v1/courses/course-1/sessions':
+            return _jsonResponse([
+              _sessionJson(
+                id: 'session-os',
+                courseId: 'course-1',
+                sessionNumber: 1,
+                title: '운영체제 차시',
+                sessionDate: '2026-09-01',
+              ),
+            ]);
+          case 'GET /api/v1/courses/course-2/sessions':
+            return _jsonResponse([
+              _sessionJson(
+                id: 'session-ds',
+                courseId: 'course-2',
+                sessionNumber: 1,
+                title: '자료구조 차시',
+                sessionDate: '2026-09-01',
+              ),
+            ]);
+        }
+        fail('Unexpected request: ${request.method} ${request.url}');
+      }),
+    ),
+  );
+}
+
 Map<String, Object?> _sessionJson({
   required String id,
+  String courseId = 'course-1',
   required int sessionNumber,
   required String title,
   required String sessionDate,
 }) {
   return {
     'id': id,
-    'courseId': 'course-1',
+    'courseId': courseId,
     'sessionNumber': sessionNumber,
     'title': title,
     'sessionDate': sessionDate,

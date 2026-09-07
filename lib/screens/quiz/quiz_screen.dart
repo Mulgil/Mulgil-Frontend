@@ -11,35 +11,36 @@ import '../../widgets/session_week_list.dart';
 import 'quiz_session_screen.dart';
 
 class QuizScreen extends StatefulWidget {
-  final String? initialCourse;
+  final String? initialCourseId;
   final LearningDomainStore? store;
 
-  const QuizScreen({super.key, this.initialCourse, this.store});
+  const QuizScreen({super.key, this.initialCourseId, this.store});
 
   @override
   State<QuizScreen> createState() => _QuizScreenState();
 }
 
 class _QuizScreenState extends State<QuizScreen> {
-  String? _courseName;
+  String? _courseId;
   late final LearningDomainStore _learningStore;
 
   @override
   void initState() {
     super.initState();
     _learningStore = widget.store ?? LearningDomainStore.instance;
-    _courseName = widget.initialCourse;
+    _courseId = widget.initialCourseId;
     unawaited(_learningStore.load());
   }
 
   Course? _selectedCourse() {
     final courses = _learningStore.courses;
     if (courses.isEmpty) return null;
-    final selectedName = _courseName;
-    if (selectedName != null) {
+    final selectedId = _courseId;
+    if (selectedId != null) {
       for (final course in courses) {
-        if (course.name == selectedName) return course;
+        if (course.id == selectedId) return course;
       }
+      return null;
     }
     return courses.first;
   }
@@ -79,9 +80,14 @@ class _QuizScreenState extends State<QuizScreen> {
       return Text('퀴즈', style: AppTextStyles.h2);
     }
     return CourseDropdown(
-      selected: selectedCourse.name,
-      options: _learningStore.courseNames,
-      onChanged: (value) => setState(() => _courseName = value),
+      selectedValue: selectedCourse.id,
+      options: _learningStore.courses
+          .map(
+            (course) =>
+                CourseDropdownOption(value: course.id, label: course.name),
+          )
+          .toList(),
+      onChanged: (value) => setState(() => _courseId = value),
     );
   }
 
@@ -99,10 +105,13 @@ class _QuizScreenState extends State<QuizScreen> {
       );
     }
     if (selectedCourse == null) {
-      return const Center(
+      final message = _learningStore.courses.isEmpty
+          ? '등록된 과목이 없어요'
+          : '선택한 과목을 찾을 수 없어요';
+      return Center(
         child: Text(
-          '등록된 과목이 없어요',
-          style: TextStyle(color: AppColors.textMuted),
+          message,
+          style: const TextStyle(color: AppColors.textMuted),
         ),
       );
     }

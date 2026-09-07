@@ -75,7 +75,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 Navigator.pop(sheetCtx);
                 Navigator.of(context).push(
                   MaterialPageRoute(
-                    builder: (_) => NoteListScreen(initialCourse: course.name),
+                    builder: (_) => NoteListScreen(initialCourseId: course.id),
                   ),
                 );
               },
@@ -87,7 +87,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 Navigator.pop(sheetCtx);
                 Navigator.of(context).push(
                   MaterialPageRoute(
-                    builder: (_) => QuizScreen(initialCourse: course.name),
+                    builder: (_) => QuizScreen(initialCourseId: course.id),
                   ),
                 );
               },
@@ -102,7 +102,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 Navigator.pop(sheetCtx);
                 Navigator.of(context).push(
                   MaterialPageRoute(
-                    builder: (_) => AiSummaryScreen(initialCourse: course.name),
+                    builder: (_) => AiSummaryScreen(initialCourseId: course.id),
                   ),
                 );
               },

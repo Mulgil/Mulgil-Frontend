@@ -16,8 +16,10 @@ import 'widgets/lecture_card.dart';
 import 'widgets/session_materials_sheet.dart';
 
 class NoteListScreen extends StatefulWidget {
-  final String? initialCourse;
-  const NoteListScreen({super.key, this.initialCourse});
+  final String? initialCourseId;
+  final LearningDomainStore? store;
+
+  const NoteListScreen({super.key, this.initialCourseId, this.store});
 
   @override
   State<NoteListScreen> createState() => _NoteListScreenState();
@@ -25,26 +27,28 @@ class NoteListScreen extends StatefulWidget {
 
 class _NoteListScreenState extends State<NoteListScreen> {
   int _filter = 0;
-  String? _courseName;
-  final _learningStore = LearningDomainStore.instance;
+  String? _courseId;
+  late final LearningDomainStore _learningStore;
 
   static const _filters = ['전체', '필기있음', '퀴즈완료', '메모'];
 
   @override
   void initState() {
     super.initState();
-    _courseName = widget.initialCourse;
+    _learningStore = widget.store ?? LearningDomainStore.instance;
+    _courseId = widget.initialCourseId;
     unawaited(_learningStore.load());
   }
 
   Course? _selectedCourse() {
     final courses = _learningStore.courses;
     if (courses.isEmpty) return null;
-    final selectedName = _courseName;
-    if (selectedName != null) {
+    final selectedId = _courseId;
+    if (selectedId != null) {
       for (final course in courses) {
-        if (course.name == selectedName) return course;
+        if (course.id == selectedId) return course;
       }
+      return null;
     }
     return courses.first;
   }
@@ -113,9 +117,14 @@ class _NoteListScreenState extends State<NoteListScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         CourseDropdown(
-          selected: selectedCourse.name,
-          options: _learningStore.courseNames,
-          onChanged: (value) => setState(() => _courseName = value),
+          selectedValue: selectedCourse.id,
+          options: _learningStore.courses
+              .map(
+                (course) =>
+                    CourseDropdownOption(value: course.id, label: course.name),
+              )
+              .toList(),
+          onChanged: (value) => setState(() => _courseId = value),
         ),
         if (selectedCourse.instructor != null)
           Text(
@@ -140,10 +149,13 @@ class _NoteListScreenState extends State<NoteListScreen> {
       );
     }
     if (selectedCourse == null) {
-      return const Center(
+      final message = _learningStore.courses.isEmpty
+          ? '등록된 과목이 없어요'
+          : '선택한 과목을 찾을 수 없어요';
+      return Center(
         child: Text(
-          '등록된 과목이 없어요',
-          style: TextStyle(color: AppColors.textMuted),
+          message,
+          style: const TextStyle(color: AppColors.textMuted),
         ),
       );
     }
