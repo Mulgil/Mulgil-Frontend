@@ -335,14 +335,22 @@ class BackIfPushed extends StatelessWidget {
   }
 }
 
+class CourseDropdownOption {
+  final String value;
+  final String label;
+
+  const CourseDropdownOption({required this.value, required this.label});
+}
+
 class CourseDropdown extends StatelessWidget {
-  final String selected;
-  final List<String> options;
+  final String selectedValue;
+  final List<CourseDropdownOption> options;
   final ValueChanged<String> onChanged;
   final double fontSize;
+
   const CourseDropdown({
     super.key,
-    required this.selected,
+    required this.selectedValue,
     required this.options,
     required this.onChanged,
     this.fontSize = 20,
@@ -350,20 +358,31 @@ class CourseDropdown extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    var selectedLabel = '';
+    for (final option in options) {
+      if (option.value == selectedValue) {
+        selectedLabel = option.label;
+        break;
+      }
+    }
     return PopupMenuButton<String>(
       onSelected: onChanged,
       offset: const Offset(0, 36),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppRadius.md),
       ),
-      itemBuilder: (_) =>
-          options.map((o) => PopupMenuItem(value: o, child: Text(o))).toList(),
+      itemBuilder: (_) => options
+          .map(
+            (option) =>
+                PopupMenuItem(value: option.value, child: Text(option.label)),
+          )
+          .toList(),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Flexible(
             child: Text(
-              selected,
+              selectedLabel,
               style: TextStyle(
                 fontSize: fontSize,
                 fontWeight: FontWeight.w800,
