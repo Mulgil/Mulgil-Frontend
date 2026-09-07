@@ -35,7 +35,6 @@ dependencies:
   crypto: ^3.0.7
   file_picker: ^12.2.0
   file_picker_web: ^3.1.0
-  google_fonts: ^6.2.1
   http: ^1.6.0
   web: ^1.1.1
   url_launcher: ^6.3.2
@@ -108,3 +107,8 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+  fonts:
+    - family: Nunito
+      fonts:
+        - asset: assets/fonts/Nunito-Variable.ttf
+          weight: 900

@@ -1,13 +1,10 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mulgil/theme/app_theme.dart';
 import 'package:mulgil/widgets/mulgil_logo.dart';
 
 void main() {
-  testWidgets('uses platform fonts on web and Nunito on native', (
-    tester,
-  ) async {
+  testWidgets('uses the bundled Nunito font on every platform', (tester) async {
     await tester.pumpWidget(
       MaterialApp(
         home: Scaffold(
@@ -21,7 +18,7 @@ void main() {
       ),
     );
 
-    final expectedFontFamily = kIsWeb ? isNull : startsWith('Nunito');
+    const expectedFontFamily = 'Nunito';
     final logoStyle = tester.widget<Text>(find.text('logo')).style!;
     final wordmarkStyle = tester.widget<Text>(find.text('mulg')).style!;
     expect(logoStyle.fontFamily, expectedFontFamily);

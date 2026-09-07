@@ -1,6 +1,4 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 extension BuildContextX on BuildContext {
   bool get isTablet => MediaQuery.of(this).size.width > 768;
@@ -52,9 +50,7 @@ class AppColors {
 }
 
 class AppTextStyles {
-  static TextStyle get _base => kIsWeb
-      ? const TextStyle(color: AppColors.ink)
-      : GoogleFonts.notoSansKr(color: AppColors.ink);
+  static const TextStyle _base = TextStyle(color: AppColors.ink);
 
   static TextStyle get h1 => _base.copyWith(
     fontSize: 24,
@@ -87,23 +83,16 @@ class AppTextStyles {
     letterSpacing: -0.2,
   );
 
-  static TextStyle get logoStyle => kIsWeb
-      ? const TextStyle(
-          fontSize: 48,
-          fontWeight: FontWeight.w900,
-          color: Colors.white,
-        )
-      : GoogleFonts.nunito(
-          fontSize: 48,
-          fontWeight: FontWeight.w900,
-          color: Colors.white,
-        );
+  static const TextStyle logoStyle = TextStyle(
+    fontFamily: 'Nunito',
+    fontSize: 48,
+    fontWeight: FontWeight.w900,
+    color: Colors.white,
+  );
 }
 
 ThemeData buildAppTheme() {
-  final textTheme = kIsWeb
-      ? ThemeData.light().textTheme
-      : GoogleFonts.notoSansKrTextTheme();
+  final textTheme = ThemeData.light().textTheme;
   return ThemeData(
     useMaterial3: true,
     colorScheme: ColorScheme.fromSeed(
