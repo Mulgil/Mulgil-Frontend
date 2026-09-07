@@ -34,6 +34,28 @@ void main() {
     expect(find.text('자료구조 차시'), findsOneWidget);
     expect(find.text('운영체제 차시'), findsNothing);
   });
+
+  testWidgets(
+    'does not fall back to the first course for a missing course id',
+    (tester) async {
+      AuthStore.saveTokens(
+        accessToken: 'access-token',
+        refreshToken: 'refresh-token',
+      );
+      final store = LearningDomainStore(_learningApi());
+      await store.load();
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: NoteListScreen(store: store, initialCourseId: 'missing-course'),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('선택한 과목을 찾을 수 없어요'), findsOneWidget);
+      expect(find.text('운영체제 차시'), findsNothing);
+    },
+  );
 }
 
 LearningDomainApi _learningApi() {

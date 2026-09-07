@@ -73,6 +73,30 @@ void main() {
       expect(find.text('운영체제 차시'), findsNothing);
     });
   }
+
+  for (final screen in <String, Widget Function(LearningDomainStore)>{
+    'AI summary': (store) =>
+        AiSummaryScreen(store: store, initialCourseId: 'missing-course'),
+    'quiz': (store) =>
+        QuizScreen(store: store, initialCourseId: 'missing-course'),
+  }.entries) {
+    testWidgets('${screen.key} does not fall back to first course', (
+      tester,
+    ) async {
+      AuthStore.saveTokens(
+        accessToken: 'access-token',
+        refreshToken: 'refresh-token',
+      );
+      final store = LearningDomainStore(_twoCourseLearningApi());
+      await store.load();
+
+      await tester.pumpWidget(MaterialApp(home: screen.value(store)));
+      await tester.pumpAndSettle();
+
+      expect(find.text('선택한 과목을 찾을 수 없어요'), findsOneWidget);
+      expect(find.text('운영체제 차시'), findsNothing);
+    });
+  }
 }
 
 LearningDomainApi _learningApi() {

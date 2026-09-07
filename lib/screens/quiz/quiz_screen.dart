@@ -40,6 +40,7 @@ class _QuizScreenState extends State<QuizScreen> {
       for (final course in courses) {
         if (course.id == selectedId) return course;
       }
+      return null;
     }
     return courses.first;
   }
@@ -104,10 +105,13 @@ class _QuizScreenState extends State<QuizScreen> {
       );
     }
     if (selectedCourse == null) {
-      return const Center(
+      final message = _learningStore.courses.isEmpty
+          ? '등록된 과목이 없어요'
+          : '선택한 과목을 찾을 수 없어요';
+      return Center(
         child: Text(
-          '등록된 과목이 없어요',
-          style: TextStyle(color: AppColors.textMuted),
+          message,
+          style: const TextStyle(color: AppColors.textMuted),
         ),
       );
     }
