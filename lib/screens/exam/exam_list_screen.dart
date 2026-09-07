@@ -23,7 +23,7 @@ class ExamListScreen extends StatefulWidget {
 class _ExamListScreenState extends State<ExamListScreen> {
   late final LearningDomainStore _learningStore;
   String? _courseIdFilter;
-  String? _courseNameFilter;
+  String? _courseTitle;
   bool _initialized = false;
 
   @override
@@ -45,16 +45,12 @@ class _ExamListScreenState extends State<ExamListScreen> {
   void _readRouteFilter(Object? arguments) {
     if (arguments is Exam) {
       _courseIdFilter = arguments.courseId;
-      _courseNameFilter = arguments.courseName;
+      _courseTitle = arguments.courseName;
       return;
     }
     if (arguments is Course) {
       _courseIdFilter = arguments.id;
-      _courseNameFilter = arguments.name;
-      return;
-    }
-    if (arguments is String) {
-      _courseNameFilter = arguments;
+      _courseTitle = arguments.name;
     }
   }
 
@@ -63,14 +59,11 @@ class _ExamListScreenState extends State<ExamListScreen> {
     if (_courseIdFilter != null) {
       return exams.where((e) => e.courseId == _courseIdFilter).toList();
     }
-    if (_courseNameFilter != null) {
-      return exams.where((e) => e.courseName == _courseNameFilter).toList();
-    }
     return exams;
   }
 
   String get _title {
-    final courseName = _courseNameFilter;
+    final courseName = _courseTitle;
     return courseName == null ? '시험 관리' : '시험 관리 · $courseName';
   }
 
