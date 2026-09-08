@@ -35,6 +35,7 @@ class _GraphLayout {
   final Map<String, String?> parentOf;
   final Map<String, double> angleOf;
   final int maxDepth;
+  final int totalLeaves;
 
   const _GraphLayout({
     required this.order,
@@ -43,6 +44,7 @@ class _GraphLayout {
     required this.parentOf,
     required this.angleOf,
     required this.maxDepth,
+    required this.totalLeaves,
   });
 
   static _GraphLayout build(String centerLabel, MindmapGraph graph) {
@@ -104,7 +106,7 @@ class _GraphLayout {
       return leafCount[id] = sum;
     }
 
-    countLeaves(centerId);
+    final totalLeaves = countLeaves(centerId);
 
     final angleOf = <String, double>{centerId: 0};
     void assignAngles(String id, double start, double end) {
@@ -130,26 +132,38 @@ class _GraphLayout {
       parentOf: parentOf,
       angleOf: angleOf,
       maxDepth: maxDepth,
+      totalLeaves: totalLeaves,
     );
   }
 }
 
 class _MindmapTabState extends State<MindmapTab> {
-  static const _minScale = 0.6;
-  static const _maxScale = 2.2;
+  // A sane floor for manual pinch-zoom-out on graphs that already fit the
+  // viewport at 100%. Dense graphs can zoom out further than this — see
+  // _minScale, which relaxes down to whatever the fit-to-view scale needs.
+  static const _baseMinScale = 0.4;
+  static const _maxScale = 2.5;
+  // Minimum arc length (px) to budget per leaf at the outermost ring, so
+  // dense graphs automatically get a bigger canvas instead of crowding
+  // labels together. The viewport then zooms-to-fit this canvas.
+  static const _minArcPerLeaf = 78.0;
+  static const _worldPadding = 90.0;
+  static const _minOuterRadius = 140.0;
 
   late _GraphLayout _layout;
-  Map<String, Offset>? _positions;
-  Size? _canvasSize;
+  late Size _worldSize;
+  late Map<String, Offset> _positions;
+  Size? _viewportSize;
   Offset _panOffset = Offset.zero;
   double _scale = 1.0;
+  double _minScale = _baseMinScale;
   double _scaleAtGestureStart = 1.0;
   String? _draggingId;
 
   @override
   void initState() {
     super.initState();
-    _layout = _GraphLayout.build(widget.centerLabel, widget.graph);
+    _rebuildGraph();
   }
 
   @override
@@ -157,26 +171,53 @@ class _MindmapTabState extends State<MindmapTab> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.centerLabel != widget.centerLabel ||
         oldWidget.graph != widget.graph) {
-      _layout = _GraphLayout.build(widget.centerLabel, widget.graph);
-      final canvasSize = _canvasSize;
-      if (canvasSize != null) {
-        _positions = _positionsFromLayout(_layout, canvasSize);
-      }
-      _panOffset = Offset.zero;
-      _scale = 1.0;
+      _rebuildGraph();
+      // Force the next build to recompute the zoom-to-fit transform for the
+      // new graph instead of reusing whatever pan/zoom the old one had.
+      _viewportSize = null;
     }
   }
 
-  void _ensureLayout(Size size) {
-    if (_canvasSize == size) return;
-    _canvasSize = size;
-    _positions = _positionsFromLayout(_layout, size);
+  void _rebuildGraph() {
+    _layout = _GraphLayout.build(widget.centerLabel, widget.graph);
+    _worldSize = _computeWorldSize(_layout);
+    _positions = _positionsFromLayout(_layout, _worldSize);
+  }
+
+  Size _computeWorldSize(_GraphLayout layout) {
+    final maxDepth = math.max(layout.maxDepth, 1);
+    final outerRadius = math.max(
+      _minOuterRadius,
+      (_minArcPerLeaf * layout.totalLeaves) / (2 * math.pi) * maxDepth,
+    );
+    final side = (outerRadius + _worldPadding) * 2;
+    return Size(side, side);
+  }
+
+  void _ensureFitToViewport(Size viewportSize) {
+    if (_viewportSize == viewportSize) return;
+    _viewportSize = viewportSize;
+    final fitScale = math
+        .min(
+          viewportSize.width / _worldSize.width,
+          viewportSize.height / _worldSize.height,
+        )
+        .clamp(0.05, 1.0);
+    // Never trap a dense graph above its own fit scale — let zoom-out go as
+    // far as "see the whole thing" requires, only using the base floor for
+    // graphs that already fit comfortably.
+    _minScale = math.min(_baseMinScale, fitScale);
+    _scale = fitScale;
+    _panOffset = Offset(
+      (viewportSize.width - _worldSize.width * fitScale) / 2,
+      (viewportSize.height - _worldSize.height * fitScale) / 2,
+    );
   }
 
   Map<String, Offset> _positionsFromLayout(_GraphLayout layout, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
     final maxDepth = math.max(layout.maxDepth, 1);
-    final available = (math.min(size.width, size.height) / 2) - 40;
+    final available = (math.min(size.width, size.height) / 2) - _worldPadding;
     final ringStep = available / maxDepth;
     final positions = <String, Offset>{};
     for (final id in layout.order) {
@@ -203,11 +244,9 @@ class _MindmapTabState extends State<MindmapTab> {
 
   void _handleScaleStart(ScaleStartDetails details) {
     _scaleAtGestureStart = _scale;
-    final positions = _positions;
-    if (positions == null) return;
     final canvasPoint = (details.localFocalPoint - _panOffset) / _scale;
     String? hit;
-    for (final entry in positions.entries) {
+    for (final entry in _positions.entries) {
       if (entry.key == _GraphLayout.centerId) continue;
       if ((canvasPoint - entry.value).distance <= 20.0) {
         hit = entry.key;
@@ -217,29 +256,25 @@ class _MindmapTabState extends State<MindmapTab> {
     _draggingId = hit;
   }
 
-  Offset _clampToCanvas(Offset point) {
-    final canvasSize = _canvasSize;
-    if (canvasSize == null) return point;
+  Offset _clampToWorld(Offset point) {
     const marginX = 54.0;
     const marginTop = 16.0;
     const marginBottom = 34.0;
     return Offset(
-      point.dx.clamp(marginX, canvasSize.width - marginX),
-      point.dy.clamp(marginTop, canvasSize.height - marginBottom),
+      point.dx.clamp(marginX, _worldSize.width - marginX),
+      point.dy.clamp(marginTop, _worldSize.height - marginBottom),
     );
   }
 
   void _handleScaleUpdate(ScaleUpdateDetails details) {
-    final positions = _positions;
     final draggingId = _draggingId;
-    if (positions == null) return;
     setState(() {
       if (draggingId != null) {
         final updated =
-            positions[draggingId]! + details.focalPointDelta / _scale;
+            _positions[draggingId]! + details.focalPointDelta / _scale;
         // Copy-on-write so the painter can tell (by reference) whether node
         // positions actually changed, instead of always repainting.
-        _positions = Map.of(positions)..[draggingId] = _clampToCanvas(updated);
+        _positions = Map.of(_positions)..[draggingId] = _clampToWorld(updated);
       } else {
         _scale = (_scaleAtGestureStart * details.scale).clamp(
           _minScale,
@@ -251,9 +286,11 @@ class _MindmapTabState extends State<MindmapTab> {
   }
 
   void _resetView() {
+    final viewportSize = _viewportSize;
+    if (viewportSize == null) return;
     setState(() {
-      _panOffset = Offset.zero;
-      _scale = 1.0;
+      _viewportSize = null;
+      _ensureFitToViewport(viewportSize);
     });
   }
 
@@ -324,10 +361,10 @@ class _MindmapTabState extends State<MindmapTab> {
             Positioned.fill(
               child: LayoutBuilder(
                 builder: (context, constraints) {
-                  _ensureLayout(constraints.biggest);
+                  _ensureFitToViewport(constraints.biggest);
                   final layout = _layout;
-                  final positions = _positions!;
-                  final canvasSize = _canvasSize!;
+                  final positions = _positions;
+                  final canvasSize = _worldSize;
                   return GestureDetector(
                     onScaleStart: _handleScaleStart,
                     onScaleUpdate: _handleScaleUpdate,
