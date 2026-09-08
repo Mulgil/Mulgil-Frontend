@@ -50,7 +50,10 @@ class AppColors {
 }
 
 class AppTextStyles {
-  static const TextStyle _base = TextStyle(color: AppColors.ink);
+  static const TextStyle _base = TextStyle(
+    color: AppColors.ink,
+    fontFamilyFallback: ['Pretendard'],
+  );
 
   static TextStyle get h1 => _base.copyWith(
     fontSize: 24,
@@ -106,6 +109,7 @@ ThemeData buildAppTheme() {
     textTheme: textTheme.apply(
       bodyColor: AppColors.ink,
       displayColor: AppColors.ink,
+      fontFamilyFallback: const ['Pretendard'],
     ),
     appBarTheme: const AppBarTheme(
       backgroundColor: AppColors.surface,
