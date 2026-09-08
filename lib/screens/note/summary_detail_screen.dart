@@ -182,7 +182,7 @@ class _SummaryDetailScreenState extends State<SummaryDetailScreen>
                       ),
                       MindmapTab(
                         centerLabel: widget.lecture.title,
-                        nodeLabels: summary.mindmapNodeLabels,
+                        graph: summary.mindmapGraph,
                         generationJob: _artifactJob('mindmap'),
                       ),
                       OriginalTab(paragraphs: _originalParagraphs()),

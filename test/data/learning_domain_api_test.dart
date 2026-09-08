@@ -305,7 +305,13 @@ void main() {
       final summary = await api.getSessionSummary('session-1');
 
       expect(summary.items.single.body, '프로세스와 스레드 차이를 정리합니다.');
-      expect(summary.mindmapNodeLabels, ['프로세스', '스레드', '스케줄링', '동기화']);
+      expect(summary.mindmapGraph.nodes.map((node) => node.label).toList(), [
+        '프로세스',
+        '스레드',
+        '스케줄링',
+        '동기화',
+      ]);
+      expect(summary.mindmapGraph.edges, isEmpty);
     });
 
     test('lists public session quiz questions', () async {
