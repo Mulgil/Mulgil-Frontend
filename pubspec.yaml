@@ -112,3 +112,6 @@ flutter:
       fonts:
         - asset: assets/fonts/Nunito-Variable.ttf
           weight: 900
+    - family: Pretendard
+      fonts:
+        - asset: assets/fonts/PretendardVariable.ttf
