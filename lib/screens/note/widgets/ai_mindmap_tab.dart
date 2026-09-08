@@ -22,7 +22,6 @@ class MindmapTab extends StatefulWidget {
 }
 
 class _MindmapTabState extends State<MindmapTab> {
-  static const _obsidianBg = Color(0xFF14161C);
   static const _canvasSize = Size(560, 420);
   static const _baseRadius = 110.0;
   static const _minScale = 0.6;
@@ -65,10 +64,7 @@ class _MindmapTabState extends State<MindmapTab> {
         center +
             _jitter(
               labels[i],
-              Offset.fromDirection(
-                (2 * math.pi * i / n) - math.pi / 2,
-                radius,
-              ),
+              Offset.fromDirection((2 * math.pi * i / n) - math.pi / 2, radius),
             ),
     ];
   }
@@ -176,7 +172,8 @@ class _MindmapTabState extends State<MindmapTab> {
           height: 340,
           clipBehavior: Clip.antiAlias,
           decoration: BoxDecoration(
-            color: _obsidianBg,
+            color: AppColors.surfaceAlt,
+            border: Border.all(color: AppColors.border),
             borderRadius: BorderRadius.circular(AppRadius.lg),
           ),
           child: Stack(
@@ -206,7 +203,9 @@ class _MindmapTabState extends State<MindmapTab> {
                             for (var i = 0; i < _positions.length; i++)
                               _buildNode(
                                 i,
-                                i == 0 ? widget.centerLabel : visibleLabels[i - 1],
+                                i == 0
+                                    ? widget.centerLabel
+                                    : visibleLabels[i - 1],
                               ),
                           ],
                         ),
@@ -226,13 +225,14 @@ class _MindmapTabState extends State<MindmapTab> {
                     child: Container(
                       padding: const EdgeInsets.all(6),
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.08),
+                        color: AppColors.surface.withValues(alpha: 0.85),
+                        border: Border.all(color: AppColors.border),
                         shape: BoxShape.circle,
                       ),
                       child: const Icon(
                         Icons.center_focus_weak,
                         size: 16,
-                        color: Colors.white70,
+                        color: AppColors.ink60,
                       ),
                     ),
                   ),
@@ -263,16 +263,15 @@ class _MindmapTabState extends State<MindmapTab> {
               height: dotSize,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: isCenter ? AppColors.teal : Colors.white70,
-                boxShadow: isCenter
-                    ? [
-                        BoxShadow(
-                          color: AppColors.teal.withValues(alpha: 0.55),
-                          blurRadius: 10,
-                          spreadRadius: 1,
-                        ),
-                      ]
-                    : null,
+                color: isCenter ? AppColors.navy : AppColors.teal,
+                boxShadow: [
+                  BoxShadow(
+                    color: (isCenter ? AppColors.navy : AppColors.teal)
+                        .withValues(alpha: 0.35),
+                    blurRadius: isCenter ? 10 : 6,
+                    spreadRadius: 1,
+                  ),
+                ],
               ),
             ),
             const SizedBox(height: 6),
@@ -282,7 +281,7 @@ class _MindmapTabState extends State<MindmapTab> {
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                color: isCenter ? Colors.white : Colors.white70,
+                color: isCenter ? AppColors.ink : AppColors.textMuted,
                 fontSize: isCenter ? 12.5 : 11.5,
                 fontWeight: isCenter ? FontWeight.w700 : FontWeight.w500,
                 height: 1.2,
@@ -303,7 +302,7 @@ class _MindmapLinePainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     if (positions.isEmpty) return;
     final paint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.18)
+      ..color = AppColors.ink40.withValues(alpha: 0.45)
       ..strokeWidth = 1.1
       ..style = PaintingStyle.stroke;
     final center = positions.first;
