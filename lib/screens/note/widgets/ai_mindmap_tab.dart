@@ -143,10 +143,15 @@ class _MindmapTabState extends State<MindmapTab> {
   // _minScale, which relaxes down to whatever the fit-to-view scale needs.
   static const _baseMinScale = 0.4;
   static const _maxScale = 2.5;
+  // The initial view never starts smaller than this, even on a huge graph —
+  // showing everything at once isn't worth making labels unreadable. Users
+  // pan/zoom to explore dense branches, the same way Obsidian's graph view
+  // doesn't try to fit an entire vault on screen at once.
+  static const _initialMinScale = 0.6;
   // Minimum arc length (px) to budget per leaf at the outermost ring, so
   // dense graphs automatically get a bigger canvas instead of crowding
   // labels together. The viewport then zooms-to-fit this canvas.
-  static const _minArcPerLeaf = 78.0;
+  static const _minArcPerLeaf = 95.0;
   static const _worldPadding = 90.0;
   static const _minOuterRadius = 140.0;
 
@@ -197,21 +202,19 @@ class _MindmapTabState extends State<MindmapTab> {
   void _ensureFitToViewport(Size viewportSize) {
     if (_viewportSize == viewportSize) return;
     _viewportSize = viewportSize;
-    final fitScale = math
-        .min(
-          viewportSize.width / _worldSize.width,
-          viewportSize.height / _worldSize.height,
-        )
-        .clamp(0.05, 1.0);
-    // Never trap a dense graph above its own fit scale — let zoom-out go as
-    // far as "see the whole thing" requires, only using the base floor for
-    // graphs that already fit comfortably.
-    _minScale = math.min(_baseMinScale, fitScale);
-    _scale = fitScale;
-    _panOffset = Offset(
-      (viewportSize.width - _worldSize.width * fitScale) / 2,
-      (viewportSize.height - _worldSize.height * fitScale) / 2,
+    final wholeGraphScale = math.min(
+      viewportSize.width / _worldSize.width,
+      viewportSize.height / _worldSize.height,
     );
+    // Let manual zoom-out go as far as "see the whole thing" requires on a
+    // dense graph, but never *start* below a readable size — center on the
+    // graph's own center node instead of cramming everything into view.
+    _minScale = math.min(_baseMinScale, wholeGraphScale);
+    _scale = wholeGraphScale.clamp(_initialMinScale, 1.0);
+    final worldCenter = Offset(_worldSize.width / 2, _worldSize.height / 2);
+    _panOffset =
+        Offset(viewportSize.width / 2, viewportSize.height / 2) -
+        worldCenter * _scale;
   }
 
   Map<String, Offset> _positionsFromLayout(_GraphLayout layout, Size size) {
@@ -291,6 +294,20 @@ class _MindmapTabState extends State<MindmapTab> {
     setState(() {
       _viewportSize = null;
       _ensureFitToViewport(viewportSize);
+    });
+  }
+
+  void _zoomBy(double factor) {
+    final viewportSize = _viewportSize;
+    if (viewportSize == null) return;
+    setState(() {
+      final viewportCenter = Offset(
+        viewportSize.width / 2,
+        viewportSize.height / 2,
+      );
+      final worldPoint = (viewportCenter - _panOffset) / _scale;
+      _scale = (_scale * factor).clamp(_minScale, _maxScale);
+      _panOffset = viewportCenter - worldPoint * _scale;
     });
   }
 
@@ -410,25 +427,14 @@ class _MindmapTabState extends State<MindmapTab> {
             Positioned(
               right: 8,
               top: 8,
-              child: Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: _resetView,
-                  borderRadius: BorderRadius.circular(20),
-                  child: Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      color: AppColors.surface.withValues(alpha: 0.85),
-                      border: Border.all(color: AppColors.border),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.center_focus_weak,
-                      size: 16,
-                      color: AppColors.ink60,
-                    ),
-                  ),
-                ),
+              child: Column(
+                children: [
+                  _toolbarButton(Icons.center_focus_weak, _resetView),
+                  const SizedBox(height: 6),
+                  _toolbarButton(Icons.add, () => _zoomBy(1.3)),
+                  const SizedBox(height: 6),
+                  _toolbarButton(Icons.remove, () => _zoomBy(1 / 1.3)),
+                ],
               ),
             ),
           ],
@@ -437,14 +443,33 @@ class _MindmapTabState extends State<MindmapTab> {
     );
   }
 
+  Widget _toolbarButton(IconData icon, VoidCallback onTap) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(20),
+        child: Container(
+          padding: const EdgeInsets.all(6),
+          decoration: BoxDecoration(
+            color: AppColors.surface.withValues(alpha: 0.85),
+            border: Border.all(color: AppColors.border),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(icon, size: 16, color: AppColors.ink60),
+        ),
+      ),
+    );
+  }
+
   Widget _buildNode(Offset pos, String label, int depth) {
     final isCenter = depth == 0;
-    const boxWidth = 108.0;
+    const boxWidth = 145.0;
     final dotSize = isCenter
-        ? 14.0
+        ? 16.0
         : depth == 1
-        ? 11.0
-        : 8.0;
+        ? 12.0
+        : 9.0;
     return Positioned(
       left: pos.dx - boxWidth / 2,
       top: pos.dy - dotSize / 2,
@@ -473,11 +498,11 @@ class _MindmapTabState extends State<MindmapTab> {
             Text(
               label,
               textAlign: TextAlign.center,
-              maxLines: 2,
+              maxLines: 3,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 color: isCenter ? AppColors.ink : AppColors.textMuted,
-                fontSize: isCenter ? 12.5 : 11.5,
+                fontSize: isCenter ? 18.0 : 16.0,
                 fontWeight: isCenter ? FontWeight.w700 : FontWeight.w500,
                 height: 1.2,
               ),
