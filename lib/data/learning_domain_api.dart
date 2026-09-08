@@ -2,6 +2,7 @@ import '../models/app_notification.dart';
 import '../models/course.dart';
 import '../models/exam.dart';
 import '../models/lecture.dart';
+import '../models/mindmap_graph.dart';
 import '../models/quiz_attempt_result.dart';
 import '../models/quiz_question.dart';
 import '../models/source_ref.dart';
@@ -12,11 +13,11 @@ import 'api_client.dart';
 
 class SessionSummary {
   final List<SummaryItem> items;
-  final List<String> mindmapNodeLabels;
+  final MindmapGraph mindmapGraph;
 
   const SessionSummary({
     required this.items,
-    this.mindmapNodeLabels = const [],
+    this.mindmapGraph = const MindmapGraph(),
   });
 }
 
@@ -289,10 +290,7 @@ class LearningDomainApi {
     final mindmap = json['mindmap'] is Map
         ? _map(json['mindmap'], 'mindmap')
         : const <String, Object?>{};
-    return SessionSummary(
-      items: items,
-      mindmapNodeLabels: _mindmapLabels(mindmap['nodes']),
-    );
+    return SessionSummary(items: items, mindmapGraph: _mindmapGraph(mindmap));
   }
 
   SummaryItem? _summaryItemFromJson(Object? value, int index) {
@@ -310,24 +308,44 @@ class LearningDomainApi {
     );
   }
 
-  List<String> _mindmapLabels(Object? value) {
-    if (value is! List) return const [];
-    return value
-        .map((node) {
-          if (node is Map) {
-            final json = node.map(
-              (key, value) => MapEntry(key.toString(), value),
-            );
-            return _optionalString(json, 'label') ??
-                _optionalString(json, 'text') ??
-                _optionalString(json, 'title') ??
-                _optionalString(json, 'id');
-          }
-          return node?.toString();
-        })
-        .whereType<String>()
-        .where((label) => label.trim().isNotEmpty)
-        .toList();
+  MindmapGraph _mindmapGraph(Map<String, Object?> mindmap) {
+    final nodesValue = mindmap['nodes'];
+    final nodes = <MindmapNode>[];
+    if (nodesValue is List) {
+      for (var i = 0; i < nodesValue.length; i++) {
+        final entry = nodesValue[i];
+        String? id;
+        String? label;
+        if (entry is Map) {
+          final json = _map(entry, 'mindmap.node');
+          id = _optionalString(json, 'id');
+          label =
+              _optionalString(json, 'label') ??
+              _optionalString(json, 'text') ??
+              _optionalString(json, 'title') ??
+              id;
+        } else {
+          label = entry?.toString();
+        }
+        if (label == null || label.trim().isEmpty) continue;
+        nodes.add(MindmapNode(id: id ?? 'node_$i', label: label));
+      }
+    }
+
+    final edgesValue = mindmap['edges'];
+    final edges = <MindmapEdge>[];
+    if (edgesValue is List) {
+      for (final entry in edgesValue) {
+        if (entry is! Map) continue;
+        final json = _map(entry, 'mindmap.edge');
+        final from = _optionalString(json, 'from');
+        final to = _optionalString(json, 'to');
+        if (from == null || to == null) continue;
+        edges.add(MindmapEdge(from: from, to: to));
+      }
+    }
+
+    return MindmapGraph(nodes: nodes, edges: edges);
   }
 
   QuizQuestion _quizQuestionFromJson(Object? value) {
